@@ -1,0 +1,6 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Đăng nhập | CMS Core</title><link rel="stylesheet" th:href="@{/css/auth.css}"></head>
+<body><main class="card"><h1>Đăng nhập</h1><p class="err" th:if="${error}" th:text="${error}"></p><p class="msg" th:if="${message}" th:text="${message}"></p>
+<form method="post" th:action="@{/login}"><label for="email">Email</label><input id="email" name="email" type="email" required autocomplete="username"><label for="password">Mật khẩu</label><input id="password" name="password" type="password" required autocomplete="current-password"><button type="submit">Đăng nhập</button></form>
+<a class="google" href="/oauth2/authorization/google">Đăng nhập bằng Google</a><p class="links">Chưa có tài khoản? <a href="/register">Đăng ký</a></p></main></body></html>

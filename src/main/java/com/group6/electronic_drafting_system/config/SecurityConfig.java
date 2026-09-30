@@ -11,9 +11,14 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 
 @Configuration
 public class SecurityConfig {
+    @Bean AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+        return configuration.getAuthenticationManager();
+    }
     @Bean PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
 
     @Bean UserDetailsService userDetailsService(AccountRepository accounts) {
@@ -29,7 +34,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/login", "/register", "/register/**", "/css/**", "/error", "/oauth2/**", "/login/oauth2/**").permitAll()
                         .anyRequest().authenticated())
-                .formLogin(form -> form.loginPage("/login").usernameParameter("email").defaultSuccessUrl("/", true).permitAll())
+                .formLogin(form -> form.loginPage("/login").loginProcessingUrl("/process-login").usernameParameter("email").defaultSuccessUrl("/", true).permitAll())
                 .oauth2Login(oauth -> oauth.loginPage("/login").successHandler(googleSuccessHandler))
                 .logout(logout -> logout.logoutSuccessUrl("/login?logout"))
                 .build();

@@ -1,0 +1,40 @@
+package com.group6.electronic_drafting_system.exception;
+
+import org.springframework.http.HttpStatus;
+
+public enum ErrorCode {
+    UNCATEGORIZED_EXCEPTION(9999, "Đã xảy ra lỗi. Vui lòng thử lại sau.", HttpStatus.INTERNAL_SERVER_ERROR),
+    VALIDATION_FAILED(1000, "Thông tin gửi lên không hợp lệ.", HttpStatus.BAD_REQUEST),
+    BAD_REQUEST(1004, "Yêu cầu không hợp lệ.", HttpStatus.BAD_REQUEST),
+
+    AUTH_REGISTRATION_FAILED(1100, "Đăng ký không thành công. Vui lòng kiểm tra lại thông tin.", HttpStatus.BAD_REQUEST),
+    AUTH_VERIFICATION_FAILED(1101, "Mã xác minh không đúng hoặc đã hết hạn.", HttpStatus.BAD_REQUEST),
+    AUTH_RESEND_OTP_FAILED(1102, "Không thể gửi lại mã xác minh. Vui lòng thử lại.", HttpStatus.BAD_REQUEST),
+    AUTH_INVALID_CREDENTIALS(1103, "Email hoặc mật khẩu không đúng.", HttpStatus.UNAUTHORIZED),
+    AUTH_ACCOUNT_NOT_REGISTERED(1104, "Tài khoản chưa đăng ký. Vui lòng đăng ký trước khi đăng nhập.", HttpStatus.UNAUTHORIZED),
+    AUTH_ACCOUNT_ALREADY_EXISTS(2000, "Email này đã được đăng ký.", HttpStatus.CONFLICT),
+    AUTH_UNEXPECTED_ERROR(9999, "Đã xảy ra lỗi. Vui lòng thử lại sau.", HttpStatus.INTERNAL_SERVER_ERROR);
+
+    private final int code;
+    private final String message;
+    private final HttpStatus statusCode;
+
+    ErrorCode(int code, String message, HttpStatus statusCode) {
+        this.code = code;
+        this.message = message;
+        this.statusCode = statusCode;
+    }
+
+    public int getCode() { return code; }
+    public String getMessage() { return message; }
+    public HttpStatus getStatusCode() { return statusCode; }
+
+    public static ErrorCode fromName(String name) {
+        if (name == null) return UNCATEGORIZED_EXCEPTION;
+        try {
+            return valueOf(name);
+        } catch (IllegalArgumentException ex) {
+            return UNCATEGORIZED_EXCEPTION;
+        }
+    }
+}

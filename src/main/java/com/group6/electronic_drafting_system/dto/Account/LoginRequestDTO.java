@@ -1,0 +1,11 @@
+package com.group6.electronic_drafting_system.dto.Account;
+
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class LoginRequestDTO {
+    private String email;
+    private String password;
+}

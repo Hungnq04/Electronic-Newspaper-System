@@ -15,6 +15,7 @@ public class Account {
     @ManyToOne(fetch = FetchType.LAZY, optional = false) @JoinColumn(name = "role_id", nullable = false) private Role role;
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "department_id") private Department department;
     @Column(nullable = false, length = 20) private String status = "Active";
+    @Column(name = "verified") private Boolean verified = false;
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false) private LocalDateTime createdAt;
     @Column(name = "updated_at", nullable = false, insertable = false, updatable = false) private LocalDateTime updatedAt;
 }

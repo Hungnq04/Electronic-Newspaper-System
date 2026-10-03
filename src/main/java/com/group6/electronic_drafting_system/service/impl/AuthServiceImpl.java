@@ -49,13 +49,18 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public GetAccountDTO login(String email, String password) {
         var authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(email, password));
-        SecurityContextHolder.getContext().setAuthentication(authentication);
         Account account = accounts.findByEmailIgnoreCase(email.trim())
                 .orElseThrow(() -> new ApplicationException(ErrorCode.AUTH_INVALID_CREDENTIALS));
+        if (!Boolean.TRUE.equals(account.getVerified())) {
+            SecurityContextHolder.clearContext();
+            issueOtp(account);
+            return accountMapper.toGetAccountDTO(account);
+        }
+        SecurityContextHolder.getContext().setAuthentication(authentication);
         return accountMapper.toGetAccountDTO(account);
     }
 
@@ -74,58 +79,44 @@ public class AuthServiceImpl implements AuthService {
         if (!normalizedEmail.endsWith("@gmail.com") || fullName == null || fullName.isBlank()
                 || fullName.length() > 100 || password == null || password.length() < 8)
             throw new ApplicationException(ErrorCode.AUTH_REGISTRATION_FAILED);
-        EmailVerification verification = verifications.findById(normalizedEmail).orElseGet(EmailVerification::new);
-        verification.setEmail(normalizedEmail);
-        verification.setFullName(fullName.trim());
-        verification.setPasswordHash(encoder.encode(password));
-        sendNewCode(verification);
+        Role reporter = getReporterRole();
+        Account account = new Account();
+        account.setUsername(createUsername(normalizedEmail));
+        account.setEmail(normalizedEmail);
+        account.setFullName(fullName.trim());
+        account.setPasswordHash(encoder.encode(password));
+        account.setRole(reporter);
+        account.setStatus("Active");
+        account.setVerified(false);
+        accounts.saveAndFlush(account);
+        issueOtp(account);
     }
 
     @Override
     @Transactional
     public void resendRegistrationCode(String email) {
         String normalizedEmail = normalize(email);
-        EmailVerification verification = verifications.findById(normalizedEmail)
+        Account account = accounts.findByEmailIgnoreCase(normalizedEmail)
                 .orElseThrow(() -> new ApplicationException(ErrorCode.AUTH_RESEND_OTP_FAILED));
-        if (accounts.existsByEmailIgnoreCase(normalizedEmail)) {
-            verifications.delete(verification);
+        if (Boolean.TRUE.equals(account.getVerified())) {
             throw new ApplicationException(ErrorCode.AUTH_ACCOUNT_ALREADY_EXISTS);
         }
-        sendNewCode(verification);
+        issueOtp(account);
     }
 
     @Override
     @Transactional
     public void verifyAndRegister(String email, String code) {
         String normalizedEmail = normalize(email);
+        Account account = accounts.findByEmailIgnoreCase(normalizedEmail)
+                .orElseThrow(() -> new ApplicationException(ErrorCode.AUTH_ACCOUNT_NOT_REGISTERED));
+        if (Boolean.TRUE.equals(account.getVerified())) throw new ApplicationException(ErrorCode.AUTH_ACCOUNT_ALREADY_EXISTS);
         EmailVerification verification = verifications.findById(normalizedEmail)
                 .orElseThrow(() -> new ApplicationException(ErrorCode.AUTH_VERIFICATION_FAILED));
-        if (accounts.existsByEmailIgnoreCase(normalizedEmail)) {
-            verifications.delete(verification);
-            throw new ApplicationException(ErrorCode.AUTH_ACCOUNT_ALREADY_EXISTS);
-        }
         if (verification.getExpiresAt().isBefore(LocalDateTime.now()) || code == null
                 || !encoder.matches(code.trim(), verification.getCodeHash()))
             throw new ApplicationException(ErrorCode.AUTH_VERIFICATION_FAILED);
-        Role reporter = roles.findByRoleNameIgnoreCase("Reporter").orElseGet(() -> {
-            Role role = new Role();
-            role.setRoleName("Reporter");
-            role.setDescription("Reporter account");
-            return roles.save(role);
-        });
-        Account account = new Account();
-        String username = normalizedEmail.substring(0, normalizedEmail.indexOf('@'));
-        if (username.length() > 50) username = username.substring(0, 50);
-        if (accounts.existsByUsernameIgnoreCase(username)) {
-            String suffix = "_" + Integer.toHexString(random.nextInt());
-            username = username.substring(0, Math.min(username.length(), 50 - suffix.length())) + suffix;
-        }
-        account.setUsername(username);
-        account.setEmail(normalizedEmail);
-        account.setFullName(verification.getFullName());
-        account.setPasswordHash(verification.getPasswordHash());
-        account.setRole(reporter);
-        account.setStatus("Active");
+        account.setVerified(true);
         accounts.save(account);
         verifications.delete(verification);
     }
@@ -140,14 +131,27 @@ public class AuthServiceImpl implements AuthService {
                 .orElse(0);
     }
 
+    @Override
+    @Transactional
+    public void sendVerificationCodeForExistingAccount(String email) {
+        String normalizedEmail = normalize(email);
+        Account account = accounts.findByEmailIgnoreCase(normalizedEmail)
+                .orElseThrow(() -> new ApplicationException(ErrorCode.AUTH_ACCOUNT_NOT_REGISTERED));
+        if (!Boolean.TRUE.equals(account.getVerified())) issueOtp(account);
+    }
+
     private String normalize(String email) {
         if (email == null || !email.matches("(?i)^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$"))
             throw new ApplicationException(ErrorCode.AUTH_REGISTRATION_FAILED);
         return email.trim().toLowerCase(Locale.ROOT);
     }
 
-    private void sendNewCode(EmailVerification verification) {
+    private void issueOtp(Account account) {
         String code = String.format("%06d", random.nextInt(1_000_000));
+        EmailVerification verification = verifications.findById(account.getEmail()).orElseGet(EmailVerification::new);
+        verification.setEmail(account.getEmail());
+        verification.setFullName(account.getFullName());
+        verification.setPasswordHash(account.getPasswordHash());
         verification.setCodeHash(encoder.encode(code));
         verification.setExpiresAt(LocalDateTime.now().plusSeconds(60));
         verifications.saveAndFlush(verification);
@@ -162,5 +166,24 @@ public class AuthServiceImpl implements AuthService {
         } else {
             otpEmailService.sendVerificationCode(recipient, code);
         }
+    }
+
+    private Role getReporterRole() {
+        return roles.findByRoleNameIgnoreCase("Reporter").orElseGet(() -> {
+            Role role = new Role();
+            role.setRoleName("Reporter");
+            role.setDescription("Reporter account");
+            return roles.save(role);
+        });
+    }
+
+    private String createUsername(String normalizedEmail) {
+        String username = normalizedEmail.substring(0, normalizedEmail.indexOf('@'));
+        if (username.length() > 50) username = username.substring(0, 50);
+        if (accounts.existsByUsernameIgnoreCase(username)) {
+            String suffix = "_" + Integer.toHexString(random.nextInt());
+            username = username.substring(0, Math.min(username.length(), 50 - suffix.length())) + suffix;
+        }
+        return username;
     }
 }

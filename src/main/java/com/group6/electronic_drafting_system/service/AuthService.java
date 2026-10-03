@@ -10,4 +10,5 @@ public interface AuthService {
     void resendRegistrationCode(String email);
     void verifyAndRegister(String email, String code);
     int getOtpRemainingSeconds(String email);
+    void sendVerificationCodeForExistingAccount(String email);
 }

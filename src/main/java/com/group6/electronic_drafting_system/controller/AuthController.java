@@ -26,7 +26,13 @@ public class AuthController {
     public String login(@ModelAttribute LoginRequestDTO loginRequest, jakarta.servlet.http.HttpServletRequest request,
                         RedirectAttributes redirect) {
         try {
-            authService.login(loginRequest.getEmail(), loginRequest.getPassword());
+            var account = authService.login(loginRequest.getEmail(), loginRequest.getPassword());
+            if (!account.isVerified()) {
+                redirect.addFlashAttribute("message", ErrorCode.AUTH_ACCOUNT_NOT_VERIFIED.getMessage()
+                        + " Mã xác thực mới đã được gửi đến email của bạn.");
+                return "redirect:/register/verify?email="
+                        + java.net.URLEncoder.encode(account.getEmail(), java.nio.charset.StandardCharsets.UTF_8);
+            }
             authService.persistSecurityContext(request);
             return "redirect:/";
         } catch (AuthenticationException | ApplicationException ex) {
@@ -59,9 +65,11 @@ public class AuthController {
     }
 
     @GetMapping("/register/verify")
-    public String verifyPage(@RequestParam String email, Model model) {
+    public String verifyPage(@RequestParam String email, @RequestParam(required = false) String pending, Model model) {
         model.addAttribute("email", email);
         model.addAttribute("otpRemainingSeconds", authService.getOtpRemainingSeconds(email));
+        if (pending != null) model.addAttribute("message", ErrorCode.AUTH_ACCOUNT_NOT_VERIFIED.getMessage()
+                + " Mã xác thực đã được gửi đến email của bạn.");
         return "verify-otp";
     }
 

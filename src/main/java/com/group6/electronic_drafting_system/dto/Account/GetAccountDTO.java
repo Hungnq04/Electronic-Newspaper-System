@@ -12,4 +12,5 @@ public class GetAccountDTO {
     private String email;
     private String role;
     private String status;
+    private boolean verified;
 }

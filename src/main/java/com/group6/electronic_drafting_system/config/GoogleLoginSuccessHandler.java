@@ -2,6 +2,7 @@ package com.group6.electronic_drafting_system.config;
 
 import com.group6.electronic_drafting_system.exception.ErrorCode;
 import com.group6.electronic_drafting_system.repository.AccountRepository;
+import com.group6.electronic_drafting_system.service.AuthService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -16,9 +17,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class GoogleLoginSuccessHandler implements AuthenticationSuccessHandler {
     private final AccountRepository accounts;
+    private final AuthService authService;
 
-    public GoogleLoginSuccessHandler(AccountRepository accounts) {
+    public GoogleLoginSuccessHandler(AccountRepository accounts, AuthService authService) {
         this.accounts = accounts;
+        this.authService = authService;
     }
 
     @Override
@@ -32,8 +35,17 @@ public class GoogleLoginSuccessHandler implements AuthenticationSuccessHandler {
             return;
         }
         String email = emailValue.trim().toLowerCase(Locale.ROOT);
-        if (accounts.findByEmailIgnoreCase(email).isEmpty()) {
+        var account = accounts.findByEmailIgnoreCase(email);
+        if (account.isEmpty()) {
             rejectLogin(request, response);
+            return;
+        }
+        if (!Boolean.TRUE.equals(account.get().getVerified())) {
+            authService.sendVerificationCodeForExistingAccount(email);
+            SecurityContextHolder.clearContext();
+            if (request.getSession(false) != null) request.getSession(false).invalidate();
+            response.sendRedirect("/register/verify?email="
+                    + java.net.URLEncoder.encode(email, java.nio.charset.StandardCharsets.UTF_8) + "&pending=true");
             return;
         }
         response.sendRedirect("/");

@@ -29,18 +29,12 @@
     (() => {
         let remaining = /*[[${otpRemainingSeconds}]]*/ 0;
         const countdown = document.getElementById('otp-countdown');
-        const resendButton = document.getElementById('resend-otp');
-
         const updateCountdown = () => {
             if (remaining <= 0) {
-                countdown.textContent = 'Bạn có thể yêu cầu gửi mã OTP mới.';
-                resendButton.disabled = false;
-                resendButton.removeAttribute('aria-disabled');
+                countdown.textContent = 'Mã OTP đã hết hạn. Bạn có thể xác thực bằng mã mới hoặc yêu cầu gửi lại.';
                 return;
             }
-            countdown.textContent = `Có thể gửi lại mã sau ${remaining} giây.`;
-            resendButton.disabled = true;
-            resendButton.setAttribute('aria-disabled', 'true');
+            countdown.textContent = `Mã OTP hiện tại còn hiệu lực ${remaining} giây. Bạn có thể gửi mã mới bất cứ lúc nào.`;
             remaining -= 1;
             window.setTimeout(updateCountdown, 1000);
         };

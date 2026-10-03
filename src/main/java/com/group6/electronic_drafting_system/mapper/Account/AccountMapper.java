@@ -14,6 +14,7 @@ public class AccountMapper {
                 .email(account.getEmail())
                 .role(account.getRole().getRoleName())
                 .status(account.getStatus())
+                .verified(Boolean.TRUE.equals(account.getVerified()))
                 .build();
     }
 }

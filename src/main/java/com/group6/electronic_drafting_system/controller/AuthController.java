@@ -2,6 +2,7 @@ package com.group6.electronic_drafting_system.controller;
 
 import com.group6.electronic_drafting_system.service.AuthService;
 import com.group6.electronic_drafting_system.dto.Account.LoginRequestDTO;
+import com.group6.electronic_drafting_system.entity.enums.AccountStatus;
 import com.group6.electronic_drafting_system.exception.ApplicationException;
 import com.group6.electronic_drafting_system.exception.ErrorCode;
 import org.springframework.security.core.AuthenticationException;
@@ -27,16 +28,17 @@ public class AuthController {
                         RedirectAttributes redirect) {
         try {
             var account = authService.login(loginRequest.getEmail(), loginRequest.getPassword());
-            if (!account.isVerified()) {
+            if (account.getStatus() == AccountStatus.PENDING) {
                 redirect.addFlashAttribute("message", ErrorCode.AUTH_ACCOUNT_NOT_VERIFIED.getMessage()
-                        + " Mã xác thực mới đã được gửi đến email của bạn.");
+                        + " Vui lòng nhập mã xác thực đã gửi đến email của bạn.");
                 return "redirect:/register/verify?email="
                         + java.net.URLEncoder.encode(account.getEmail(), java.nio.charset.StandardCharsets.UTF_8);
             }
             authService.persistSecurityContext(request);
             return "redirect:/";
-        } catch (AuthenticationException | ApplicationException ex) {
-            redirect.addFlashAttribute("error", ErrorCode.AUTH_INVALID_CREDENTIALS.getMessage());
+        } catch (ApplicationException ex) {
+            return "redirect:/login?error=" + ex.getErrorCode().name();
+        } catch (AuthenticationException ex) {
             return "redirect:/login?error=" + ErrorCode.AUTH_INVALID_CREDENTIALS.name();
         }
     }
@@ -51,6 +53,12 @@ public class AuthController {
             authService.sendRegistrationCode(fullName, email, password);
             redirect.addFlashAttribute("message", "OTP đã được gửi. Mã có hiệu lực trong 60 giây.");
         } catch (ApplicationException ex) {
+            if (ex.getErrorCode() == ErrorCode.AUTH_ACCOUNT_NOT_VERIFIED) {
+                // Email đã đăng ký nhưng chưa xác minh: chuyển sang trang nhập OTP
+                redirect.addFlashAttribute("message", ErrorCode.AUTH_ACCOUNT_NOT_VERIFIED.getMessage()
+                        + " Vui lòng nhập mã xác thực đã gửi đến email của bạn.");
+                return "redirect:/register/verify?email=" + java.net.URLEncoder.encode(email.trim(), java.nio.charset.StandardCharsets.UTF_8);
+            }
             redirect.addFlashAttribute("error", ex.getErrorCode().getMessage());
             redirect.addFlashAttribute("fullName", fullName);
             redirect.addFlashAttribute("email", email);
@@ -67,8 +75,7 @@ public class AuthController {
     @GetMapping("/register/verify")
     public String verifyPage(@RequestParam String email, @RequestParam(required = false) String pending, Model model) {
         model.addAttribute("email", email);
-        model.addAttribute("otpRemainingSeconds", authService.getOtpRemainingSeconds(email));
-        if (pending != null) model.addAttribute("message", ErrorCode.AUTH_ACCOUNT_NOT_VERIFIED.getMessage()
+        model.addAttribute("otpRemainingSeconds", authService.getOtpRemainingSeconds(email));        if (pending != null) model.addAttribute("message", ErrorCode.AUTH_ACCOUNT_NOT_VERIFIED.getMessage()
                 + " Mã xác thực đã được gửi đến email của bạn.");
         return "verify-otp";
     }

@@ -29,17 +29,19 @@
     (() => {
         let remaining = /*[[${otpRemainingSeconds}]]*/ 0;
         const countdown = document.getElementById('otp-countdown');
-        const updateCountdown = () => {
+        // Tính theo mốc thời gian để không lệch khi tab bị tạm dừng
+        const deadline = Date.now() + remaining * 1000;
+        const tick = () => {
+            remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
             if (remaining <= 0) {
-                countdown.textContent = 'Mã OTP đã hết hạn. Bạn có thể xác thực bằng mã mới hoặc yêu cầu gửi lại.';
+                countdown.textContent = 'Mã OTP đã hết hiệu lực. Vui lòng bấm "Gửi lại OTP" để nhận mã mới.';
                 return;
             }
-            countdown.textContent = `Mã OTP hiện tại còn hiệu lực ${remaining} giây. Bạn có thể gửi mã mới bất cứ lúc nào.`;
-            remaining -= 1;
-            window.setTimeout(updateCountdown, 1000);
+            countdown.textContent = `Mã OTP còn hiệu lực ${remaining} giây. Bấm "Gửi lại OTP" để nhận mã mới (mã cũ sẽ bị vô hiệu hóa).`;
+            window.setTimeout(tick, 250);
         };
 
-        updateCountdown();
+        tick();
     })();
 </script>
 </body>

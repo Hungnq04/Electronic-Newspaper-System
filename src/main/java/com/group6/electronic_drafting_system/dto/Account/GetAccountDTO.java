@@ -1,5 +1,6 @@
 package com.group6.electronic_drafting_system.dto.Account;
 
+import com.group6.electronic_drafting_system.entity.enums.AccountStatus;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -11,6 +12,5 @@ public class GetAccountDTO {
     private String fullName;
     private String email;
     private String role;
-    private String status;
-    private boolean verified;
+    private AccountStatus status;
 }

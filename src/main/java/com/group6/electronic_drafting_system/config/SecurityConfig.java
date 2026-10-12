@@ -1,5 +1,6 @@
 package com.group6.electronic_drafting_system.config;
 
+import com.group6.electronic_drafting_system.entity.enums.AccountStatus;
 import com.group6.electronic_drafting_system.repository.AccountRepository;
 import java.util.Locale;
 import org.springframework.context.annotation.Bean;
@@ -24,8 +25,9 @@ public class SecurityConfig {
     @Bean UserDetailsService userDetailsService(AccountRepository accounts) {
         return email -> accounts.findByEmailIgnoreCase(email.trim())
                 .map(account -> User.withUsername(account.getEmail().toLowerCase(Locale.ROOT))
-                        .password(account.getPasswordHash()).roles(account.getRole().getRoleName())
-                        .disabled(!"Active".equalsIgnoreCase(account.getStatus())).build())
+                        .password(account.getPasswordHash()).roles(account.getRole().getRoleName().name())
+                        .accountLocked(account.getStatus() == AccountStatus.LOCKED)
+                        .disabled(account.getStatus() != AccountStatus.ACTIVE).build())
                 .orElseThrow(() -> new UsernameNotFoundException("Account not found"));
     }
 

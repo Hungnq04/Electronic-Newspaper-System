@@ -12,9 +12,8 @@ public class AccountMapper {
                 .username(account.getUsername())
                 .fullName(account.getFullName())
                 .email(account.getEmail())
-                .role(account.getRole().getRoleName())
+                .role(account.getRole().getRoleName().name())
                 .status(account.getStatus())
-                .verified(Boolean.TRUE.equals(account.getVerified()))
                 .build();
     }
 }

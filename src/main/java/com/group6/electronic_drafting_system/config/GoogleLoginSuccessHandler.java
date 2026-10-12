@@ -1,5 +1,6 @@
 package com.group6.electronic_drafting_system.config;
 
+import com.group6.electronic_drafting_system.entity.enums.AccountStatus;
 import com.group6.electronic_drafting_system.exception.ErrorCode;
 import com.group6.electronic_drafting_system.repository.AccountRepository;
 import com.group6.electronic_drafting_system.service.AuthService;
@@ -31,16 +32,22 @@ public class GoogleLoginSuccessHandler implements AuthenticationSuccessHandler {
         Object emailAttribute = google.getAttribute("email");
         if (!(emailAttribute instanceof String emailValue) || emailValue.isBlank()
                 || !Boolean.TRUE.equals(google.getAttribute("email_verified"))) {
-            rejectLogin(request, response);
+            rejectLogin(request, response, ErrorCode.AUTH_ACCOUNT_NOT_REGISTERED);
             return;
         }
         String email = emailValue.trim().toLowerCase(Locale.ROOT);
         var account = accounts.findByEmailIgnoreCase(email);
         if (account.isEmpty()) {
-            rejectLogin(request, response);
+            rejectLogin(request, response, ErrorCode.AUTH_ACCOUNT_NOT_REGISTERED);
             return;
         }
-        if (!Boolean.TRUE.equals(account.get().getVerified())) {
+        AccountStatus status = account.get().getStatus();
+        if (status == AccountStatus.LOCKED || status == AccountStatus.INACTIVE) {
+            rejectLogin(request, response, status == AccountStatus.LOCKED
+                    ? ErrorCode.AUTH_ACCOUNT_LOCKED : ErrorCode.AUTH_ACCOUNT_INACTIVE);
+            return;
+        }
+        if (status == AccountStatus.PENDING) {
             authService.sendVerificationCodeForExistingAccount(email);
             SecurityContextHolder.clearContext();
             if (request.getSession(false) != null) request.getSession(false).invalidate();
@@ -51,9 +58,9 @@ public class GoogleLoginSuccessHandler implements AuthenticationSuccessHandler {
         response.sendRedirect("/");
     }
 
-    private void rejectLogin(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    private void rejectLogin(HttpServletRequest request, HttpServletResponse response, ErrorCode error) throws IOException {
         SecurityContextHolder.clearContext();
         if (request.getSession(false) != null) request.getSession(false).invalidate();
-        response.sendRedirect("/login?error=" + ErrorCode.AUTH_ACCOUNT_NOT_REGISTERED.name());
+        response.sendRedirect("/login?error=" + error.name());
     }
 }

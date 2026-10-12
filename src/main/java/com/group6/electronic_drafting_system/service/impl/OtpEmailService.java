@@ -18,7 +18,7 @@ public class OtpEmailService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(email);
         message.setSubject("Mã xác minh đăng ký Electronic Drafting System");
-        message.setText("Mã OTP của bạn là " + code + ". Mã hết hạn sau 60 giây.");
+        message.setText("Mã OTP của bạn là " + code + ". Mã hết hạn sau 60 giây. Không chia sẻ mã này với bất kỳ ai.");
         mailSender.send(message);
     }
 }

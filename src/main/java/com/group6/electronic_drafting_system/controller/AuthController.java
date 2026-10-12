@@ -13,6 +13,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 public class AuthController {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AuthController.class);
     private final AuthService authService;
     public AuthController(AuthService authService) { this.authService = authService; }
 
@@ -64,6 +65,7 @@ public class AuthController {
             redirect.addFlashAttribute("email", email);
             return "redirect:/register";
         } catch (Exception ex) {
+            log.error("Register failed for {}", email, ex);
             redirect.addFlashAttribute("error", ErrorCode.AUTH_UNEXPECTED_ERROR.getMessage());
             redirect.addFlashAttribute("fullName", fullName);
             redirect.addFlashAttribute("email", email);

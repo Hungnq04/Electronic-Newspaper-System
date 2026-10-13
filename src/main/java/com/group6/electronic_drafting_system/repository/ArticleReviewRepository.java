@@ -23,4 +23,7 @@ public interface ArticleReviewRepository extends JpaRepository<ArticleReview, In
 
     @EntityGraph(attributePaths = {"reviewer", "version"})
     List<ArticleReview> findByVersionArticleAndDecisionIsNotNullOrderByReviewedAtAscIdAsc(Article article);
+
+    @EntityGraph(attributePaths = "reviewer")
+    Optional<ArticleReview> findFirstByVersion_Article_IdOrderByIdDesc(Integer articleId);
 }

@@ -49,6 +49,9 @@ public class SecurityConfig {
                         .requestMatchers("/department-head/**").hasRole("DEPARTMENT_HEAD")
                         // Màn của Thư ký tòa soạn (FL-02, FL-06, FL-07); role còn được kiểm tra lại ở service
                         .requestMatchers("/secretary/**").hasRole("EDITORIAL_SECRETARY")
+                        .requestMatchers("/reporter/css/**", "/reporter/js/**").permitAll()
+                        .requestMatchers("/reporter/**").hasRole("REPORTER")
+                        .requestMatchers("/articles/**").hasRole("REPORTER")
                         .anyRequest().authenticated())
                 .formLogin(form -> form.loginPage("/login").loginProcessingUrl("/process-login").usernameParameter("email").defaultSuccessUrl("/", true).permitAll())
                 .oauth2Login(oauth -> oauth.loginPage("/login")

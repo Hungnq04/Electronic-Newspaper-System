@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="content">
+<main class="page">
+    <div class="page-head">
+        <div>
+            <h1>Topic tòa soạn</h1>
+            <p>Tạo Topic cấp tòa soạn và giao cho Trưởng phòng điều phối.</p>
+        </div>
+        <a class="btn" th:href="@{/secretary/topics/new}">+ Tạo Editorial Topic</a>
+    </div>
+
+    <div class="alert alert-success" th:if="${message}" th:text="${message}"></div>
+    <div class="alert alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <!-- Topic ACTIVE chưa có Trưởng phòng phụ trách (PRD 7.2, EC-09) -->
+    <h2 class="section-title">Topic chưa giao <span class="badge badge-warning" th:text="${#lists.size(unassigned)}"></span></h2>
+    <section class="card">
+        <div class="empty" th:if="${#lists.isEmpty(unassigned)}">Không có Topic nào đang chờ giao.</div>
+        <div class="table-wrap" th:unless="${#lists.isEmpty(unassigned)}">
+            <table class="data">
+                <thead>
+                <tr><th>Topic</th><th>Ưu tiên</th><th>Dự kiến</th><th>Người tạo</th><th></th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="t : ${unassigned}">
+                    <td class="title-cell">
+                        <a th:href="@{/secretary/topics/{id}/assign(id=${t.id})}" th:text="${t.title}"></a>
+                        <span class="sub" th:text="${t.category}"></span>
+                    </td>
+                    <td th:insert="~{secretary/editorial-topic-list :: priority-badge(${t})}"></td>
+                    <td th:text="${t.expectedDate} ? ${#temporals.format(t.expectedDate, 'dd/MM/yyyy')} : '—'"></td>
+                    <td>
+                        <span th:text="${t.creatorName}"></span>
+                        <span class="sub" th:text="${#temporals.format(t.createdAt, 'dd/MM/yyyy HH:mm')}"></span>
+                    </td>
+                    <td><a class="btn btn-sm" th:href="@{/secretary/topics/{id}/assign(id=${t.id})}">Giao Trưởng phòng</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Topic ACTIVE đã có Trưởng phòng phụ trách -->
+    <h2 class="section-title">Đã giao <span class="badge" th:text="${#lists.size(assigned)}"></span></h2>
+    <section class="card">
+        <div class="empty" th:if="${#lists.isEmpty(assigned)}">Chưa có Topic nào được giao.</div>
+        <div class="table-wrap" th:unless="${#lists.isEmpty(assigned)}">
+            <table class="data">
+                <thead>
+                <tr><th>Topic</th><th>Ưu tiên</th><th>Trưởng phòng</th><th>Lead Reporter</th><th>Bài viết</th><th></th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="t : ${assigned}">
+                    <td class="title-cell">
+                        <strong th:text="${t.title}"></strong>
+                        <span class="sub">
+                            <span th:text="${t.category}"></span> ·
+                            <span th:text="${t.editorial} ? 'Tòa soạn giao' : 'Reporter đề xuất'"></span>
+                        </span>
+                    </td>
+                    <td th:insert="~{secretary/editorial-topic-list :: priority-badge(${t})}"></td>
+                    <td>
+                        <span th:text="${t.departmentHeadName}"></span>
+                        <span class="sub" th:text="${t.departmentName}"></span>
+                    </td>
+                    <td>
+                        <span th:if="${t.leadName}" th:text="${t.leadName}"></span>
+                        <span class="badge badge-warning" th:unless="${t.leadName}">Chưa phân công</span>
+                        <span class="sub" th:if="${t.supportingCount > 0}" th:text="'+ ' + ${t.supportingCount} + ' Supporting'"></span>
+                    </td>
+                    <td th:text="${t.articleCount}"></td>
+                    <td><a class="btn btn-ghost btn-sm" th:href="@{/secretary/topics/{id}/assign(id=${t.id})}">Giao lại</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+
+<!-- Mẫu nhãn mức ưu tiên, chỉ dùng qua th:insert -->
+<th:block th:if="${false}">
+    <th:block th:fragment="priority-badge(t)">
+        <span class="badge"
+              th:classappend="${t.priority == 'URGENT'} ? 'badge-danger' : (${t.priority == 'HIGH'} ? 'badge-warning' : '')"
+              th:text="${t.priorityLabel}"></span>
+    </th:block>
+</th:block>
+</th:block>
+</body>
+</html>

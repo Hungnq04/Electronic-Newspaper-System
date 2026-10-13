@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" th:with="activeNav='home'">
+<head th:replace="~{public/layout :: pageHead('Trang chủ')}"></head>
+<body>
+<header th:replace="~{public/layout :: siteHeader}"></header>
+
+<main class="wrap">
+    <section th:if="${featured != null}" class="hero">
+        <a th:href="@{/articles/{id}(id=${featured.articleId})}" tabindex="-1" aria-hidden="true">
+            <figure th:replace="~{public/layout :: articleThumb(${featured}, 'ratio wide')}"></figure>
+        </a>
+        <div class="hero-body">
+            <p th:replace="~{public/layout :: articleMeta(${featured})}"></p>
+            <h1><a th:href="@{/articles/{id}(id=${featured.articleId})}" th:text="${featured.title}">Tiêu đề</a></h1>
+            <p class="subtitle" th:if="${featured.subtitle}" th:text="${featured.subtitle}">Tít phụ</p>
+            <p class="sapo" th:text="${featured.sapo}">Sapo</p>
+            <a class="more" th:href="@{/articles/{id}(id=${featured.articleId})}">Đọc tiếp →</a>
+        </div>
+    </section>
+
+    <section th:if="${!latest.isEmpty()}">
+        <div class="section-head">
+            <h2>Mới xuất bản</h2>
+            <a th:href="@{/articles}">Xem tất cả bài viết →</a>
+        </div>
+        <div class="grid">
+            <th:block th:each="a : ${latest}"><article th:replace="~{public/layout :: articleCard(${a})}"></article></th:block>
+        </div>
+    </section>
+
+    <section th:if="${!categories.isEmpty()}">
+        <div class="section-head"><h2>Chuyên mục</h2></div>
+        <ul class="chips">
+            <li th:each="c : ${categories}"><a th:href="@{/articles(category=${c})}" th:text="${c}">Chuyên mục</a></li>
+        </ul>
+    </section>
+
+    <section th:if="${featured == null}" class="empty">
+        <h1>Chưa có bài viết nào được xuất bản</h1>
+        <p>Các bài viết sẽ xuất hiện ở đây sau khi Thư ký tòa soạn xuất bản.</p>
+    </section>
+</main>
+
+<footer th:replace="~{public/layout :: siteFooter}"></footer>
+</body>
+</html>

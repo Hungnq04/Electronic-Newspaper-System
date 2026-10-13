@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" th:with="activeNav='detail', activeCategory=${article.category}">
+<head th:replace="~{public/layout :: pageHead(${article.title})}"></head>
+<body>
+<header th:replace="~{public/layout :: siteHeader}"></header>
+
+<main class="wrap">
+    <nav class="crumbs" aria-label="Đường dẫn">
+        <a th:href="@{/}">Trang chủ</a> ›
+        <a th:href="@{/articles(category=${article.category})}" th:text="${article.category}">Chuyên mục</a>
+    </nav>
+
+    <article class="story">
+        <header>
+            <h1 th:text="${article.title}">Tiêu đề</h1>
+            <p class="subtitle" th:if="${article.subtitle}" th:text="${article.subtitle}">Tít phụ</p>
+            <p class="byline">
+                <span>Bài: <strong th:text="${article.author}">Tác giả</strong></span>
+                <time th:datetime="${article.publishedAtVn}"
+                      th:text="${#temporals.format(article.publishedAtVn, 'HH:mm, dd/MM/yyyy')} + ' (GMT+7)'">08:00, 01/01/2026</time>
+            </p>
+        </header>
+
+        <p class="lead" th:text="${article.sapo}">Sapo</p>
+
+        <th:block th:if="${article.featuredImageUrl != null}">
+            <figure th:replace="~{public/layout :: articleThumb(${article}, 'ratio wide')}"></figure>
+            <p class="caption" th:if="${article.featuredImageCaption}" th:text="${article.featuredImageCaption}">Chú thích ảnh</p>
+        </th:block>
+
+        <!-- th:text (không dùng utext): nội dung là văn bản thường, tránh chèn HTML -->
+        <div class="body">
+            <p th:each="para : ${article.paragraphs}" th:text="${para}">Đoạn văn</p>
+        </div>
+    </article>
+
+    <section th:if="${!related.isEmpty()}" class="related">
+        <div class="section-head">
+            <h2>Cùng chuyên mục <span th:text="${article.category}">Chuyên mục</span></h2>
+        </div>
+        <div class="grid">
+            <th:block th:each="a : ${related}"><article th:replace="~{public/layout :: articleCard(${a})}"></article></th:block>
+        </div>
+    </section>
+</main>
+
+<footer th:replace="~{public/layout :: siteFooter}"></footer>
+</body>
+</html>

@@ -46,6 +46,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/login", "/register", "/register/**", "/css/**", "/js/**", "/error", "/oauth2/**", "/login/oauth2/**").permitAll()
                         .requestMatchers("/department_head/css/**", "/department_head/js/**").permitAll()
+                        // FL-07 trang công khai: Home, danh sách, chi tiết bài đã đăng, ảnh bài viết
+                        .requestMatchers("/", "/articles", "/articles/**", "/uploads/**").permitAll()
                         .requestMatchers("/department-head/**").hasRole("DEPARTMENT_HEAD")
                         .anyRequest().authenticated())
                 .formLogin(form -> form.loginPage("/login").loginProcessingUrl("/process-login").usernameParameter("email").defaultSuccessUrl("/", true).permitAll())

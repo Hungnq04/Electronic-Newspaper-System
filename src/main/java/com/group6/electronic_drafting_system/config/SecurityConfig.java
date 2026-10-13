@@ -40,8 +40,8 @@ public class SecurityConfig {
                         .disabled(account.getStatus() != AccountStatus.ACTIVE).build())
                 .orElseThrow(() -> new UsernameNotFoundException("Account not found"));
     }
-
-    @Bean SecurityFilterChain securityFilterChain(HttpSecurity http, GoogleLoginSuccessHandler googleSuccessHandler) throws Exception {
+    @Bean SecurityFilterChain securityFilterChain(HttpSecurity http, GoogleLoginSuccessHandler googleSuccessHandler,
+                                                  AccountRepository accounts) throws Exception {
         return http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/login", "/register", "/register/**", "/css/**", "/js/**", "/error", "/oauth2/**", "/login/oauth2/**").permitAll()

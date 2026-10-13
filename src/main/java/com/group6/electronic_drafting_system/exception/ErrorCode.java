@@ -18,7 +18,24 @@ public enum ErrorCode {
     AUTH_ACCOUNT_ALREADY_VERIFIED(1108, "Tài khoản đã được xác minh. Vui lòng đăng nhập.", HttpStatus.CONFLICT),
     AUTH_OTP_EXPIRED(1109, "Mã xác minh đã hết hạn. Vui lòng yêu cầu gửi lại mã.", HttpStatus.BAD_REQUEST),
     AUTH_OTP_TOO_MANY_ATTEMPTS(1110, "Bạn đã nhập sai quá 5 lần. Vui lòng yêu cầu gửi lại mã mới.", HttpStatus.TOO_MANY_REQUESTS),    AUTH_ACCOUNT_ALREADY_EXISTS(2000, "Email này đã được đăng ký.", HttpStatus.CONFLICT),
-    AUTH_UNEXPECTED_ERROR(9999, "Đã xảy ra lỗi. Vui lòng thử lại sau.", HttpStatus.INTERNAL_SERVER_ERROR);
+    AUTH_UNEXPECTED_ERROR(9999, "Đã xảy ra lỗi. Vui lòng thử lại sau.", HttpStatus.INTERNAL_SERVER_ERROR),
+
+    ARTICLE_NOT_FOUND(1300, "Không tìm thấy bài viết.", HttpStatus.NOT_FOUND),
+    ARTICLE_NOT_SUBMITTED(1301, "Bài viết chưa được nộp nên chưa có phiên bản để duyệt.", HttpStatus.CONFLICT),
+    REVIEW_ACCESS_DENIED(1310, "Bạn không có quyền duyệt bài ở cấp này.", HttpStatus.FORBIDDEN),
+    REVIEW_NOT_IN_FINAL_STAGE(1311, "Bài viết không còn ở bước chờ Thư ký tòa soạn duyệt.", HttpStatus.CONFLICT),
+    REVIEW_OWN_ARTICLE(1312, "Bạn là Lead Reporter của bài này nên không được duyệt.", HttpStatus.FORBIDDEN),
+    REVIEW_HELD_BY_OTHER(1313, "Bài đang được một Thư ký tòa soạn khác duyệt.", HttpStatus.CONFLICT),
+    REVIEW_DEPARTMENT_NOT_APPROVED(1314, "Phiên bản mới nhất chưa được Trưởng phòng duyệt.", HttpStatus.CONFLICT),
+    REVIEW_NOT_OPENED(1315, "Lượt duyệt chưa được mở. Vui lòng mở lại bài rồi thử lại.", HttpStatus.CONFLICT),
+    REVIEW_FEEDBACK_REQUIRED(1316, "Vui lòng nhập nội dung yêu cầu chỉnh sửa.", HttpStatus.BAD_REQUEST),
+
+    TOPIC_ACCESS_DENIED(1320, "Chỉ Thư ký tòa soạn được quản lý Topic cấp tòa soạn.", HttpStatus.FORBIDDEN),
+    TOPIC_NOT_FOUND(1321, "Không tìm thấy Topic.", HttpStatus.NOT_FOUND),
+    TOPIC_NOT_ACTIVE(1322, "Chỉ giao được Topic đang ở trạng thái ACTIVE.", HttpStatus.CONFLICT),
+    TOPIC_HEAD_INVALID(1323, "Người được chọn không phải Trưởng phòng đang hoạt động.", HttpStatus.BAD_REQUEST),
+    TOPIC_HEAD_UNCHANGED(1324, "Topic đang do chính Trưởng phòng này phụ trách.", HttpStatus.CONFLICT),
+    ASSIGNMENT_DEADLINE_PAST(1325, "Deadline phải ở tương lai.", HttpStatus.BAD_REQUEST);
 
     private final int code;
     private final String message;

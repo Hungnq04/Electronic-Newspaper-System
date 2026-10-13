@@ -18,7 +18,19 @@ public enum ErrorCode {
     AUTH_ACCOUNT_ALREADY_VERIFIED(1108, "Tài khoản đã được xác minh. Vui lòng đăng nhập.", HttpStatus.CONFLICT),
     AUTH_OTP_EXPIRED(1109, "Mã xác minh đã hết hạn. Vui lòng yêu cầu gửi lại mã.", HttpStatus.BAD_REQUEST),
     AUTH_OTP_TOO_MANY_ATTEMPTS(1110, "Bạn đã nhập sai quá 5 lần. Vui lòng yêu cầu gửi lại mã mới.", HttpStatus.TOO_MANY_REQUESTS),    AUTH_ACCOUNT_ALREADY_EXISTS(2000, "Email này đã được đăng ký.", HttpStatus.CONFLICT),
-    AUTH_UNEXPECTED_ERROR(9999, "Đã xảy ra lỗi. Vui lòng thử lại sau.", HttpStatus.INTERNAL_SERVER_ERROR);
+    AUTH_UNEXPECTED_ERROR(9999, "Đã xảy ra lỗi. Vui lòng thử lại sau.", HttpStatus.INTERNAL_SERVER_ERROR),
+
+    ARTICLE_NOT_FOUND(3000, "Không tìm thấy bài viết.", HttpStatus.NOT_FOUND),
+    ARTICLE_FORBIDDEN(3001, "Bạn không có quyền chỉnh sửa bài viết này.", HttpStatus.FORBIDDEN),
+    ARTICLE_NOT_EDITABLE(3002, "Bài viết đang trong quy trình duyệt nên không thể chỉnh sửa.", HttpStatus.CONFLICT),
+    ARTICLE_TITLE_REQUIRED(3003, "Tiêu đề bài viết không được để trống.", HttpStatus.BAD_REQUEST),
+    ARTICLE_SAPO_REQUIRED(3004, "Cần nhập sa-pô trước khi nộp bài.", HttpStatus.BAD_REQUEST),
+    ARTICLE_CONTENT_REQUIRED(3005, "Nội dung bài viết đang trống.", HttpStatus.BAD_REQUEST),
+    ARTICLE_CATEGORY_REQUIRED(3006, "Chuyên mục không được để trống.", HttpStatus.BAD_REQUEST),
+    ARTICLE_TOPIC_NOT_ASSIGNED(3007, "Bạn không phải người viết chính của đề tài này hoặc đề tài chưa được duyệt.", HttpStatus.FORBIDDEN),
+    ARTICLE_SOURCE_NOT_FOUND(3008, "Không tìm thấy ảnh tư liệu của bài viết.", HttpStatus.NOT_FOUND),
+    ARTICLE_TOPIC_REQUIRED(3009, "Vui lòng chọn đề tài cho bài viết.", HttpStatus.BAD_REQUEST),
+    ARTICLE_ALREADY_EXISTS(3010, "Bạn đã có bài viết cho đề tài này.", HttpStatus.CONFLICT);
 
     private final int code;
     private final String message;

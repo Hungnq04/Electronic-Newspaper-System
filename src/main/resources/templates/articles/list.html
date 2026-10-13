@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bài viết của tôi | Tòa soạn</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@600;700&display=swap">
+    <link rel="stylesheet" th:href="@{/css/editor.css}">
+</head>
+<body>
+<aside class="side-nav">
+    <a class="brand" th:href="@{/}">
+        <span class="brand-mark">T</span>
+        <span><strong>TÒA SOẠN</strong><small>Hệ thống xuất bản số</small></span>
+    </a>
+    <p class="nav-label">Phân ban tin tức</p>
+    <nav>
+        <a class="active" th:href="@{/articles}"><i data-lucide="file-pen-line"></i>Bài viết đang soạn</a>
+        <a th:href="@{/articles/new}"><i data-lucide="square-pen"></i>Viết bài mới</a>
+        <a th:href="@{/}"><i data-lucide="house"></i>Trang chủ</a>
+    </nav>
+    <form class="logout" method="post" th:action="@{/logout}" style="margin-top:auto"><button type="submit"><i data-lucide="log-out"></i>Đăng xuất</button></form>
+</aside>
+
+<div class="workspace">
+    <header class="topbar"><h2 class="page-title">Bài viết của tôi</h2>
+        <div class="top-actions"><a class="btn primary" th:href="@{/articles/new}"><i data-lucide="square-pen"></i>Viết bài mới</a></div></header>
+    <div class="flash err" th:if="${error}" th:text="${error}"></div>
+    <div class="flash ok" th:if="${message}" th:text="${message}"></div>
+
+    <div class="list-wrap">
+        <section class="card" th:unless="${waitingTopics.isEmpty()}">
+            <div class="card-head"><h3><i data-lucide="clipboard-list"></i>Đề tài được giao, chưa bắt đầu viết</h3></div>
+            <table class="data-table">
+                <thead><tr><th>Đề tài</th><th>Chuyên mục</th><th>Hạn nộp</th><th></th></tr></thead>
+                <tbody>
+                <tr th:each="t : ${waitingTopics}">
+                    <td class="strong" th:text="${t.title()}"></td>
+                    <td th:text="${t.category()}"></td>
+                    <td th:text="${t.deadline() != null} ? ${#temporals.format(t.deadline(), 'HH:mm dd/MM/yyyy')} : '—'"></td>
+                    <td class="right">
+                        <a class="btn primary mini-primary" th:href="@{/articles/new(topicId=${t.topicId()})}"><i data-lucide="pen-line"></i>Bắt đầu viết</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <div class="card-head"><h3><i data-lucide="files"></i>Bài viết</h3></div>
+            <p class="hint" th:if="${articles.isEmpty()}">Bạn chưa có bài viết nào.</p>
+            <table class="data-table" th:unless="${articles.isEmpty()}">
+                <thead><tr><th>Tiêu đề</th><th>Đề tài</th><th>Chuyên mục</th><th>Trạng thái</th><th>Cập nhật</th></tr></thead>
+                <tbody>
+                <tr th:each="a : ${articles}">
+                    <td class="strong"><a th:href="@{/articles/{id}/edit(id=${a.id()})}" th:text="${a.title()}"></a></td>
+                    <td th:text="${a.topicTitle()}"></td>
+                    <td th:text="${a.category()}"></td>
+                    <td><span class="chip" th:text="${a.status()}"></span></td>
+                    <td th:text="${#temporals.format(a.updatedAt(), 'HH:mm dd/MM/yyyy')}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+    </div>
+</div>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>
+</body>
+</html>

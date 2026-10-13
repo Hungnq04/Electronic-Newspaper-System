@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <title th:text="${article.title} + ' | Tòa soạn'">Soạn bài | Tòa soạn</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Playfair+Display:wght@600;700&family=Roboto:ital,wght@0,400;0,700;1,400&display=swap">
+    <link rel="stylesheet" th:href="@{/css/editor.css}">
+</head>
+<body th:classappend="${article.editable} ? '' : 'readonly'">
+
+<!-- ===== Sidebar trái ===== -->
+<aside class="side-nav">
+    <a class="brand" th:href="@{/}">
+        <span class="brand-mark">T</span>
+        <span><strong>TÒA SOẠN</strong><small>Hệ thống xuất bản số</small></span>
+    </a>
+    <p class="nav-label">Phân ban tin tức</p>
+    <nav>
+        <a th:classappend="${article.isNew()} ? '' : 'active'" th:href="@{/articles}"><i data-lucide="file-pen-line"></i>Bài viết đang soạn</a>
+        <a th:classappend="${article.isNew()} ? 'active' : ''" th:href="@{/articles/new}"><i data-lucide="square-pen"></i>Viết bài mới</a>
+        <a th:href="@{/}"><i data-lucide="house"></i>Trang chủ</a>
+    </nav>
+    <div class="deadline-card" th:if="${article.deadline != null}">
+        <p class="deadline-head"><span><i data-lucide="clock-3"></i>Hạn nộp bài</span>
+            <strong th:text="${#temporals.format(article.deadline, 'HH:mm')}">17:30</strong></p>
+        <p class="deadline-date" th:text="${#temporals.format(article.deadline, 'dd/MM/yyyy')}">12/10/2026</p>
+        <p class="deadline-left" id="deadlineLeft" th:attr="data-deadline=${article.deadline}">—</p>
+    </div>
+    <form class="logout" method="post" th:action="@{/logout}"><button type="submit"><i data-lucide="log-out"></i>Đăng xuất</button></form>
+</aside>
+
+<div class="workspace">
+    <!-- ===== Thanh trên cùng ===== -->
+    <header class="topbar">
+        <div class="save-state">
+            <i data-lucide="cloud-check"></i>
+            <span id="saveState" th:text="${article.isNew()} ? 'Bài mới · chưa lưu' : 'Đã lưu lúc ' + ${#temporals.format(article.updatedAt, 'HH:mm dd/MM')}">Đã lưu</span>
+        </div>
+        <span class="chip" th:text="${article.statusLabel()}">Bản thảo</span>
+        <div class="top-actions">
+            <button type="button" class="btn ghost" data-open="versionModal" th:unless="${article.isNew()}"><i data-lucide="history"></i>Lịch sử phiên bản
+                <span class="count" th:text="${article.versions().size()}">0</span></button>
+            <button type="button" class="btn ghost" id="previewBtn"><i data-lucide="eye"></i>Xem trước</button>
+            <button type="button" class="btn outline" id="saveBtn" th:if="${article.editable and !article.isNew()}"><i data-lucide="save"></i>Lưu nháp</button>
+            <button type="submit" form="articleForm" name="action" value="draft" class="btn outline" id="createDraftBtn" th:if="${article.isNew()}"><i data-lucide="save"></i>Tạo bản nháp</button>
+            <button type="submit" form="articleForm" name="action" value="submit" class="btn primary" th:if="${article.editable}"><i data-lucide="send"></i>Nộp bản thảo</button>
+        </div>
+        <div class="user">
+            <span><strong th:text="${article.leadName}">Phóng viên</strong>
+                <small th:text="${article.departmentName ?: 'Chưa có ban'}">Ban</small></span>
+            <span class="avatar"><i data-lucide="user"></i></span>
+        </div>
+    </header>
+
+    <div class="flash err" th:if="${error}" th:text="${error}"></div>
+    <div class="flash ok" th:if="${message}" th:text="${message}"></div>
+    <div class="flash info" th:unless="${article.editable}">
+        Bài viết đang ở trạng thái "<span th:text="${article.statusLabel()}"></span>" nên chỉ có thể xem, không thể chỉnh sửa.
+    </div>
+
+    <!-- ===== Thanh công cụ định dạng (kiểu Word) ===== -->
+    <div class="toolbar" id="toolbar" th:if="${article.editable}">
+        <div class="tb-group">
+            <button type="button" data-cmd="undo" title="Hoàn tác (Ctrl+Z)"><i data-lucide="undo-2"></i></button>
+            <button type="button" data-cmd="redo" title="Làm lại (Ctrl+Y)"><i data-lucide="redo-2"></i></button>
+        </div>
+        <div class="tb-group">
+            <select id="blockFormat" title="Kiểu đoạn">
+                <option value="p">Đoạn văn</option>
+                <option value="h2">Tiêu đề 2 (H2)</option>
+                <option value="h3">Tiêu đề 3 (H3)</option>
+                <option value="h4">Tiêu đề 4 (H4)</option>
+                <option value="blockquote">Trích dẫn</option>
+                <option value="pre">Khối mã</option>
+            </select>
+            <select id="fontName" title="Phông chữ">
+                <option value="">Phông chữ</option>
+                <option value="Lora">Lora</option>
+                <option value="Merriweather">Merriweather</option>
+                <option value="Noto Serif">Noto Serif</option>
+                <option value="Playfair Display">Playfair Display</option>
+                <option value="Times New Roman">Times New Roman</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Inter">Inter</option>
+                <option value="Roboto">Roboto</option>
+                <option value="Arial">Arial</option>
+                <option value="Tahoma">Tahoma</option>
+                <option value="Verdana">Verdana</option>
+                <option value="Courier New">Courier New</option>
+            </select>
+            <select id="fontSize" title="Cỡ chữ">
+                <option value="">Cỡ</option>
+                <option>10</option><option>11</option><option>12</option><option>13</option><option>14</option>
+                <option>16</option><option>18</option><option>20</option><option>22</option><option>24</option>
+                <option>28</option><option>32</option><option>36</option><option>40</option><option>48</option>
+            </select>
+        </div>
+        <div class="tb-group">
+            <button type="button" data-cmd="bold" title="In đậm (Ctrl+B)"><i data-lucide="bold"></i></button>
+            <button type="button" data-cmd="italic" title="In nghiêng (Ctrl+I)"><i data-lucide="italic"></i></button>
+            <button type="button" data-cmd="underline" title="Gạch chân (Ctrl+U)"><i data-lucide="underline"></i></button>
+            <button type="button" data-cmd="strikeThrough" title="Gạch ngang"><i data-lucide="strikethrough"></i></button>
+            <button type="button" data-cmd="superscript" title="Chỉ số trên"><i data-lucide="superscript"></i></button>
+            <button type="button" data-cmd="subscript" title="Chỉ số dưới"><i data-lucide="subscript"></i></button>
+            <label class="color-btn" title="Màu chữ"><i data-lucide="baseline"></i><span class="swatch" id="foreSwatch"></span>
+                <input type="color" id="foreColor" value="#7f1d2d"></label>
+            <label class="color-btn" title="Màu tô nền chữ"><i data-lucide="highlighter"></i><span class="swatch" id="backSwatch"></span>
+                <input type="color" id="backColor" value="#fff3a3"></label>
+            <button type="button" data-cmd="removeFormat" title="Xóa định dạng"><i data-lucide="remove-formatting"></i></button>
+        </div>
+        <div class="tb-group">
+            <button type="button" data-cmd="justifyLeft" title="Căn trái"><i data-lucide="align-left"></i></button>
+            <button type="button" data-cmd="justifyCenter" title="Căn giữa"><i data-lucide="align-center"></i></button>
+            <button type="button" data-cmd="justifyRight" title="Căn phải"><i data-lucide="align-right"></i></button>
+            <button type="button" data-cmd="justifyFull" title="Căn đều hai bên"><i data-lucide="align-justify"></i></button>
+            <select id="lineHeight" title="Giãn dòng">
+                <option value="">Giãn dòng</option>
+                <option value="1">1.0</option><option value="1.15">1.15</option><option value="1.5">1.5</option>
+                <option value="1.8">1.8</option><option value="2">2.0</option>
+            </select>
+        </div>
+        <div class="tb-group">
+            <button type="button" data-cmd="insertUnorderedList" title="Danh sách dấu chấm"><i data-lucide="list"></i></button>
+            <button type="button" data-cmd="insertOrderedList" title="Danh sách đánh số"><i data-lucide="list-ordered"></i></button>
+            <button type="button" data-cmd="outdent" title="Giảm thụt lề"><i data-lucide="indent-decrease"></i></button>
+            <button type="button" data-cmd="indent" title="Tăng thụt lề"><i data-lucide="indent-increase"></i></button>
+        </div>
+        <div class="tb-group">
+            <button type="button" id="linkBtn" title="Chèn liên kết (Ctrl+K)"><i data-lucide="link"></i></button>
+            <button type="button" data-cmd="unlink" title="Bỏ liên kết"><i data-lucide="unlink"></i></button>
+            <button type="button" data-open="imageModal" title="Chèn ảnh tư liệu"><i data-lucide="image-plus"></i><span>Ảnh tư liệu</span></button>
+            <div class="table-picker">
+                <button type="button" id="tableBtn" title="Chèn bảng"><i data-lucide="table"></i></button>
+                <div class="table-grid" id="tableGrid" hidden><div class="grid"></div><p id="tableSize">Chèn bảng</p></div>
+            </div>
+            <button type="button" data-cmd="insertHorizontalRule" title="Đường kẻ ngang"><i data-lucide="minus"></i></button>
+        </div>
+    </div>
+
+    <form id="articleForm" method="post" th:action="${article.isNew()} ? @{/articles} : @{/articles/{id}/submit(id=${article.id})}" class="layout">
+        <input type="hidden" name="content" id="contentInput">
+
+        <!-- ===== Cột soạn thảo ===== -->
+        <main class="editor-col">
+            <section class="card title-card">
+                <div class="card-meta">
+                    <span class="label">Tiêu đề bài viết (H1)</span>
+                    <span><span id="titleCount">0</span>/255 ký tự · <span class="tag" th:text="${article.category}">Chuyên mục</span></span>
+                </div>
+                <textarea id="title" name="title" class="title-input" rows="1" maxlength="255" required
+                          placeholder="Nhập tiêu đề bài viết…" th:text="${article.title}" th:readonly="${!article.editable}"></textarea>
+                <input id="subtitle" name="subtitle" class="subtitle-input" maxlength="255" placeholder="Tiêu đề phụ (không bắt buộc)"
+                       th:value="${article.subtitle}" th:readonly="${!article.editable}">
+            </section>
+
+            <section class="card sapo-card">
+                <div class="card-meta">
+                    <span class="label">Sa-pô dẫn nhập (Lead teaser)</span>
+                    <span><span id="sapoCount">0</span> ký tự · khuyến nghị 150–250</span>
+                </div>
+                <textarea id="sapo" name="sapo" class="sapo-input" rows="3" placeholder="Một đoạn ngắn tóm lược, thu hút người đọc…"
+                          th:text="${article.sapo}" th:readonly="${!article.editable}"></textarea>
+            </section>
+
+            <section class="card hero-card">
+                <div class="card-head">
+                    <h3><i data-lucide="image"></i>Ảnh đại diện trang nhất (Hero Cover)</h3>
+                    <button type="button" class="btn mini" data-open="featuredModal" th:if="${article.editable and !article.imageSources().isEmpty()}">
+                        <i data-lucide="replace"></i>Thay ảnh</button>
+                </div>
+                <th:block th:with="hero=${article.featuredImage()}">
+                    <figure class="hero" th:if="${hero != null}" id="heroFigure">
+                        <img th:src="${hero.fileUrl()}" th:alt="${hero.title()}" id="heroImg">
+                        <figcaption><i data-lucide="info"></i>
+                            <span>Chú thích: <span id="heroCaption" th:text="${hero.caption() ?: hero.title()}"></span>
+                            · Nguồn: <strong id="heroSource" th:text="${hero.title()}"></strong></span></figcaption>
+                    </figure>
+                    <div class="hero-empty" th:if="${hero == null}" id="heroEmpty">
+                        <i data-lucide="image-off"></i>
+                        <p th:text="${article.isNew()} ? 'Ảnh đại diện được chọn từ tư liệu đính kèm sau khi tạo bài.' : (${article.imageSources().isEmpty()} ? 'Bài viết chưa có ảnh tư liệu nào được đính kèm.' : 'Chưa chọn ảnh đại diện. Bấm Thay ảnh để chọn từ tư liệu.')"></p>
+                        <button type="button" class="btn mini" data-open="featuredModal" th:if="${article.editable and !article.imageSources().isEmpty()}">Chọn ảnh</button>
+                    </div>
+                </th:block>
+            </section>
+
+            <section class="card body-card">
+                <div class="card-meta">
+                    <span class="label">Nội dung tác phẩm (Longform body)</span>
+                    <span id="paraCount">0 đoạn</span>
+                </div>
+                <div id="editor" class="prose" th:attr="contenteditable=${article.editable}" spellcheck="true"
+                     data-placeholder="Bắt đầu viết nội dung bài báo…" th:utext="${article.content}"></div>
+                <div class="statusbar">
+                    <span><span id="sbWords">0</span> từ</span>
+                    <span><span id="sbChars">0</span> ký tự</span>
+                    <span th:text="${article.isNew()} ? 'Ctrl+S để tạo bản nháp' : 'Ctrl+S để lưu nháp'">Ctrl+S để lưu nháp</span>
+                </div>
+            </section>
+        </main>
+
+        <!-- ===== Cột thông tin bên phải ===== -->
+        <aside class="info-col">
+            <section class="card">
+                <div class="card-head"><h3><i data-lucide="square-check-big"></i>Quy trình duyệt bài</h3>
+                    <span class="badge" th:text="'v' + ${article.versions().size()}">v0</span></div>
+                <div class="field-box">
+                    <span class="label">Trạng thái hồ sơ</span>
+                    <p class="status-line"><span th:text="${article.statusLabel()}">Bản thảo</span>
+                        <span class="dot" th:classappend="${article.status.name().toLowerCase()}"></span></p>
+                </div>
+                <div class="field-box">
+                    <span class="label">Chuyển tiếp người duyệt (Reviewer)</span>
+                    <p th:text="${article.reviewerName != null} ? ${article.reviewerName} + ' (Trưởng ban)' : (${article.topicId == null} ? 'Trưởng ban của đề tài được chọn' : 'Trưởng ban (chưa phân công)')"></p>
+                </div>
+                <div class="review-note" th:if="${article.latestReview() != null and article.latestReview().feedback() != null}"
+                     th:classappend="${article.latestReview().decision() != null ? article.latestReview().decision().name().toLowerCase() : ''}">
+                    <span class="label">Phản hồi gần nhất · <span th:text="${article.latestReview().reviewerName()}"></span></span>
+                    <p th:text="${article.latestReview().feedback()}"></p>
+                </div>
+                <th:block th:if="${article.editable}">
+                    <label class="label" for="changeSummary">Ghi chú cho bản nộp</label>
+                    <textarea id="changeSummary" name="changeSummary" rows="3" class="note-input"
+                              placeholder="Tóm tắt thay đổi / lời nhắn cho Trưởng ban…" th:text="${changeSummary}"></textarea>
+                    <button type="submit" name="action" value="submit" class="btn primary block"><i data-lucide="send"></i>Nộp bản thảo duyệt bài</button>
+                    <p class="hint">Mỗi lần nộp sẽ tạo một phiên bản mới; bài bị khóa chỉnh sửa cho tới khi được trả về.</p>
+                </th:block>
+            </section>
+
+            <section class="card">
+                <div class="card-head"><h3><i data-lucide="gauge"></i>Chỉ số thời gian thực</h3></div>
+                <div class="stats">
+                    <div><span class="label">Số lượng từ</span><strong id="wordCount">0</strong><small id="lengthHint">—</small></div>
+                    <div><span class="label">Thời gian đọc</span><strong id="readTime">~0 phút</strong><small><span id="charCount">0</span> ký tự</small></div>
+                </div>
+                <div class="field-box structure">
+                    <span class="label">Cấu trúc nhịp điệu bài</span>
+                    <p id="structure">—</p>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-head"><h3><i data-lucide="tag"></i>Phân loại</h3></div>
+                <label class="label" for="category">Chuyên mục chính</label>
+                <input id="category" name="category" class="text-input" maxlength="100" required list="categoryOptions"
+                       th:value="${article.category}" th:readonly="${!article.editable}">
+                <datalist id="categoryOptions"><option th:value="${article.topicCategory}"></option></datalist>
+                <th:block th:if="${article.isNew()}">
+                    <label class="label" for="topicId">Đề tài được giao</label>
+                    <select id="topicId" name="topicId" class="text-input" required>
+                        <option value="" th:selected="${article.topicId == null}">— Chọn đề tài —</option>
+                        <option th:each="t : ${topics}" th:value="${t.topicId()}" th:text="${t.title()}"
+                                th:attr="data-category=${t.category()}" th:selected="${t.topicId() == article.topicId}"></option>
+                    </select>
+                    <p class="hint left" th:if="${topics.isEmpty()}">Bạn chưa có đề tài nào đã duyệt (ACTIVE) mà mình là người viết chính.</p>
+                </th:block>
+                <th:block th:unless="${article.isNew()}">
+                    <span class="label">Đề tài gốc</span>
+                    <p class="field-box plain" th:text="${article.topicTitle}">Đề tài</p>
+                </th:block>
+                <div class="meta-grid">
+                    <div><span class="label">Ưu tiên</span><p th:text="${article.priorityLabel()}">Bình thường</p></div>
+                    <div><span class="label">Dự kiến đăng</span>
+                        <p th:text="${article.topicExpectedDate != null} ? ${#temporals.format(article.topicExpectedDate, 'dd/MM/yyyy')} : 'Chưa định'">—</p></div>
+                </div>
+            </section>
+
+            <section class="card" th:unless="${article.isNew()}">
+                <div class="card-head"><h3><i data-lucide="paperclip"></i>Tư liệu đính kèm</h3>
+                    <span class="badge" th:text="${article.sources().size()}">0</span></div>
+                <p class="hint" th:if="${article.sources().isEmpty()}">Chưa có tư liệu nào gắn với bài viết.</p>
+                <ul class="source-list">
+                    <li th:each="s : ${article.sources()}">
+                        <i th:attr="data-lucide=${s.type().name() == 'IMAGE' ? 'image' : (s.type().name() == 'WEBSITE' ? 'globe' : (s.type().name() == 'INTERVIEW' ? 'mic' : 'file-text'))}"></i>
+                        <div>
+                            <a th:if="${s.fileUrl() != null}" th:href="${s.fileUrl()}" target="_blank" rel="noopener" th:text="${s.title()}"></a>
+                            <span th:unless="${s.fileUrl() != null}" th:text="${s.title()}"></span>
+                            <small th:text="${s.type()} + (${s.featured()} ? ' · Ảnh đại diện' : '')"></small>
+                        </div>
+                    </li>
+                </ul>
+            </section>
+
+            <section class="card" th:unless="${article.isNew()}">
+                <div class="card-head"><h3><i data-lucide="shield-check"></i>Hồ sơ bài viết</h3></div>
+                <dl class="facts">
+                    <dt>Mã hồ sơ</dt><dd class="mono" th:text="'CMS-' + ${#temporals.format(article.createdAt, 'yyyy')} + '-' + ${article.id}">CMS</dd>
+                    <dt>Tạo lúc</dt><dd th:text="${#temporals.format(article.createdAt, 'HH:mm dd/MM/yyyy')}"></dd>
+                    <dt>Cập nhật</dt><dd id="updatedAt" th:text="${#temporals.format(article.updatedAt, 'HH:mm dd/MM/yyyy')}"></dd>
+                    <dt>Nộp gần nhất</dt><dd th:text="${article.submittedAt != null} ? ${#temporals.format(article.submittedAt, 'HH:mm dd/MM/yyyy')} : 'Chưa nộp'"></dd>
+                </dl>
+            </section>
+        </aside>
+    </form>
+</div>
+
+<!-- ===== Lịch sử phiên bản ===== -->
+<div class="modal" id="versionModal" hidden>
+    <div class="modal-box">
+        <div class="modal-head"><h3>Lịch sử phiên bản</h3><button type="button" class="close" data-close>&times;</button></div>
+        <p class="hint" th:if="${article.versions().isEmpty()}">Chưa có phiên bản nào. Phiên bản được tạo mỗi lần nộp bài.</p>
+        <ol class="version-list">
+            <li th:each="v : ${article.versions()}">
+                <strong th:text="'Phiên bản ' + ${v.versionLabel() ?: v.versionNumber()}">Phiên bản</strong>
+                <span th:text="${v.creatorName()} + ' · ' + ${#temporals.format(v.createdAt(), 'HH:mm dd/MM/yyyy')}"></span>
+                <p th:text="${v.title()}"></p>
+                <small th:if="${v.changeSummary() != null}" th:text="${v.changeSummary()}"></small>
+            </li>
+        </ol>
+    </div>
+</div>
+
+<!-- ===== Chèn ảnh vào nội dung ===== -->
+<div class="modal" id="imageModal" hidden>
+    <div class="modal-box">
+        <div class="modal-head"><h3>Chèn ảnh tư liệu</h3><button type="button" class="close" data-close>&times;</button></div>
+        <div class="image-grid" th:unless="${article.imageSources().isEmpty()}">
+            <button type="button" class="image-option insert-image" th:each="s : ${article.imageSources()}"
+                    th:attr="data-src=${s.fileUrl()},data-caption=${s.caption() ?: s.title()},data-id=${s.articleSourceId()}">
+                <img th:src="${s.fileUrl()}" th:alt="${s.title()}"><span th:text="${s.title()}"></span>
+            </button>
+        </div>
+        <p class="hint" th:if="${article.imageSources().isEmpty()}">Bài viết chưa có ảnh tư liệu. Có thể chèn ảnh bằng đường dẫn bên dưới.</p>
+        <div class="url-row">
+            <input type="url" id="imageUrl" class="text-input" placeholder="https://… đường dẫn ảnh">
+            <input type="text" id="imageCaption" class="text-input" placeholder="Chú thích ảnh">
+            <button type="button" class="btn primary" id="insertUrlImage">Chèn</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Chọn ảnh đại diện ===== -->
+<div class="modal" id="featuredModal" hidden th:if="${article.editable}">
+    <div class="modal-box">
+        <div class="modal-head"><h3>Chọn ảnh đại diện</h3><button type="button" class="close" data-close>&times;</button></div>
+        <div class="image-grid">
+            <button type="button" class="image-option choose-featured" th:each="s : ${article.imageSources()}"
+                    th:classappend="${s.featured()} ? 'selected' : ''"
+                    th:attr="data-id=${s.articleSourceId()},data-src=${s.fileUrl()},data-caption=${s.caption() ?: s.title()},data-title=${s.title()}">
+                <img th:src="${s.fileUrl()}" th:alt="${s.title()}"><span th:text="${s.title()}"></span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Xem trước ===== -->
+<div class="modal" id="previewModal" hidden>
+    <div class="modal-box wide">
+        <div class="modal-head"><h3>Xem trước bài viết</h3><button type="button" class="close" data-close>&times;</button></div>
+        <article class="preview" id="previewBody"></article>
+    </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script th:inline="javascript">
+    window.ARTICLE = {
+        id: /*[[${article.id}]]*/ 0,
+        editable: /*[[${article.editable}]]*/ false,
+        isNew: /*[[${article.isNew()}]]*/ false,
+        draftUrl: /*[[${article.isNew()} ? null : @{/articles/{id}/draft(id=${article.id})}]]*/ '',
+        featuredUrl: /*[[${article.isNew()} ? null : @{/articles/{id}/featured(id=${article.id})}]]*/ ''
+    };
+</script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script th:src="@{/js/editor.js}"></script>
+</body>
+</html>

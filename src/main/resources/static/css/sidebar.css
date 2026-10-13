@@ -1,12 +1,14 @@
 /* CSS chỉ áp dụng cho sidebar; không ghi đè body hoặc style toàn trang. */
 :root {
     --sidebar-width: 212px;
-    --sidebar-bg: #f2f3fa;
-    --sidebar-text: #514b50;
-    --sidebar-muted: #79717a;
-    --sidebar-accent: #921f32;
-    --sidebar-active-bg: #e9eaf3;
-    --sidebar-border: #e7e7ef;
+    /* Bảng màu giống màn workspace: đỏ đậm chủ đạo */
+    --sidebar-bg: #f2f3fb;
+    --sidebar-text: #574142;
+    --sidebar-muted: #585f6b;
+    --sidebar-accent: #6b0119;
+    --sidebar-accent-container: #8b1e2d;
+    --sidebar-active-bg: #8b1e2d;
+    --sidebar-border: #e1e2e9;
 }
 
 .app-sidebar,
@@ -28,7 +30,7 @@
     background: var(--sidebar-bg);
     color: var(--sidebar-text);
     border-right: 1px solid var(--sidebar-border);
-    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
     font-size: 12px;
     line-height: 1.4;
     transition: width 180ms ease, min-width 180ms ease;
@@ -94,16 +96,17 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    flex: 0 0 29px;
-    width: 29px;
-    height: 29px;
-    border-radius: 2px;
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
     background: var(--sidebar-accent);
     color: #fff;
-    font-family: Georgia, "Times New Roman", serif;
+    font-family: "Newsreader", Georgia, serif;
     font-size: 20px;
     font-weight: 700;
     line-height: 1;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .sidebar-brand-copy {
@@ -114,11 +117,12 @@
 
 .sidebar-brand-name {
     overflow: hidden;
-    color: #29252a;
-    font-size: 15px;
-    font-weight: 750;
-    letter-spacing: -0.35px;
-    line-height: 1.15;
+    color: var(--sidebar-accent);
+    font-family: "Newsreader", Georgia, serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -127,10 +131,11 @@
     margin-top: 3px;
     overflow: hidden;
     color: var(--sidebar-muted);
-    font-size: 8px;
-    font-weight: 650;
-    letter-spacing: 0.45px;
-    line-height: 1.2;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    line-height: 1.3;
+    text-transform: uppercase;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -182,10 +187,20 @@
     outline-offset: 2px;
 }
 
+/* Mục đang chọn: nền đỏ đậm, chữ trắng (giống menu đang chọn ở workspace) */
 .sidebar-link.is-active {
     background: var(--sidebar-active-bg);
-    color: #3d343b;
-    font-weight: 700;
+    color: #fff;
+    font-weight: 600;
+}
+
+.sidebar-link.is-active:hover {
+    background: var(--sidebar-accent);
+    color: #fff;
+}
+
+.sidebar-link.is-active .sidebar-link-icon {
+    color: #fff;
 }
 
 .sidebar-link-icon {

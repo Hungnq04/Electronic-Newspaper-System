@@ -1,0 +1,15 @@
+/* Bố cục chung của layout/app.html: sidebar bên trái, nội dung trang bên phải. */
+body {
+    margin: 0;
+}
+
+.app-shell {
+    display: flex;
+    align-items: flex-start;
+    min-height: 100vh;
+}
+
+.app-content {
+    flex: 1;
+    min-width: 0; /* để nội dung rộng không đẩy tràn ngang ra ngoài màn hình */
+}

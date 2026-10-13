@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="content">
+<main class="page">
+    <a class="back-link" th:href="@{/secretary/final-reviews}">← Hàng đợi duyệt cuối</a>
+    <div class="page-head">
+        <div>
+            <h1>Duyệt cuối bài viết</h1>
+            <p th:text="'Topic: ' + ${ws.topicTitle}"></p>
+        </div>
+        <div class="article-meta">
+            <span class="badge badge-info" th:text="'Phiên bản ' + ${ws.versionLabel}"></span>
+            <span class="badge" th:classappend="${ws.status == 'DEPARTMENT_APPROVED'} ? 'badge-warning' : 'badge-success'"
+                  th:text="${ws.statusLabel}"></span>
+        </div>
+    </div>
+
+    <div class="alert alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <div class="workspace">
+        <!-- Nội dung version đang duyệt (bản chụp cố định, không phải bản đang soạn) -->
+        <article class="card article-preview">
+            <div class="category" th:text="${ws.category}"></div>
+            <h1 id="a-title" th:text="${ws.title}"></h1>
+            <p id="a-subtitle" class="subtitle" th:if="${ws.subtitle}" th:text="${ws.subtitle}"></p>
+            <figure th:if="${ws.featuredImageUrl}">
+                <img th:src="${ws.featuredImageUrl}" th:alt="${ws.featuredImageCaption}"
+                     onerror="this.closest('figure').classList.add('img-missing')">
+                <figcaption th:text="${ws.featuredImageCaption}"></figcaption>
+            </figure>
+            <p id="a-sapo" class="sapo" th:text="${ws.sapo}"></p>
+            <p class="paragraph" th:each="p, st : ${ws.paragraphs}" th:id="'p-' + ${st.count}">
+                <span class="pno" th:text="${st.count}"></span><span th:text="${p}"></span>
+            </p>
+        </article>
+
+        <aside>
+            <!-- Quyết định -->
+            <section class="card decision-card">
+                <div class="card-body">
+                    <h2>Quyết định</h2>
+                    <th:block th:if="${ws.canDecide}">
+                        <p>Duyệt cuối để bài chuyển sang chờ xuất bản, hoặc trả thẳng về Lead Reporter kèm yêu cầu chỉnh sửa.</p>
+                        <div class="actions">
+                            <button type="button" class="btn btn-block" data-open="approve-dialog">Duyệt cuối</button>
+                            <button type="button" class="btn btn-danger btn-block" data-open="revision-dialog">Yêu cầu chỉnh sửa</button>
+                        </div>
+                    </th:block>
+                    <div class="alert alert-warning" th:if="${!ws.canDecide and ws.blockedReason != null}" th:text="${ws.blockedReason}"></div>
+                    <p th:if="${!ws.canDecide and ws.blockedReason == null}">
+                        Bài không còn ở bước chờ Thư ký duyệt cuối. Trang này chỉ để xem.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Thông tin bài -->
+            <section class="card">
+                <div class="card-body">
+                    <h2>Thông tin bài</h2>
+                    <dl class="facts">
+                        <dt>Lead Reporter</dt><dd th:text="${ws.leadName}"></dd>
+                        <dt>Nộp lúc</dt><dd th:text="${ws.submittedAt} ? ${#temporals.format(ws.submittedAt, 'dd/MM/yyyy HH:mm')} : '—'"></dd>
+                        <dt>Số vòng sửa</dt><dd th:text="${ws.revisionRounds}"></dd>
+                        <th:block th:if="${ws.changeSummary}">
+                            <dt>Ghi chú nộp</dt><dd th:text="${ws.changeSummary}"></dd>
+                        </th:block>
+                    </dl>
+                </div>
+            </section>
+
+            <!-- Góp ý (Inline Comment) -->
+            <section class="card">
+                <div class="card-body">
+                    <h2 th:text="'Góp ý trên phiên bản ' + ${ws.versionLabel}"></h2>
+                    <p class="sub" th:if="${#lists.isEmpty(ws.currentVersionComments)}">Chưa có góp ý.</p>
+                    <ul class="list">
+                        <li th:each="c : ${ws.currentVersionComments}">
+                            <th:block th:replace="~{secretary/final-review-workspace :: comment-body(${c})}"></th:block>
+                        </li>
+                    </ul>
+                    <th:block th:unless="${#lists.isEmpty(ws.earlierOpenComments)}">
+                        <h2 style="margin-top:18px">Góp ý còn mở từ phiên bản trước</h2>
+                        <ul class="list">
+                            <li th:each="c : ${ws.earlierOpenComments}">
+                                <th:block th:replace="~{secretary/final-review-workspace :: comment-body(${c})}"></th:block>
+                            </li>
+                        </ul>
+                    </th:block>
+                </div>
+            </section>
+
+            <!-- Đội phụ trách Topic -->
+            <section class="card">
+                <div class="card-body">
+                    <h2>Đội phụ trách</h2>
+                    <ul class="list">
+                        <li th:each="m : ${ws.team}">
+                            <strong th:text="${m.name}"></strong>
+                            <span class="badge" th:text="${m.roleLabel}"></span>
+                            <span class="badge badge-success" th:if="${m.statusLabel == 'Đã xong'}" th:text="${m.statusLabel}"></span>
+                            <div class="meta" th:if="${m.requirements}" th:text="${m.requirements}"></div>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Tư liệu dùng trong bài -->
+            <section class="card">
+                <div class="card-body">
+                    <h2>Tư liệu</h2>
+                    <p class="sub" th:if="${#lists.isEmpty(ws.sources)}">Bài chưa gắn tư liệu.</p>
+                    <ul class="list">
+                        <li th:each="s : ${ws.sources}">
+                            <a th:if="${s.url}" th:href="${s.url}" target="_blank" rel="noopener" th:text="${s.title}"></a>
+                            <span th:unless="${s.url}" th:text="${s.title}"></span>
+                            <div class="meta">
+                                <span class="badge" th:text="${s.typeLabel}"></span>
+                                <span class="badge badge-info" th:if="${s.featured}">Ảnh đại diện</span>
+                                <span class="badge badge-warning" th:if="${s.internalOnly}">Chỉ dùng nội bộ</span>
+                            </div>
+                            <div class="meta" th:if="${s.caption}" th:text="'Chú thích: ' + ${s.caption}"></div>
+                            <div class="meta" th:if="${s.note}" th:text="${s.note}"></div>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Lịch sử duyệt -->
+            <section class="card">
+                <div class="card-body">
+                    <h2>Lịch sử duyệt</h2>
+                    <p class="sub" th:if="${#lists.isEmpty(ws.reviewHistory)}">Chưa có lượt duyệt nào hoàn tất.</p>
+                    <ul class="list">
+                        <li th:each="r : ${ws.reviewHistory}">
+                            <span class="badge" th:classappend="${r.decision == 'APPROVED'} ? 'badge-success' : 'badge-danger'"
+                                  th:text="${r.decisionLabel}"></span>
+                            <strong th:text="${r.stageLabel}"></strong>
+                            <span th:text="'· v' + ${r.versionLabel}"></span>
+                            <span th:if="${r.kindLabel != 'Duyệt bài'}" th:text="'· ' + ${r.kindLabel}"></span>
+                            <div class="meta"
+                                 th:text="${r.reviewerName} + ' · ' + ${#temporals.format(r.reviewedAt, 'dd/MM/yyyy HH:mm')}"></div>
+                            <div th:if="${r.feedback}" th:text="${r.feedback}"></div>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+        </aside>
+    </div>
+</main>
+
+<!-- Final Article Approval Confirmation -->
+<dialog id="approve-dialog" th:if="${ws.canDecide}">
+    <form method="post" th:action="@{/secretary/final-reviews/{id}/approve(id=${ws.articleId})}">
+        <h2>Duyệt cuối bài viết?</h2>
+        <p th:text="'Phiên bản ' + ${ws.versionLabel} + ' sẽ là bản được xuất bản. Bài chuyển sang danh sách chờ xuất bản.'"></p>
+        <label for="approve-feedback">Nhận xét (không bắt buộc)</label>
+        <textarea id="approve-feedback" name="feedback" maxlength="4000"></textarea>
+        <div class="dialog-actions">
+            <button type="button" class="btn btn-ghost" data-close>Hủy</button>
+            <button type="submit" class="btn">Xác nhận duyệt cuối</button>
+        </div>
+    </form>
+</dialog>
+
+<!-- Final Revision Request Form -->
+<dialog id="revision-dialog" th:if="${ws.canDecide}">
+    <form method="post" th:action="@{/secretary/final-reviews/{id}/request-revision(id=${ws.articleId})}">
+        <h2>Yêu cầu chỉnh sửa</h2>
+        <p>Bài sẽ trả thẳng về Lead Reporter. Sau khi sửa và nộp lại, bài phải qua Trưởng phòng duyệt rồi mới quay lại Thư ký.</p>
+        <label for="revision-feedback">Nội dung cần sửa (bắt buộc)</label>
+        <textarea id="revision-feedback" name="feedback" maxlength="4000" required th:text="${feedback}"></textarea>
+        <div class="dialog-actions">
+            <button type="button" class="btn btn-ghost" data-close>Hủy</button>
+            <button type="submit" class="btn btn-danger">Trả bài về Lead Reporter</button>
+        </div>
+    </form>
+</dialog>
+
+<!-- Mẫu hiển thị một comment, chỉ dùng qua th:replace (bọc th:if false để không tự render) -->
+<th:block th:if="${false}">
+<th:block th:fragment="comment-body(c)">
+    <button type="button" class="comment-anchor" th:attr="data-anchor=${c.anchorLabel}" th:text="${c.anchorLabel}"></button>
+    <span class="badge" th:classappend="${c.status == 'OPEN'} ? 'badge-warning' : 'badge-success'"
+          th:text="${c.status == 'OPEN'} ? 'Đang mở' : 'Đã xử lý'"></span>
+    <div class="comment-quote" th:if="${c.quotedText}" th:text="${c.quotedText}"></div>
+    <div th:text="${c.content}"></div>
+    <div class="meta" th:text="${c.authorName} + ' (' + ${c.stageLabel} + ', v' + ${c.versionLabel} + ') · '
+            + ${#temporals.format(c.createdAt, 'dd/MM/yyyy HH:mm')}"></div>
+    <div class="replies" th:unless="${#lists.isEmpty(c.replies)}">
+        <div th:each="r : ${c.replies}">
+            <div th:text="${r.content}"></div>
+            <div class="meta" th:text="${r.authorName} + ' · ' + ${#temporals.format(r.createdAt, 'dd/MM/yyyy HH:mm')}"></div>
+        </div>
+    </div>
+</th:block>
+
+</th:block>
+<script>
+    (() => {
+        document.querySelectorAll('[data-open]').forEach(btn =>
+            btn.addEventListener('click', () => document.getElementById(btn.dataset.open).showModal()));
+        document.querySelectorAll('dialog [data-close]').forEach(btn =>
+            btn.addEventListener('click', () => btn.closest('dialog').close()));
+
+        // Bấm vị trí của comment để cuộn tới đoạn tương ứng trong bài
+        const targets = { 'Tít': 'a-title', 'Tít phụ': 'a-subtitle', 'Sapo': 'a-sapo' };
+        document.querySelectorAll('.comment-anchor').forEach(btn => btn.addEventListener('click', () => {
+            const label = btn.dataset.anchor;
+            const match = label.match(/^Đoạn (\d+)$/);
+            const el = document.getElementById(match ? 'p-' + match[1] : targets[label]);
+            if (!el) return;
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('flash');
+            setTimeout(() => el.classList.remove('flash'), 1500);
+        }));
+    })();
+</script>
+</th:block>
+</body>
+</html>

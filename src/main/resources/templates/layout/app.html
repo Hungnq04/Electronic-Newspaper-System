@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<!--
+  Layout chung cho mọi quyền: sidebar bên trái + nội dung bên phải.
+  Controller truyền vào model:
+    pageTitle       - tiêu đề tab trình duyệt
+    contentView     - template chứa nội dung, vd "department_head/dashboard"
+    contentFragment - tên th:fragment trong template đó, vd "departmentHeadContent"
+    pageCss, pageJs - (tuỳ chọn) danh sách file CSS/JS riêng của trang
+  sidebarGroups và activePath do SidebarAdvice tự thêm.
+-->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${pageTitle} ?: 'CMS Core'">CMS Core</title>
+    <link rel="stylesheet" th:href="@{/css/sidebar.css}">
+    <link rel="stylesheet" th:href="@{/css/layout.css}">
+    <link rel="stylesheet" th:each="css : ${pageCss}" th:href="@{${css}}">
+</head>
+<body>
+<div class="app-shell">
+    <aside th:replace="~{fragment/sidebar :: sidebar(null, null, null, '/', ${sidebarGroups}, ${activePath}, null, null, null)}"></aside>
+    <div class="app-content">
+        <th:block th:replace="~{__${contentView}__ :: __${contentFragment}__}"></th:block>
+    </div>
+</div>
+<script th:src="@{/js/sidebar.js}"></script>
+<script th:each="js : ${pageJs}" th:src="@{${js}}"></script>
+</body>
+</html>

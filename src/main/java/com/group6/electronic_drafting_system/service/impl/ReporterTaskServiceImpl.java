@@ -124,7 +124,7 @@ public class ReporterTaskServiceImpl implements ReporterTaskService {
                 OffsetDateTime.now().truncatedTo(ChronoUnit.SECONDS));
 
         // Trưởng ban -> viết chính -> hỗ trợ (theo thứ tự khai báo của AssignmentRole)
-        List<ReporterTaskDetailDTO.Member> team = assignments.findByTopic_IdAndStatusNot(topic.getId(), AssignmentStatus.REMOVED).stream()
+        List<ReporterTaskDetailDTO.Member> team = assignments.findByTopicAndStatusNot(topic, AssignmentStatus.REMOVED).stream()
                 .sorted(Comparator.comparing(Assignment::getAssignmentRole))
                 .map(a -> mapper.toMember(a, me.getId()))
                 .toList();

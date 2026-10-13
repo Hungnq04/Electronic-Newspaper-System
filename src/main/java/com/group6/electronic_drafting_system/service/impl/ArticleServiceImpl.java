@@ -9,6 +9,7 @@ import com.group6.electronic_drafting_system.dto.Article.AssignedTopicDTO;
 import com.group6.electronic_drafting_system.entity.Account;
 import com.group6.electronic_drafting_system.entity.Article;
 import com.group6.electronic_drafting_system.entity.ArticleSource;
+import com.group6.electronic_drafting_system.entity.ArticleVersion;
 import com.group6.electronic_drafting_system.entity.Assignment;
 import com.group6.electronic_drafting_system.entity.Source;
 import com.group6.electronic_drafting_system.entity.enums.ArticleStatus;
@@ -132,7 +133,7 @@ public class ArticleServiceImpl implements ArticleService {
     @Transactional(readOnly = true)
     public ArticleEditorDTO getEditor(Integer articleId, String email) {
         Account me = currentAccount(email);
-        Article article = articles.findWithDetailsById(articleId).orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_NOT_FOUND));
+        Article article = articles.findWithTopicAndLeadById(articleId).orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_NOT_FOUND));
         if (!article.getLead().getId().equals(me.getId())) throw new ApplicationException(ErrorCode.ARTICLE_FORBIDDEN);
 
         Integer topicId = article.getTopic().getId();
@@ -221,7 +222,7 @@ public class ArticleServiceImpl implements ArticleService {
     private void submitVersion(Article article, String changeSummary) {
         if (article.getSapo() == null) throw new ApplicationException(ErrorCode.ARTICLE_SAPO_REQUIRED);
         if (Jsoup.parse(article.getContent()).text().isBlank()) throw new ApplicationException(ErrorCode.ARTICLE_CONTENT_REQUIRED);
-        versions.save(articleMapper.toVersion(article, versions.findMaxVersionNumber(article.getId()) + 1, changeSummary));
+        versions.save(articleMapper.toVersion(article, versions.findFirstByArticleOrderByVersionNumberDesc(article).map(ArticleVersion::getVersionNumber).orElse(0) + 1, changeSummary));
         article.setStatus(ArticleStatus.DEPARTMENT_REVIEW);
         article.setSubmittedAt(OffsetDateTime.now().truncatedTo(ChronoUnit.SECONDS));
     }

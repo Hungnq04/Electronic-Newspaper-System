@@ -20,24 +20,33 @@ public enum ErrorCode {
     AUTH_OTP_TOO_MANY_ATTEMPTS(1110, "Bạn đã nhập sai quá 5 lần. Vui lòng yêu cầu gửi lại mã mới.", HttpStatus.TOO_MANY_REQUESTS),    AUTH_ACCOUNT_ALREADY_EXISTS(2000, "Email này đã được đăng ký.", HttpStatus.CONFLICT),
     AUTH_UNEXPECTED_ERROR(9999, "Đã xảy ra lỗi. Vui lòng thử lại sau.", HttpStatus.INTERNAL_SERVER_ERROR),
 
-    ARTICLE_NOT_FOUND(3000, "Không tìm thấy bài viết.", HttpStatus.NOT_FOUND),
-    ARTICLE_FORBIDDEN(3001, "Bạn không có quyền chỉnh sửa bài viết này.", HttpStatus.FORBIDDEN),
-    ARTICLE_NOT_EDITABLE(3002, "Bài viết đang trong quy trình duyệt nên không thể chỉnh sửa.", HttpStatus.CONFLICT),
-    ARTICLE_TITLE_REQUIRED(3003, "Tiêu đề bài viết không được để trống.", HttpStatus.BAD_REQUEST),
-    ARTICLE_SAPO_REQUIRED(3004, "Cần nhập sa-pô trước khi nộp bài.", HttpStatus.BAD_REQUEST),
-    ARTICLE_CONTENT_REQUIRED(3005, "Nội dung bài viết đang trống.", HttpStatus.BAD_REQUEST),
-    ARTICLE_CATEGORY_REQUIRED(3006, "Chuyên mục không được để trống.", HttpStatus.BAD_REQUEST),
-    ARTICLE_ASSIGNMENT_NOT_LEAD(3007, "Bạn chỉ được viết bài từ nhiệm vụ được giao cho mình với vai trò viết chính, trên đề tài đã được duyệt.", HttpStatus.FORBIDDEN),
-    ARTICLE_SOURCE_NOT_FOUND(3008, "Không tìm thấy ảnh tư liệu của bài viết.", HttpStatus.NOT_FOUND),
-    ARTICLE_ASSIGNMENT_REQUIRED(3009, "Bài viết phải được tạo từ một nhiệm vụ được giao. Vui lòng chọn nhiệm vụ để viết bài.", HttpStatus.BAD_REQUEST),
+    ARTICLE_NOT_FOUND(1300, "Không tìm thấy bài viết.", HttpStatus.NOT_FOUND),
+    ARTICLE_NOT_SUBMITTED(1301, "Bài viết chưa được nộp nên chưa có phiên bản để duyệt.", HttpStatus.CONFLICT),
+    REVIEW_ACCESS_DENIED(1310, "Bạn không có quyền duyệt bài ở cấp này.", HttpStatus.FORBIDDEN),
+    REVIEW_NOT_IN_FINAL_STAGE(1311, "Bài viết không còn ở bước chờ Thư ký tòa soạn duyệt.", HttpStatus.CONFLICT),
+    REVIEW_OWN_ARTICLE(1312, "Bạn là Lead Reporter của bài này nên không được duyệt.", HttpStatus.FORBIDDEN),
+    REVIEW_HELD_BY_OTHER(1313, "Bài đang được một Thư ký tòa soạn khác duyệt.", HttpStatus.CONFLICT),
+    REVIEW_DEPARTMENT_NOT_APPROVED(1314, "Phiên bản mới nhất chưa được Trưởng phòng duyệt.", HttpStatus.CONFLICT),
+    REVIEW_NOT_OPENED(1315, "Lượt duyệt chưa được mở. Vui lòng mở lại bài rồi thử lại.", HttpStatus.CONFLICT),
+    REVIEW_FEEDBACK_REQUIRED(1316, "Vui lòng nhập nội dung yêu cầu chỉnh sửa.", HttpStatus.BAD_REQUEST),
 
-    TASK_NOT_FOUND(3100, "Không tìm thấy nhiệm vụ hoặc bạn không được giao nhiệm vụ này.", HttpStatus.NOT_FOUND),
+    ARTICLE_FORBIDDEN(1320, "Bạn không có quyền chỉnh sửa bài viết này.", HttpStatus.FORBIDDEN),
+    ARTICLE_NOT_EDITABLE(1321, "Bài viết đang trong quy trình duyệt nên không thể chỉnh sửa.", HttpStatus.CONFLICT),
+    ARTICLE_TITLE_REQUIRED(1322, "Tiêu đề bài viết không được để trống.", HttpStatus.BAD_REQUEST),
+    ARTICLE_SAPO_REQUIRED(1323, "Cần nhập sa-pô trước khi nộp bài.", HttpStatus.BAD_REQUEST),
+    ARTICLE_CONTENT_REQUIRED(1324, "Nội dung bài viết đang trống.", HttpStatus.BAD_REQUEST),
+    ARTICLE_CATEGORY_REQUIRED(1325, "Chuyên mục không được để trống.", HttpStatus.BAD_REQUEST),
+    ARTICLE_ASSIGNMENT_NOT_LEAD(1326, "Bạn chỉ được viết bài từ nhiệm vụ được giao cho mình với vai trò viết chính, trên đề tài đã được duyệt.", HttpStatus.FORBIDDEN),
+    ARTICLE_SOURCE_NOT_FOUND(1327, "Không tìm thấy ảnh tư liệu của bài viết.", HttpStatus.NOT_FOUND),
+    ARTICLE_ASSIGNMENT_REQUIRED(1328, "Bài viết phải được tạo từ một nhiệm vụ được giao. Vui lòng chọn nhiệm vụ để viết bài.", HttpStatus.BAD_REQUEST),
 
-    MEDIA_FILE_REQUIRED(3200, "Vui lòng chọn ảnh hoặc video để tải lên.", HttpStatus.BAD_REQUEST),
-    MEDIA_TYPE_NOT_SUPPORTED(3201, "Chỉ hỗ trợ ảnh JPG, PNG, WebP, GIF và video MP4, WebM, MOV.", HttpStatus.BAD_REQUEST),
-    MEDIA_TOO_LARGE(3202, "Tệp quá lớn: ảnh tối đa 10MB, video tối đa 100MB.", HttpStatus.PAYLOAD_TOO_LARGE),
-    MEDIA_STORAGE_NOT_CONFIGURED(3203, "Hệ thống chưa cấu hình Cloudinary nên chưa thể tải tệp lên.", HttpStatus.SERVICE_UNAVAILABLE),
-    MEDIA_UPLOAD_FAILED(3204, "Tải tệp lên Cloudinary không thành công. Vui lòng thử lại.", HttpStatus.BAD_GATEWAY);
+    TASK_NOT_FOUND(1400, "Không tìm thấy nhiệm vụ hoặc bạn không được giao nhiệm vụ này.", HttpStatus.NOT_FOUND),
+
+    MEDIA_FILE_REQUIRED(1500, "Vui lòng chọn ảnh hoặc video để tải lên.", HttpStatus.BAD_REQUEST),
+    MEDIA_TYPE_NOT_SUPPORTED(1501, "Chỉ hỗ trợ ảnh JPG, PNG, WebP, GIF và video MP4, WebM, MOV.", HttpStatus.BAD_REQUEST),
+    MEDIA_TOO_LARGE(1502, "Tệp quá lớn: ảnh tối đa 10MB, video tối đa 100MB.", HttpStatus.PAYLOAD_TOO_LARGE),
+    MEDIA_STORAGE_NOT_CONFIGURED(1503, "Hệ thống chưa cấu hình Cloudinary nên chưa thể tải tệp lên.", HttpStatus.SERVICE_UNAVAILABLE),
+    MEDIA_UPLOAD_FAILED(1504, "Tải tệp lên Cloudinary không thành công. Vui lòng thử lại.", HttpStatus.BAD_GATEWAY);
 
     private final int code;
     private final String message;

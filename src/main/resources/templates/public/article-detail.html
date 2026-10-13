@@ -7,7 +7,7 @@
 <main class="wrap">
     <nav class="crumbs" aria-label="Đường dẫn">
         <a th:href="@{/}">Trang chủ</a> ›
-        <a th:href="@{/articles(category=${article.category})}" th:text="${article.category}">Chuyên mục</a>
+        <a th:href="@{/news(category=${article.category})}" th:text="${article.category}">Chuyên mục</a>
     </nav>
 
     <article class="story">

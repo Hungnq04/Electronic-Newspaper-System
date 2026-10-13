@@ -35,7 +35,7 @@ public class PublicArticleController {
         return "public/home";
     }
 
-    @GetMapping("/articles")
+    @GetMapping("/news")
     public String list(@RequestParam(required = false) String q, @RequestParam(required = false) String category,
                        @RequestParam(defaultValue = "1") int page, Model model) {
         Page<PublicArticle> result = publicArticleService.search(q, category, page);
@@ -45,7 +45,7 @@ public class PublicArticleController {
         return "public/article-list";
     }
 
-    @GetMapping("/articles/{id:\\d+}")
+    @GetMapping("/news/{id:\\d+}")
     public String detail(@PathVariable int id, Model model, HttpServletResponse response) {
         PublicArticle article = publicArticleService.findPublished(id).orElse(null);
         if (article == null) {

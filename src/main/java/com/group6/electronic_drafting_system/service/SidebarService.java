@@ -16,7 +16,10 @@ public class SidebarService {
                     new SidebarGroup("THẨM ĐỊNH NỘI DUNG", List.of(
                             new SidebarItem("Duyệt bản thảo", "/department-head/dashboard", "clipboard-check", null))));
             // TODO: bổ sung menu khi làm màn hình cho các quyền còn lại
-            case REPORTER, EDITORIAL_SECRETARY, ADMIN -> List.of();
+            case EDITORIAL_SECRETARY -> List.of(
+                    new SidebarGroup("BIÊN TẬP TÒA SOẠN", List.of(
+                            new SidebarItem("Duyệt cuối", "/secretary/final-reviews", "clipboard-check", null))));
+            case REPORTER, ADMIN -> List.of();
         };
     }
 }

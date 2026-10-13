@@ -12,7 +12,6 @@ import com.group6.electronic_drafting_system.entity.ArticleVersion;
 import com.group6.electronic_drafting_system.entity.Assignment;
 import com.group6.electronic_drafting_system.entity.Topic;
 import com.group6.electronic_drafting_system.entity.enums.ArticleStatus;
-import java.time.OffsetDateTime;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
@@ -24,9 +23,9 @@ public class ArticleMapper {
                 article.getCategory(), article.getStatus(), article.getUpdatedAt());
     }
 
-    public AssignedTopicDTO toAssignedTopicDTO(Assignment assignment) {
+    public AssignedTopicDTO toAssignedTopicDTO(Assignment assignment, long articleCount) {
         Topic topic = assignment.getTopic();
-        return new AssignedTopicDTO(topic.getId(), topic.getTitle(), topic.getCategory(), assignment.getDeadline());
+        return new AssignedTopicDTO(assignment.getId(), topic.getId(), topic.getTitle(), topic.getCategory(), assignment.getDeadline(), articleCount);
     }
 
     public ArticleEditorDTO.Version toVersionItem(ArticleVersion version) {
@@ -43,26 +42,28 @@ public class ArticleMapper {
         return new ArticleEditorDTO.Review(review.getReviewer().getFullName(), review.getDecision(), review.getFeedback(), review.getReviewedAt());
     }
 
-    public ArticleEditorDTO toEditorDTO(Article article, boolean editable, OffsetDateTime deadline, String reviewerName,
+    // assignment: nhiệm vụ viết chính hiện hành của người dùng trên đề tài (null nếu đã bị gỡ)
+    public ArticleEditorDTO toEditorDTO(Article article, boolean editable, Assignment assignment, String reviewerName,
                                         ArticleEditorDTO.Review latestReview, List<ArticleEditorDTO.Version> versions,
                                         List<ArticleEditorDTO.Source> sources) {
         Topic topic = article.getTopic();
         Account lead = article.getLead();
         return new ArticleEditorDTO(article.getId(), article.getTitle(), article.getSubtitle(), article.getSapo(), article.getContent(),
                 article.getCategory(), article.getStatus(), editable, article.getCreatedAt(), article.getUpdatedAt(), article.getSubmittedAt(),
-                topic.getId(), topic.getTitle(), topic.getCategory(), topic.getPriority(), topic.getExpectedDate(),
-                lead.getFullName(), departmentName(lead), reviewerName, deadline, latestReview, versions, sources);
+                assignment == null ? null : assignment.getId(), topic.getId(), topic.getTitle(), topic.getCategory(), topic.getPriority(), topic.getExpectedDate(),
+                lead.getFullName(), departmentName(lead), reviewerName, assignment == null ? null : assignment.getDeadline(),
+                latestReview, versions, sources);
     }
 
-    // Trang "Viết bài mới": chưa có bản ghi article, lấy dữ liệu từ form (khi nhập lỗi) và đề tài đang chọn
-    public ArticleEditorDTO toNewEditorDTO(ArticleDraftRequestDTO form, Topic topic, Account lead, OffsetDateTime deadline, String reviewerName) {
-        String title = form.getTitle() != null ? form.getTitle() : topic != null ? topic.getTitle() : "";
-        String category = form.getCategory() != null ? form.getCategory() : topic != null ? topic.getCategory() : "";
+    // Trang "Viết bài mới": chưa có bản ghi article, lấy dữ liệu từ form (khi nhập lỗi) và đề tài của nhiệm vụ
+    public ArticleEditorDTO toNewEditorDTO(ArticleDraftRequestDTO form, Assignment assignment, Account lead, String reviewerName) {
+        Topic topic = assignment.getTopic();
+        String title = form.getTitle() != null ? form.getTitle() : topic.getTitle();
+        String category = form.getCategory() != null ? form.getCategory() : topic.getCategory();
         return new ArticleEditorDTO(null, title, form.getSubtitle(), form.getSapo(), form.getContent() == null ? "" : form.getContent(),
                 category, ArticleStatus.DRAFT, true, null, null, null,
-                topic == null ? null : topic.getId(), topic == null ? null : topic.getTitle(), topic == null ? null : topic.getCategory(),
-                topic == null ? null : topic.getPriority(), topic == null ? null : topic.getExpectedDate(),
-                lead.getFullName(), departmentName(lead), reviewerName, deadline, null, List.of(), List.of());
+                assignment.getId(), topic.getId(), topic.getTitle(), topic.getCategory(), topic.getPriority(), topic.getExpectedDate(),
+                lead.getFullName(), departmentName(lead), reviewerName, assignment.getDeadline(), null, List.of(), List.of());
     }
 
     public Article toEntity(ArticleDraftRequestDTO request, Topic topic, Account lead) {

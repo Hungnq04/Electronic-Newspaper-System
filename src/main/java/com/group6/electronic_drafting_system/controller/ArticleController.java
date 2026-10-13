@@ -2,22 +2,31 @@ package com.group6.electronic_drafting_system.controller;
 
 import com.group6.electronic_drafting_system.dto.Article.ArticleCreateRequestDTO;
 import com.group6.electronic_drafting_system.dto.Article.ArticleDraftRequestDTO;
+import com.group6.electronic_drafting_system.dto.Article.ArticleEditorDTO;
+import com.group6.electronic_drafting_system.dto.Article.ArticleMediaUploadResponseDTO;
 import com.group6.electronic_drafting_system.dto.Article.ArticleSaveResponseDTO;
 import com.group6.electronic_drafting_system.exception.ApplicationException;
 import com.group6.electronic_drafting_system.exception.ErrorCode;
 import com.group6.electronic_drafting_system.service.ArticleService;
+import java.util.List;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/articles")
 public class ArticleController {
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ArticleController.class);
+    private static final String ARTICLES_PATH = "/articles";
+    private static final String TASKS_PATH = "/reporter/tasks";
+    private static final String FONTS = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Playfair+Display:wght@600;700&family=Roboto:ital,wght@0,400;0,700;1,400&display=swap";
+    private static final String LUCIDE = "https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js";
     private final ArticleService articleService;
 
     public ArticleController(ArticleService articleService) {
@@ -26,16 +35,24 @@ public class ArticleController {
 
     @GetMapping
     public String list(Authentication auth, Model model) {
-        String email = currentEmail(auth);
-        model.addAttribute("articles", articleService.getMyArticles(email));
-        model.addAttribute("waitingTopics", articleService.getTopicsWaitingForArticle(email));
-        return "articles/list";
+        model.addAttribute("page", articleService.getListPage(currentEmail(auth)));
+        model.addAttribute("pageTitle", "Bài viết của tôi – Phóng viên");
+        model.addAttribute("contentView", "articles/list");
+        model.addAttribute("contentFragment", "articleListContent");
+        model.addAttribute("pageCss", List.of("/reporter/css/reporter-tasks.css"));
+        model.addAttribute("activePath", ARTICLES_PATH);
+        return "layout/app";
     }
 
-    // Trang viết bài mới; ?topicId= để chọn sẵn đề tài
+    // Trang viết bài mới: bắt buộc ?assignmentId= của nhiệm vụ mình được giao với vai trò viết chính
     @GetMapping("/new")
-    public String newArticle(@ModelAttribute ArticleCreateRequestDTO form, Authentication auth, Model model) {
-        return renderNewArticle(form, currentEmail(auth), model);
+    public String newArticle(@ModelAttribute ArticleCreateRequestDTO form, Authentication auth, Model model, RedirectAttributes redirect) {
+        try {
+            return editorPage(model, articleService.getNewArticleForm(form, currentEmail(auth)), TASKS_PATH);
+        } catch (ApplicationException ex) {
+            redirect.addFlashAttribute("error", ex.getErrorCode().getMessage());
+            return "redirect:" + TASKS_PATH;
+        }
     }
 
     // action = draft: tạo bài ở trạng thái nháp; action = submit: tạo và nộp luôn cho Trưởng ban
@@ -54,25 +71,23 @@ public class ArticleController {
             log.error("Create article failed", ex);
             model.addAttribute("error", ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage());
         }
-        // Hiển thị lại form với nội dung đã nhập để không mất bài
-        return renderNewArticle(form, email, model);
-    }
-
-    private String renderNewArticle(ArticleCreateRequestDTO form, String email, Model model) {
-        model.addAttribute("article", articleService.getNewArticleForm(form, email));
-        model.addAttribute("topics", articleService.getTopicsWaitingForArticle(email));
-        model.addAttribute("changeSummary", form.getChangeSummary());
-        return "articles/editor";
+        // Hiển thị lại form với nội dung đã nhập để không mất bài; nhiệm vụ không hợp lệ thì quay về danh sách nhiệm vụ
+        try {
+            model.addAttribute("changeSummary", form.getChangeSummary());
+            return editorPage(model, articleService.getNewArticleForm(form, email), TASKS_PATH);
+        } catch (ApplicationException ex) {
+            redirect.addFlashAttribute("error", ex.getErrorCode().getMessage());
+            return "redirect:" + TASKS_PATH;
+        }
     }
 
     @GetMapping("/{id}/edit")
     public String edit(@PathVariable Integer id, Authentication auth, Model model, RedirectAttributes redirect) {
         try {
-            model.addAttribute("article", articleService.getEditor(id, currentEmail(auth)));
-            return "articles/editor";
+            return editorPage(model, articleService.getEditor(id, currentEmail(auth)), ARTICLES_PATH);
         } catch (ApplicationException ex) {
             redirect.addFlashAttribute("error", ex.getErrorCode().getMessage());
-            return "redirect:/articles";
+            return "redirect:" + ARTICLES_PATH;
         }
     }
 
@@ -114,6 +129,33 @@ public class ArticleController {
         } catch (ApplicationException ex) {
             return ResponseEntity.status(ex.getErrorCode().getStatusCode()).body(new ArticleSaveResponseDTO(false, ex.getErrorCode().getMessage(), null));
         }
+    }
+
+    // Tải ảnh / video từ máy lên Cloudinary (multipart: file, caption)
+    @PostMapping(value = "/{id}/media", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseBody
+    public ResponseEntity<ArticleMediaUploadResponseDTO> uploadMedia(@PathVariable Integer id, @RequestParam(required = false) MultipartFile file,
+                                                                     @RequestParam(required = false) String caption, Authentication auth) {
+        try {
+            return ResponseEntity.ok(articleService.uploadMedia(id, file, caption, currentEmail(auth)));
+        } catch (ApplicationException ex) {
+            return ResponseEntity.status(ex.getErrorCode().getStatusCode()).body(ArticleMediaUploadResponseDTO.error(ex.getErrorCode().getMessage()));
+        } catch (Exception ex) {
+            log.error("Upload media failed for article {}", id, ex);
+            return ResponseEntity.internalServerError().body(ArticleMediaUploadResponseDTO.error(ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage()));
+        }
+    }
+
+    // Trình soạn thảo nằm trong layout chung (sidebar theo quyền + topbar phóng viên)
+    private static String editorPage(Model model, ArticleEditorDTO article, String activePath) {
+        model.addAttribute("article", article);
+        model.addAttribute("pageTitle", (article.isNew() ? "Viết bài mới" : article.title()) + " – Phóng viên");
+        model.addAttribute("contentView", "articles/editor");
+        model.addAttribute("contentFragment", "articleEditorContent");
+        model.addAttribute("pageCss", List.of(FONTS, "/reporter/css/reporter-tasks.css", "/css/editor.css"));
+        model.addAttribute("pageJs", List.of(LUCIDE, "/js/editor.js"));
+        model.addAttribute("activePath", activePath);
+        return "layout/app";
     }
 
     // Đăng nhập form: username là email; đăng nhập Google: lấy thuộc tính email

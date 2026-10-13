@@ -68,6 +68,12 @@
 			<artifactId>jsoup</artifactId>
 			<version>1.18.3</version>
 		</dependency>
+		<!-- Lưu ảnh / video bài viết lên Cloudinary; DB chỉ lưu đường dẫn -->
+		<dependency>
+			<groupId>com.cloudinary</groupId>
+			<artifactId>cloudinary-http5</artifactId>
+			<version>2.5.0</version>
+		</dependency>
 
 		<dependency>
 			<groupId>com.microsoft.sqlserver</groupId>

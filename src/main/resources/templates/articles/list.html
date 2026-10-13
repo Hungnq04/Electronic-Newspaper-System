@@ -1,70 +1,105 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Bài viết của tôi | Tòa soạn</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@600;700&display=swap">
-    <link rel="stylesheet" th:href="@{/css/editor.css}">
-</head>
 <body>
-<aside class="side-nav">
-    <a class="brand" th:href="@{/}">
-        <span class="brand-mark">T</span>
-        <span><strong>TÒA SOẠN</strong><small>Hệ thống xuất bản số</small></span>
-    </a>
-    <p class="nav-label">Phân ban tin tức</p>
-    <nav>
-        <a class="active" th:href="@{/articles}"><i data-lucide="file-pen-line"></i>Bài viết đang soạn</a>
-        <a th:href="@{/articles/new}"><i data-lucide="square-pen"></i>Viết bài mới</a>
-        <a th:href="@{/}"><i data-lucide="house"></i>Trang chủ</a>
-    </nav>
-    <form class="logout" method="post" th:action="@{/logout}" style="margin-top:auto"><button type="submit"><i data-lucide="log-out"></i>Đăng xuất</button></form>
-</aside>
+<!-- Trang "Bài viết của tôi", hiển thị trong layout/app cùng kiểu với trang Nhiệm vụ tác nghiệp -->
+<th:block th:fragment="articleListContent">
+    <svg th:replace="~{reporter/tasks :: reporterSprite}"></svg>
 
-<div class="workspace">
-    <header class="topbar"><h2 class="page-title">Bài viết của tôi</h2>
-        <div class="top-actions"><a class="btn primary" th:href="@{/articles/new}"><i data-lucide="square-pen"></i>Viết bài mới</a></div></header>
-    <div class="flash err" th:if="${error}" th:text="${error}"></div>
-    <div class="flash ok" th:if="${message}" th:text="${message}"></div>
+    <section class="rp-page" aria-label="Bài viết của phóng viên">
+        <header th:replace="~{reporter/tasks :: reporterTopbar(${page.fullName()}, ${page.departmentName()}, ${page.initials()}, false)}"></header>
 
-    <div class="list-wrap">
-        <section class="card" th:unless="${waitingTopics.isEmpty()}">
-            <div class="card-head"><h3><i data-lucide="clipboard-list"></i>Đề tài được giao, chưa bắt đầu viết</h3></div>
-            <table class="data-table">
-                <thead><tr><th>Đề tài</th><th>Chuyên mục</th><th>Hạn nộp</th><th></th></tr></thead>
-                <tbody>
-                <tr th:each="t : ${waitingTopics}">
-                    <td class="strong" th:text="${t.title()}"></td>
-                    <td th:text="${t.category()}"></td>
-                    <td th:text="${t.deadline() != null} ? ${#temporals.format(t.deadline(), 'HH:mm dd/MM/yyyy')} : '—'"></td>
-                    <td class="right">
-                        <a class="btn primary mini-primary" th:href="@{/articles/new(topicId=${t.topicId()})}"><i data-lucide="pen-line"></i>Bắt đầu viết</a>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-        </section>
+        <main class="rp-main">
+            <div class="rp-flash rp-flash--error" th:if="${error}" th:text="${error}"></div>
+            <div class="rp-flash rp-flash--ok" th:if="${message}" th:text="${message}"></div>
 
-        <section class="card">
-            <div class="card-head"><h3><i data-lucide="files"></i>Bài viết</h3></div>
-            <p class="hint" th:if="${articles.isEmpty()}">Bạn chưa có bài viết nào.</p>
-            <table class="data-table" th:unless="${articles.isEmpty()}">
-                <thead><tr><th>Tiêu đề</th><th>Đề tài</th><th>Chuyên mục</th><th>Trạng thái</th><th>Cập nhật</th></tr></thead>
-                <tbody>
-                <tr th:each="a : ${articles}">
-                    <td class="strong"><a th:href="@{/articles/{id}/edit(id=${a.id()})}" th:text="${a.title()}"></a></td>
-                    <td th:text="${a.topicTitle()}"></td>
-                    <td th:text="${a.category()}"></td>
-                    <td><span class="chip" th:text="${a.status()}"></span></td>
-                    <td th:text="${#temporals.format(a.updatedAt(), 'HH:mm dd/MM/yyyy')}"></td>
-                </tr>
-                </tbody>
-            </table>
-        </section>
-    </div>
-</div>
-<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
-<script>if (window.lucide) lucide.createIcons();</script>
+            <div class="rp-heading-row">
+                <div class="rp-heading">
+                    <nav class="rp-breadcrumb" aria-label="Breadcrumb">
+                        <span>TÁC NGHIỆP</span><svg class="rp-icon rp-icon--tiny"><use href="#rp-icon-chevron-right"></use></svg><strong>Bài viết của tôi</strong>
+                    </nav>
+                    <h1>Bài viết của tôi</h1>
+                    <p>Bài viết mới chỉ được tạo từ nhiệm vụ bạn được giao với vai trò <b>viết chính</b>. Một đề tài có thể có nhiều bài viết.</p>
+                </div>
+                <div class="rp-heading-actions">
+                    <a class="rp-button rp-button--outline" th:href="@{/reporter/tasks}"><svg class="rp-icon"><use href="#rp-icon-clipboard"></use></svg>Nhiệm vụ tác nghiệp</a>
+                </div>
+            </div>
+
+            <!-- Nhiệm vụ viết chính còn hiệu lực: điểm bắt đầu duy nhất để viết bài mới -->
+            <section class="rp-card" style="margin-bottom:16px">
+                <div class="rp-card-head">
+                    <h2>Nhiệm vụ viết chính <span class="rp-count-pill"><b th:text="${#lists.size(page.assignments())}">2</b> nhiệm vụ</span></h2>
+                    <span class="rp-sort-note">Chọn nhiệm vụ để viết bài mới</span>
+                </div>
+                <div class="rp-empty rp-empty--compact" th:if="${page.assignments().isEmpty()}">
+                    <svg class="rp-icon"><use href="#rp-icon-clipboard"></use></svg>
+                    <strong>Chưa có nhiệm vụ viết chính nào</strong>
+                    <span>Bạn chỉ viết bài được khi Trưởng ban giao nhiệm vụ với vai trò viết chính trên đề tài đã duyệt.</span>
+                </div>
+                <div class="rp-table-wrap" th:unless="${page.assignments().isEmpty()}">
+                    <table class="rp-table">
+                        <thead>
+                        <tr><th>Đề tài</th><th>Hạn nộp bài</th><th>Bài đã viết</th><th class="rp-right">Thao tác</th></tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="a : ${page.assignments()}">
+                            <td class="rp-col-task">
+                                <a class="rp-task-title" th:href="@{/reporter/tasks/{id}(id=${a.assignmentId()})}" th:text="${a.title()}">Đề tài</a>
+                                <span class="rp-task-category"><svg class="rp-icon"><use href="#rp-icon-folder"></use></svg><span th:text="${a.category()}">Chuyên mục</span></span>
+                            </td>
+                            <td class="rp-col-deadline">
+                                <span class="rp-deadline" th:if="${a.deadline() != null}">
+                                    <svg class="rp-icon"><use href="#rp-icon-clock"></use></svg>
+                                    <span><b th:text="${#temporals.format(a.deadline(), 'HH:mm')}">15:30</b> <span th:text="${#temporals.format(a.deadline(), 'dd/MM/yyyy')}">13/10/2026</span></span>
+                                </span>
+                                <span class="rp-muted" th:if="${a.deadline() == null}">Chưa đặt hạn</span>
+                            </td>
+                            <td><span class="rp-muted" th:text="${a.articleCount() == 0} ? 'Chưa có bài' : |${a.articleCount()} bài|">0</span></td>
+                            <td class="rp-col-actions">
+                                <div class="rp-actions">
+                                    <a class="rp-button rp-button--ghost rp-button--small" th:href="@{/reporter/tasks/{id}(id=${a.assignmentId()})}"><svg class="rp-icon"><use href="#rp-icon-eye"></use></svg>Chi tiết</a>
+                                    <a class="rp-button rp-button--primary rp-button--small" th:href="@{/articles/new(assignmentId=${a.assignmentId()})}"><svg class="rp-icon"><use href="#rp-icon-edit"></use></svg>Viết bài mới</a>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="rp-card">
+                <div class="rp-card-head">
+                    <h2>Bài viết <span class="rp-count-pill"><b th:text="${#lists.size(page.articles())}">3</b> bản ghi</span></h2>
+                    <span class="rp-sort-note">Sắp xếp: Cập nhật gần nhất</span>
+                </div>
+                <div class="rp-empty rp-empty--compact" th:if="${page.articles().isEmpty()}">
+                    <svg class="rp-icon"><use href="#rp-icon-file"></use></svg>
+                    <strong>Bạn chưa có bài viết nào</strong>
+                </div>
+                <div class="rp-table-wrap" th:unless="${page.articles().isEmpty()}">
+                    <table class="rp-table">
+                        <thead>
+                        <tr><th>Tiêu đề</th><th>Đề tài</th><th>Chuyên mục</th><th>Trạng thái</th><th>Cập nhật</th><th class="rp-right">Thao tác</th></tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="a : ${page.articles()}">
+                            <td class="rp-col-task"><a class="rp-task-title" th:href="@{/articles/{id}/edit(id=${a.id()})}" th:text="${a.title()}">Tiêu đề</a></td>
+                            <td th:text="${a.topicTitle()}">Đề tài</td>
+                            <td><span class="rp-task-category"><svg class="rp-icon"><use href="#rp-icon-folder"></use></svg><span th:text="${a.category()}">Chuyên mục</span></span></td>
+                            <td class="rp-col-status"><span class="rp-stage" th:classappend="|rp-stage--${a.statusGroup()}|"><i></i><span th:text="${a.statusLabel()}">Bản thảo</span></span></td>
+                            <td><span class="rp-muted" th:text="${#temporals.format(a.updatedAt(), 'HH:mm dd/MM/yyyy')}">14:20</span></td>
+                            <td class="rp-col-actions">
+                                <div class="rp-actions">
+                                    <a class="rp-button rp-button--outline rp-button--small" th:href="@{/articles/{id}/edit(id=${a.id()})}"><svg class="rp-icon"><use href="#rp-icon-edit"></use></svg>Mở bài</a>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </section>
+</th:block>
 </body>
 </html>

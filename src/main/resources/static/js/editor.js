@@ -53,6 +53,7 @@
         const paragraphs = $$('p', editor).filter(p => p.textContent.trim()).length;
         const headings = $$('h2, h3, h4', editor).length;
         const images = $$('img', editor).length;
+        const videos = $$('video', editor).length;
         const quotes = $$('blockquote', editor).length;
         const tables = $$('table', editor).length;
 
@@ -60,13 +61,13 @@
         $('#charCount').textContent = chars.toLocaleString('vi-VN');
         $('#readTime').textContent = `~${Math.max(1, Math.ceil(words / 220))} phút`;
         $('#lengthHint').textContent = words < 300 ? 'Tin ngắn' : words < 800 ? 'Bài tiêu chuẩn' : 'Chuyên luận sâu';
-        $('#structure').textContent = `${paragraphs} đoạn · ${headings} tiêu đề phụ · ${images} ảnh · ${quotes} trích dẫn · ${tables} bảng`;
+        $('#structure').textContent = `${paragraphs} đoạn · ${headings} tiêu đề phụ · ${images} ảnh · ${videos} video · ${quotes} trích dẫn · ${tables} bảng`;
         $('#paraCount').textContent = `${paragraphs} đoạn`;
         $('#sbWords').textContent = words.toLocaleString('vi-VN');
         $('#sbChars').textContent = chars.toLocaleString('vi-VN');
         $('#titleCount').textContent = titleEl.value.length;
         $('#sapoCount').textContent = sapoEl.value.length;
-        editor.classList.toggle('is-empty', !text.trim() && images === 0 && tables === 0);
+        editor.classList.toggle('is-empty', !text.trim() && images === 0 && videos === 0 && tables === 0);
     }
 
     /* ---------- Đếm ngược hạn nộp ---------- */
@@ -246,8 +247,87 @@
         exec('insertHTML', `<figure class="article-figure"><img src="${escapeHtml(src)}" alt="${escapeHtml(caption)}"${idAttr}>` +
             `<figcaption>${escapeHtml(caption || 'Chú thích ảnh')}</figcaption></figure><p><br></p>`);
     }
-    $$('.insert-image').forEach(btn => btn.addEventListener('click',
-        () => insertFigure(btn.dataset.src, btn.dataset.caption, btn.dataset.id)));
+    function insertVideo(src, caption) {
+        closeModals();
+        exec('insertHTML', `<figure class="article-figure article-video"><video src="${escapeHtml(src)}" controls preload="metadata" playsinline></video>` +
+            (caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : '') + '</figure><p><br></p>');
+    }
+    $('#insertImageGrid').addEventListener('click', e => {
+        const btn = e.target.closest('.insert-image');
+        if (btn) insertFigure(btn.dataset.src, btn.dataset.caption, btn.dataset.id);
+    });
+
+    /* ---------- Tải ảnh / video từ máy lên Cloudinary ---------- */
+    const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    const VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
+    const MB = 1024 * 1024;
+    const mediaInput = $('#mediaFile'), uploadBtn = $('#uploadMediaBtn'), mediaDrop = $('#mediaDrop');
+    const progress = $('#uploadProgress');
+    let mediaFile = null;
+
+    // Kiểm tra trước ở trình duyệt để khỏi gửi tệp lớn rồi mới bị từ chối; server vẫn kiểm tra lại
+    function pickMedia(file) {
+        mediaFile = null;
+        uploadBtn.disabled = true;
+        if (!file) return;
+        const isImage = IMAGE_TYPES.includes(file.type), isVideo = VIDEO_TYPES.includes(file.type);
+        if (!isImage && !isVideo) { toast('Chỉ hỗ trợ ảnh JPG, PNG, WebP, GIF và video MP4, WebM, MOV', true); return; }
+        if (file.size > (isImage ? 10 : 100) * MB) { toast(isImage ? 'Ảnh tối đa 10MB' : 'Video tối đa 100MB', true); return; }
+        mediaFile = file;
+        uploadBtn.disabled = false;
+        $('#mediaFileName').textContent = `${file.name} (${(file.size / MB).toFixed(1)} MB)`;
+    }
+    function addImageOption(data) {
+        const attrs = `data-src="${escapeHtml(data.url)}" data-caption="${escapeHtml(data.caption || data.title)}" data-id="${data.articleSourceId}"`;
+        const inner = `<img src="${escapeHtml(data.url)}" alt=""><span>${escapeHtml(data.title)}</span>`;
+        $('#insertImageGrid').insertAdjacentHTML('beforeend', `<button type="button" class="image-option insert-image" ${attrs}>${inner}</button>`);
+        $('#featuredGrid')?.insertAdjacentHTML('beforeend',
+            `<button type="button" class="image-option choose-featured" ${attrs} data-title="${escapeHtml(data.title)}">${inner}</button>`);
+        $('#noImageHint')?.remove();
+        const change = $('#heroChangeBtn');
+        if (change) change.hidden = false;
+    }
+    function uploadMedia() {
+        if (!mediaFile || !A.mediaUrl) return;
+        const form = new FormData();
+        form.append('file', mediaFile);
+        form.append('caption', $('#mediaCaption').value.trim());
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', A.mediaUrl);
+        xhr.setRequestHeader(csrfHeader, csrfToken);
+        xhr.upload.onprogress = e => { if (e.lengthComputable) $('span', progress).style.width = `${Math.round(e.loaded / e.total * 100)}%`; };
+        const done = () => { uploadBtn.disabled = !mediaFile; progress.hidden = true; $('span', progress).style.width = '0'; };
+        xhr.onload = () => {
+            let data = {};
+            try { data = JSON.parse(xhr.responseText); } catch (ignored) { /* lỗi không phải JSON */ }
+            done();
+            if (xhr.status !== 200 || !data.success) { toast(data.message || 'Tải tệp lên không thành công', true); return; }
+            if (data.kind === 'VIDEO') {
+                insertVideo(data.url, data.caption);
+            } else {
+                addImageOption(data);
+                insertFigure(data.url, data.caption || data.title, data.articleSourceId);
+                if (data.featured) showHero(data.url, data.caption || data.title, data.title);
+            }
+            mediaFile = null;
+            mediaInput.value = '';
+            $('#mediaCaption').value = '';
+            $('#mediaFileName').textContent = 'Chọn hoặc kéo thả ảnh / video từ máy';
+            uploadBtn.disabled = true;
+            toast(data.message);
+        };
+        xhr.onerror = () => { done(); toast('Mất kết nối khi tải tệp lên', true); };
+        uploadBtn.disabled = true;
+        progress.hidden = false;
+        xhr.send(form);
+    }
+    if (mediaInput) {
+        mediaInput.addEventListener('change', () => pickMedia(mediaInput.files[0]));
+        uploadBtn.addEventListener('click', uploadMedia);
+        ['dragenter', 'dragover'].forEach(t => mediaDrop.addEventListener(t, e => { e.preventDefault(); mediaDrop.classList.add('over'); }));
+        ['dragleave', 'drop'].forEach(t => mediaDrop.addEventListener(t, () => mediaDrop.classList.remove('over')));
+        mediaDrop.addEventListener('drop', e => { e.preventDefault(); pickMedia(e.dataTransfer.files[0]); });
+    }
     $('#insertUrlImage').addEventListener('click', () => {
         const url = $('#imageUrl').value.trim();
         if (!/^(https?:\/\/|\/)/i.test(url)) { toast('Đường dẫn ảnh không hợp lệ', true); return; }
@@ -348,7 +428,7 @@
     function contentHtml() {
         const clone = editor.cloneNode(true);
         $$('.selected', clone).forEach(n => n.classList.remove('selected'));
-        const empty = !clone.textContent.trim() && !$('img, table', clone);
+        const empty = !clone.textContent.trim() && !$('img, video, table', clone);
         return empty ? '' : clone.innerHTML;
     }
     function payload() {
@@ -400,42 +480,32 @@
         dirty = false;
     });
 
-    /* ---------- Chọn đề tài (trang viết bài mới) ---------- */
-    const topicSelect = $('#topicId');
-    if (topicSelect) {
-        let autoCategory = categoryEl.value;
-        topicSelect.addEventListener('change', () => {
-            const category = topicSelect.selectedOptions[0]?.dataset.category || '';
-            // Chỉ điền chuyên mục của đề tài nếu người dùng chưa tự sửa
-            if (!categoryEl.value.trim() || categoryEl.value === autoCategory) {
-                categoryEl.value = category;
-                autoCategory = category;
-            }
-            $('#categoryOptions').innerHTML = category ? `<option value="${escapeHtml(category)}"></option>` : '';
-            changed();
-        });
-    }
-
     /* ---------- Ảnh đại diện ---------- */
-    $$('.choose-featured').forEach(btn => btn.addEventListener('click', async () => {
+    function showHero(src, caption, title) {
+        if (!$('#heroImg')) {
+            const empty = $('#heroEmpty');
+            empty.insertAdjacentHTML('afterend', '<figure class="hero" id="heroFigure"><img id="heroImg" alt="">' +
+                '<figcaption><i data-lucide="info"></i><span>Chú thích: <span id="heroCaption"></span> · Nguồn: <strong id="heroSource"></strong></span></figcaption></figure>');
+            empty.remove();
+            if (window.lucide) window.lucide.createIcons();
+        }
+        $('#heroImg').src = src;
+        $('#heroImg').alt = title || '';
+        $('#heroCaption').textContent = caption || '';
+        $('#heroSource').textContent = title || '';
+        $$('.choose-featured').forEach(b => b.classList.toggle('selected', b.dataset.src === src));
+    }
+    $('#featuredGrid')?.addEventListener('click', async e => {
+        const btn = e.target.closest('.choose-featured');
+        if (!btn) return;
         const body = new URLSearchParams({ articleSourceId: btn.dataset.id });
         const res = await fetch(A.featuredUrl, { method: 'POST', headers: { [csrfHeader]: csrfToken }, body });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.success) { toast(data.message || 'Không đổi được ảnh đại diện', true); return; }
-        const img = $('#heroImg');
-        if (!img) {
-            if (dirty) await saveDraft(false);
-            dirty = false;
-            location.reload();
-            return;
-        }
-        img.src = btn.dataset.src;
-        $('#heroCaption').textContent = btn.dataset.caption;
-        $('#heroSource').textContent = btn.dataset.title;
-        $$('.choose-featured').forEach(b => b.classList.toggle('selected', b === btn));
+        showHero(btn.dataset.src, btn.dataset.caption, btn.dataset.title);
         closeModals();
         toast(data.message);
-    }));
+    });
 
     // Chọn cả khối ảnh khi bấm vào ảnh trong nội dung (để xóa / di chuyển dễ hơn)
     editor.addEventListener('click', e => {

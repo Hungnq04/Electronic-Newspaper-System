@@ -27,10 +27,17 @@ public enum ErrorCode {
     ARTICLE_SAPO_REQUIRED(3004, "Cần nhập sa-pô trước khi nộp bài.", HttpStatus.BAD_REQUEST),
     ARTICLE_CONTENT_REQUIRED(3005, "Nội dung bài viết đang trống.", HttpStatus.BAD_REQUEST),
     ARTICLE_CATEGORY_REQUIRED(3006, "Chuyên mục không được để trống.", HttpStatus.BAD_REQUEST),
-    ARTICLE_TOPIC_NOT_ASSIGNED(3007, "Bạn không phải người viết chính của đề tài này hoặc đề tài chưa được duyệt.", HttpStatus.FORBIDDEN),
+    ARTICLE_ASSIGNMENT_NOT_LEAD(3007, "Bạn chỉ được viết bài từ nhiệm vụ được giao cho mình với vai trò viết chính, trên đề tài đã được duyệt.", HttpStatus.FORBIDDEN),
     ARTICLE_SOURCE_NOT_FOUND(3008, "Không tìm thấy ảnh tư liệu của bài viết.", HttpStatus.NOT_FOUND),
-    ARTICLE_TOPIC_REQUIRED(3009, "Vui lòng chọn đề tài cho bài viết.", HttpStatus.BAD_REQUEST),
-    ARTICLE_ALREADY_EXISTS(3010, "Bạn đã có bài viết cho đề tài này.", HttpStatus.CONFLICT);
+    ARTICLE_ASSIGNMENT_REQUIRED(3009, "Bài viết phải được tạo từ một nhiệm vụ được giao. Vui lòng chọn nhiệm vụ để viết bài.", HttpStatus.BAD_REQUEST),
+
+    TASK_NOT_FOUND(3100, "Không tìm thấy nhiệm vụ hoặc bạn không được giao nhiệm vụ này.", HttpStatus.NOT_FOUND),
+
+    MEDIA_FILE_REQUIRED(3200, "Vui lòng chọn ảnh hoặc video để tải lên.", HttpStatus.BAD_REQUEST),
+    MEDIA_TYPE_NOT_SUPPORTED(3201, "Chỉ hỗ trợ ảnh JPG, PNG, WebP, GIF và video MP4, WebM, MOV.", HttpStatus.BAD_REQUEST),
+    MEDIA_TOO_LARGE(3202, "Tệp quá lớn: ảnh tối đa 10MB, video tối đa 100MB.", HttpStatus.PAYLOAD_TOO_LARGE),
+    MEDIA_STORAGE_NOT_CONFIGURED(3203, "Hệ thống chưa cấu hình Cloudinary nên chưa thể tải tệp lên.", HttpStatus.SERVICE_UNAVAILABLE),
+    MEDIA_UPLOAD_FAILED(3204, "Tải tệp lên Cloudinary không thành công. Vui lòng thử lại.", HttpStatus.BAD_GATEWAY);
 
     private final int code;
     private final String message;

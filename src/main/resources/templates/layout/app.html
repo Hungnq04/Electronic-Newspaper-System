@@ -12,6 +12,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Cho các trang gọi fetch POST (vd. tự động lưu nháp) -->
+    <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
     <title th:text="${pageTitle} ?: 'CMS Core'">CMS Core</title>
     <!-- Phông giống màn workspace: Newsreader (tiêu đề) + Inter (chữ thường), cả hai hỗ trợ tiếng Việt -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

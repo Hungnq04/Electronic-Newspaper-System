@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="content">
+<main class="page">
+    <div class="page-head">
+        <div>
+            <h1>Hàng đợi duyệt cuối</h1>
+            <p>Bài đã được Trưởng phòng duyệt, chờ Thư ký tòa soạn duyệt cuối.</p>
+        </div>
+        <span class="badge badge-info" th:text="${#lists.size(items)} + ' bài đang chờ'"></span>
+    </div>
+
+    <div class="alert alert-success" th:if="${message}" th:text="${message}"></div>
+    <div class="alert alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <section class="card">
+        <div class="empty" th:if="${#lists.isEmpty(items)}">Hiện không có bài nào chờ duyệt cuối.</div>
+        <div class="table-wrap" th:unless="${#lists.isEmpty(items)}">
+            <table class="data">
+                <thead>
+                <tr>
+                    <th>Bài viết</th>
+                    <th>Lead Reporter</th>
+                    <th>Phiên bản</th>
+                    <th>Trưởng phòng duyệt</th>
+                    <th>Trạng thái</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${items}">
+                    <td class="title-cell">
+                        <a th:href="@{/secretary/final-reviews/{id}(id=${item.articleId})}" th:text="${item.title}"></a>
+                        <span class="sub">
+                            <span th:text="${item.topicTitle}"></span> · <span th:text="${item.category}"></span>
+                            <span class="badge badge-danger" th:if="${item.priority == 'URGENT'}">Khẩn</span>
+                            <span class="badge badge-warning" th:if="${item.priority == 'HIGH'}">Ưu tiên cao</span>
+                        </span>
+                    </td>
+                    <td th:text="${item.leadName}"></td>
+                    <td>
+                        <span th:text="'v' + ${item.versionLabel}"></span>
+                        <span class="sub" th:if="${item.submittedAt}"
+                              th:text="'Nộp ' + ${#temporals.format(item.submittedAt, 'dd/MM/yyyy HH:mm')}"></span>
+                    </td>
+                    <td>
+                        <span th:text="${item.departmentApprovedBy} ?: '—'"></span>
+                        <span class="sub" th:if="${item.departmentApprovedAt}"
+                              th:text="${#temporals.format(item.departmentApprovedAt, 'dd/MM/yyyy HH:mm')}"></span>
+                    </td>
+                    <td>
+                        <span class="badge" th:if="${item.ownArticle}">Bài của bạn — không được duyệt</span>
+                        <span class="badge badge-info" th:if="${!item.ownArticle and item.reviewingByMe}">Bạn đang duyệt</span>
+                        <span class="badge badge-warning" th:if="${!item.ownArticle and item.reviewingBy != null and !item.reviewingByMe}"
+                              th:text="${item.reviewingBy} + ' đang duyệt'"></span>
+                        <span class="badge badge-success" th:if="${!item.ownArticle and item.reviewingBy == null}">Chưa ai mở</span>
+                    </td>
+                    <td>
+                        <a class="btn btn-sm" th:href="@{/secretary/final-reviews/{id}(id=${item.articleId})}"
+                           th:text="${item.ownArticle or (item.reviewingBy != null and !item.reviewingByMe)} ? 'Xem' : 'Duyệt'"></a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</th:block>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" th:with="activeNav='list', activeCategory=${category}">
+<head th:replace="~{public/layout :: pageHead(${category} ?: 'Tất cả bài viết')}"></head>
+<body>
+<header th:replace="~{public/layout :: siteHeader}"></header>
+
+<main class="wrap">
+    <div class="list-head">
+        <h1 th:text="${category} ?: 'Tất cả bài viết'">Tất cả bài viết</h1>
+        <form class="filters" method="get" th:action="@{/news}">
+            <input type="search" name="q" th:value="${q}" placeholder="Từ khóa trong tít hoặc sapo" aria-label="Từ khóa">
+            <select name="category" aria-label="Chuyên mục">
+                <option value="">Mọi chuyên mục</option>
+                <option th:each="c : ${categories}" th:value="${c}" th:text="${c}" th:selected="${c == category}">Chuyên mục</option>
+            </select>
+            <button type="submit">Lọc</button>
+            <a th:if="${!q.isEmpty() or category != null}" th:href="@{/news}" class="reset">Bỏ lọc</a>
+        </form>
+        <p class="count">
+            <span th:text="${result.totalElements}">0</span> bài viết
+            <th:block th:if="${!q.isEmpty()}">khớp với “<strong th:text="${q}">từ khóa</strong>”</th:block>
+        </p>
+    </div>
+
+    <div class="grid" th:if="${result.hasContent()}">
+        <th:block th:each="a : ${result.content}"><article th:replace="~{public/layout :: articleCard(${a})}"></article></th:block>
+    </div>
+
+    <section class="empty" th:unless="${result.hasContent()}">
+        <h2>Không tìm thấy bài viết phù hợp</h2>
+        <p>Thử từ khóa khác hoặc <a th:href="@{/news}">xem tất cả bài viết</a>.</p>
+    </section>
+
+    <nav class="pager" th:if="${result.totalPages > 1}" aria-label="Phân trang"
+         th:with="cur=${result.number + 1}, qp=${q.isEmpty() ? null : q}">
+        <a th:if="${result.hasPrevious()}" th:href="@{/news(q=${qp}, category=${category}, page=${cur - 1})}">← Trước</a>
+        <th:block th:each="i : ${#numbers.sequence(1, result.totalPages)}">
+            <span th:if="${i == cur}" class="on" aria-current="page" th:text="${i}">1</span>
+            <a th:unless="${i == cur}" th:href="@{/news(q=${qp}, category=${category}, page=${i})}" th:text="${i}">2</a>
+        </th:block>
+        <a th:if="${result.hasNext()}" th:href="@{/news(q=${qp}, category=${category}, page=${cur + 1})}">Sau →</a>
+    </nav>
+</main>
+
+<footer th:replace="~{public/layout :: siteFooter}"></footer>
+</body>
+</html>

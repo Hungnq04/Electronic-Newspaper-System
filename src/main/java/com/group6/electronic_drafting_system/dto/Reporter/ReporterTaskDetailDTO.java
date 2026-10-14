@@ -2,6 +2,7 @@ package com.group6.electronic_drafting_system.dto.Reporter;
 
 import com.group6.electronic_drafting_system.entity.enums.AssignmentRole;
 import com.group6.electronic_drafting_system.entity.enums.SourceType;
+import com.group6.electronic_drafting_system.service.MediaStorageService;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -10,7 +11,7 @@ import java.util.List;
 public record ReporterTaskDetailDTO(ReporterTaskDTO task, String fullName, String departmentName, String initials,
                                     String description, String rationale, LocalDate expectedDate, String topicCreatorName,
                                     String articleSapo, OffsetDateTime articleSubmittedAt,
-                                    List<Member> team, List<SourceItem> sources) {
+                                    List<Member> team, List<SourceItem> sources, boolean canUploadMedia) {
 
     public record Member(String name, String initials, AssignmentRole role, String roleLabel, boolean me) {
     }
@@ -19,5 +20,6 @@ public record ReporterTaskDetailDTO(ReporterTaskDTO task, String fullName, Strin
     public record SourceItem(Integer id, String title, SourceType type, String typeLabel, String fileUrl,
                              String description, String note, String addedByName, OffsetDateTime uploadedAt, String origin) {
         public boolean image() { return type == SourceType.IMAGE && fileUrl != null && !fileUrl.isBlank(); }
+        public boolean video() { return type != SourceType.IMAGE && MediaStorageService.isVideoUrl(fileUrl); }
     }
 }

@@ -276,12 +276,84 @@
         <p class="hint" th:if="${article.versions().isEmpty()}">Chưa có phiên bản nào. Phiên bản được tạo mỗi lần nộp bài.</p>
         <ol class="version-list">
             <li th:each="v : ${article.versions()}">
-                <strong th:text="'Phiên bản ' + ${v.versionLabel() ?: v.versionNumber()}">Phiên bản</strong>
-                <span th:text="${v.creatorName()} + ' · ' + ${#temporals.format(v.createdAt(), 'HH:mm dd/MM/yyyy')}"></span>
+                <div class="version-row">
+                    <div>
+                        <strong th:text="'Phiên bản ' + ${v.label()}">Phiên bản</strong>
+                        <span th:text="${v.creatorName()} + ' · ' + ${#temporals.format(v.createdAt(), 'HH:mm dd/MM/yyyy')}"></span>
+                    </div>
+                    <button type="button" class="btn mini" th:attr="data-open='versionDetail-' + ${v.id()}"><i data-lucide="file-search"></i>Xem chi tiết</button>
+                </div>
                 <p th:text="${v.title()}"></p>
                 <small th:if="${v.changeSummary() != null}" th:text="${v.changeSummary()}"></small>
+                <div class="version-tags">
+                    <span class="vtag" th:each="r : ${v.reviews()}" th:classappend="${r.decision() != null ? r.decision().name().toLowerCase() : 'pending'}"
+                          th:text="${r.stageLabel()} + ': ' + ${r.decisionLabel()}"></span>
+                    <span class="vtag" th:unless="${v.comments().isEmpty()}" th:text="${v.comments().size()} + ' góp ý'"></span>
+                </div>
             </li>
         </ol>
+    </div>
+</div>
+
+<!-- ===== Chi tiết từng phiên bản: nội dung bản chụp + nhận xét / yêu cầu chỉnh sửa + góp ý ===== -->
+<div class="modal" th:each="v : ${article.versions()}" th:id="'versionDetail-' + ${v.id()}" hidden>
+    <div class="modal-box wide">
+        <div class="modal-head">
+            <h3 th:text="'Phiên bản ' + ${v.label()}">Phiên bản</h3>
+            <div class="modal-head-actions">
+                <button type="button" class="btn mini" data-open="versionModal"><i data-lucide="arrow-left"></i>Danh sách phiên bản</button>
+                <button type="button" class="close" data-close>&times;</button>
+            </div>
+        </div>
+        <p class="version-meta" th:text="'Nộp bởi ' + ${v.creatorName()} + ' lúc ' + ${#temporals.format(v.createdAt(), 'HH:mm dd/MM/yyyy')}"></p>
+        <div class="field-box" th:if="${v.changeSummary() != null}">
+            <span class="label">Ghi chú khi nộp</span>
+            <p class="pre-wrap" th:text="${v.changeSummary()}"></p>
+        </div>
+
+        <section class="version-section">
+            <h4><i data-lucide="message-square-warning"></i>Nhận xét &amp; yêu cầu chỉnh sửa</h4>
+            <p class="hint" th:if="${v.reviews().isEmpty()}">Phiên bản này chưa được duyệt.</p>
+            <div class="review-note" th:each="r : ${v.reviews()}"
+                 th:classappend="${r.decision() != null ? r.decision().name().toLowerCase() : ''}">
+                <span class="label" th:text="${r.stageLabel()} + ' · ' + ${r.reviewerName()} + ' · ' + ${r.decisionLabel()}
+                        + (${r.reviewedAt() != null} ? ' · ' + ${#temporals.format(r.reviewedAt(), 'HH:mm dd/MM/yyyy')} : '')"></span>
+                <p th:text="${r.feedback() ?: (r.decision() == null ? 'Đang trong quá trình duyệt.' : 'Không có nhận xét.')}"></p>
+            </div>
+        </section>
+
+        <section class="version-section" th:unless="${v.comments().isEmpty()}">
+            <h4><i data-lucide="messages-square"></i>Góp ý trên bài (<span th:text="${v.comments().size()}">0</span>)</h4>
+            <ul class="comment-list">
+                <li th:each="c : ${v.comments()}" th:classappend="${c.isOpen()} ? 'open' : 'resolved'">
+                    <div class="comment-head">
+                        <span class="vtag" th:text="${c.anchorLabel()}"></span>
+                        <span class="vtag" th:classappend="${c.isOpen()} ? 'request_revision' : 'approved'"
+                              th:text="${c.isOpen()} ? 'Cần xử lý' : 'Đã xử lý'"></span>
+                    </div>
+                    <blockquote class="comment-quote" th:if="${c.quotedText() != null}" th:text="${c.quotedText()}"></blockquote>
+                    <p class="pre-wrap" th:text="${c.content()}"></p>
+                    <small th:text="${c.authorName()} + ' (' + ${c.stageLabel()} + ') · ' + ${#temporals.format(c.createdAt(), 'HH:mm dd/MM/yyyy')}"></small>
+                    <div class="comment-replies" th:unless="${c.replies().isEmpty()}">
+                        <div th:each="r : ${c.replies()}">
+                            <p class="pre-wrap" th:text="${r.content()}"></p>
+                            <small th:text="${r.authorName()} + ' · ' + ${#temporals.format(r.createdAt(), 'HH:mm dd/MM/yyyy')}"></small>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </section>
+
+        <section class="version-section">
+            <h4><i data-lucide="file-text"></i>Nội dung bài tại phiên bản này</h4>
+            <article class="preview">
+                <div class="pv-cat" th:text="${article.category}"></div>
+                <h1 th:text="${v.title()}"></h1>
+                <p class="pv-sub" th:if="${v.subtitle() != null}" th:text="${v.subtitle()}"></p>
+                <p class="pv-sapo" th:text="${v.sapo()}"></p>
+                <div class="prose" th:utext="${v.content()}"></div>
+            </article>
+        </section>
     </div>
 </div>
 
@@ -306,6 +378,19 @@
             <div class="upload-progress" id="uploadProgress" hidden><span></span></div>
         </section>
         <p class="hint" th:if="${article.isNew()}">Bấm <b>Tạo bản nháp</b> trước, sau đó có thể tải ảnh / video từ máy lên.</p>
+
+        <!-- Ảnh / video do nhóm tác nghiệp (phóng viên hỗ trợ) tải vào tư liệu đề tài -->
+        <p class="label section-label">Tư liệu của đề tài (ảnh / video nhóm tác nghiệp gửi)</p>
+        <div class="image-grid" id="topicMediaGrid" th:unless="${article.topicMedia().isEmpty()}">
+            <button type="button" class="image-option insert-topic-media" th:each="m : ${article.topicMedia()}"
+                    th:attr="data-source-id=${m.sourceId()},data-src=${m.fileUrl()},data-caption=${m.caption()},data-video=${m.video()}"
+                    th:title="${m.addedByName() != null} ? ${m.title()} + ' · ' + ${m.addedByName()} : ${m.title()}">
+                <img th:unless="${m.video()}" th:src="${m.fileUrl()}" th:alt="${m.title()}" loading="lazy">
+                <video th:if="${m.video()}" th:src="${m.fileUrl()}" preload="metadata" muted playsinline></video>
+                <span><i th:attr="data-lucide=${m.video()} ? 'video' : 'image'"></i><th:block th:text="${m.title()}"></th:block></span>
+            </button>
+        </div>
+        <p class="hint" th:if="${article.topicMedia().isEmpty()}">Đề tài chưa có ảnh / video. Phóng viên hỗ trợ có thể tải lên từ trang nhiệm vụ.</p>
 
         <p class="label section-label">Ảnh tư liệu của bài</p>
         <div class="image-grid" id="insertImageGrid">
@@ -355,7 +440,8 @@
         isNew: /*[[${article.isNew()}]]*/ false,
         draftUrl: /*[[${article.isNew()} ? null : @{/articles/{id}/draft(id=${article.id})}]]*/ '',
         featuredUrl: /*[[${article.isNew()} ? null : @{/articles/{id}/featured(id=${article.id})}]]*/ '',
-        mediaUrl: /*[[${article.isNew()} ? null : @{/articles/{id}/media(id=${article.id})}]]*/ ''
+        mediaUrl: /*[[${article.isNew()} ? null : @{/articles/{id}/media(id=${article.id})}]]*/ '',
+        topicMediaUrl: /*[[${article.isNew()} ? null : @{/articles/{id}/topic-media(id=${article.id})}]]*/ ''
     };
 </script>
 </th:block>

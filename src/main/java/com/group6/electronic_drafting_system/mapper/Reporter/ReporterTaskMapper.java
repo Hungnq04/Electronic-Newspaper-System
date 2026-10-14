@@ -13,6 +13,7 @@ import com.group6.electronic_drafting_system.entity.enums.AssignmentStatus;
 import com.group6.electronic_drafting_system.entity.enums.Priority;
 import com.group6.electronic_drafting_system.entity.enums.SourceType;
 import com.group6.electronic_drafting_system.entity.enums.TopicStatus;
+import com.group6.electronic_drafting_system.service.MediaStorageService;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -59,7 +60,9 @@ public class ReporterTaskMapper {
     }
 
     public ReporterTaskDetailDTO.SourceItem toSourceItem(Source source, String note, String origin) {
-        return new ReporterTaskDetailDTO.SourceItem(source.getId(), source.getTitle(), source.getSourceType(), sourceTypeLabel(source.getSourceType()),
+        String typeLabel = source.getSourceType() != SourceType.IMAGE && MediaStorageService.isVideoUrl(source.getFileUrl())
+                ? "Video" : sourceTypeLabel(source.getSourceType());
+        return new ReporterTaskDetailDTO.SourceItem(source.getId(), source.getTitle(), source.getSourceType(), typeLabel,
                 source.getFileUrl(), source.getDescription(), note,
                 source.getAddedBy() == null ? null : source.getAddedBy().getFullName(), source.getUploadedAt(), origin);
     }

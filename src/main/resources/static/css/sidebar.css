@@ -163,10 +163,10 @@
     position: relative;
     display: flex;
     align-items: center;
-    gap: 8px;
-    min-height: 29px;
+    gap: 10px;
+    min-height: 36px;
     margin: 2px 0;
-    padding: 6px 7px;
+    padding: 8px 10px;
     border-radius: 3px;
     color: var(--sidebar-text);
     font-size: 13.5px;
@@ -207,16 +207,16 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    flex: 0 0 15px;
-    width: 15px;
-    height: 15px;
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
     color: #665e66;
 }
 
 .sidebar-link-icon svg {
     display: block;
-    width: 14px;
-    height: 14px;
+    width: 17px;
+    height: 17px;
 }
 
 .sidebar-link-label {
@@ -372,6 +372,37 @@
 .app-sidebar.is-collapsed .sidebar-link-icon svg {
     width: 16px;
     height: 16px;
+}
+
+/* Nút Đăng xuất ở chân sidebar (dùng lại kiểu .sidebar-link nên tự ẩn chữ khi thu gọn) */
+.sidebar-logout {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 8px 7px 12px;
+    border-top: 1px solid var(--sidebar-border);
+}
+
+.sidebar-logout-button {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.sidebar-logout-button:hover {
+    background: #fbeef0;
+    color: var(--sidebar-accent);
+}
+
+.sidebar-logout-button:hover .sidebar-link-icon {
+    color: var(--sidebar-accent);
+}
+
+.sidebar-logout-button:focus-visible {
+    outline: 2px solid var(--sidebar-accent);
+    outline-offset: 2px;
 }
 
 /* Màn hình hẹp: sidebar vẫn có thể thu gọn/mở rộng bằng cùng một nút. */

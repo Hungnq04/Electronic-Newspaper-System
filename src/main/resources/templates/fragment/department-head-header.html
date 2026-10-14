@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div class="dh-shared-header"
+     th:fragment="header(mode, userName, userRole, userInitials)"
+     th:classappend="${mode == 'dashboard'} ? ' dh-shared-header--dashboard' : ' dh-shared-header--workspace'">
+    <a class="dh-shared-brand" th:href="@{/department-head/dashboard}" aria-label="Tòa soạn số - về dashboard">
+        <span class="dh-shared-brand-mark">T</span>
+        <span class="dh-shared-brand-copy">
+            <span class="dh-shared-brand-name">TÒA SOẠN SỐ</span>
+            <span class="dh-shared-brand-subtitle">HỆ THỐNG XUẤT BẢN SỐ</span>
+        </span>
+    </a>
+
+    <label class="dh-shared-search" th:if="${mode == 'dashboard'}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+            <circle cx="10.8" cy="10.8" r="6.7"></circle><path d="m16 16 4.5 4.5"></path>
+        </svg>
+        <input id="dh-global-search" type="search" placeholder="Tìm kiếm tin bài, tác giả phóng viên, từ khóa hoặc mã…" aria-label="Tìm kiếm toàn hệ thống">
+        <kbd>Ctrl K</kbd>
+    </label>
+
+    <nav class="dh-shared-workspace-nav" th:if="${mode == 'workspace'}" aria-label="Điều hướng Trưởng ban">
+        <a th:href="@{/department-head/dashboard}">Bài chờ duyệt</a>
+    </nav>
+
+    <div class="dh-shared-header-actions" th:if="${mode == 'dashboard'}">
+        <button class="dh-icon-button dh-notification-button" type="button" aria-label="Thông báo" data-dh-action="notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"></path>
+            </svg>
+            <span class="dh-notification-dot"></span>
+        </button>
+        <button class="dh-icon-button" type="button" aria-label="Nhật ký duyệt" data-dh-action="open-log">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 4h16v16H4zM4 13h4l2 3h4l2-3h4"></path>
+            </svg>
+        </button>
+        <span class="dh-topbar-divider"></span>
+    </div>
+
+    <div class="dh-shared-account">
+        <div class="dh-shared-account-copy">
+            <strong th:text="${userName}">Lê Hoàng Sơn</strong>
+            <small th:text="${userRole}">Trưởng ban</small>
+        </div>
+        <span class="dh-shared-avatar" th:text="${userInitials}">LS</span>
+    </div>
+</div>
+</body>
+</html>

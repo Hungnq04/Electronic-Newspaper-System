@@ -24,25 +24,7 @@
 
     <section class="dh-dashboard" aria-label="Màn hình thẩm định và phê duyệt bản thảo">
         <header class="dh-topbar">
-            <label class="dh-global-search">
-                <svg class="dh-icon"><use href="#dh-icon-search"></use></svg>
-                <input id="dh-global-search" type="search" placeholder="Tìm kiếm tin bài, tác giả phóng viên, từ khóa hoặc mã…" aria-label="Tìm kiếm toàn hệ thống">
-                <kbd>⌘ K</kbd>
-            </label>
-            <div class="dh-topbar-right">
-                <button class="dh-icon-button dh-notification-button" type="button" aria-label="Thông báo" data-dh-action="notifications">
-                    <svg class="dh-icon"><use href="#dh-icon-bell"></use></svg><span class="dh-notification-dot"></span>
-                </button>
-                <button class="dh-icon-button" type="button" aria-label="Nhật ký duyệt" data-dh-action="open-log"><svg class="dh-icon"><use href="#dh-icon-inbox"></use></svg></button>
-                <span class="dh-topbar-divider"></span>
-                <div class="dh-account">
-                    <div class="dh-account-copy">
-                        <strong th:text="${dashboard.displayName}">Lê Hoàng Sơn</strong>
-                        <small th:text="${dashboard.departmentName != null ? 'Trưởng ban ' + dashboard.departmentName : 'Trưởng ban'}">Trưởng ban Kinh tế - Xã hội</small>
-                    </div>
-                    <span class="dh-avatar dh-avatar--account" th:text="${dashboard.userInitials}">LS</span>
-                </div>
-            </div>
+            <div th:replace="~{fragment/department-head-header :: header('dashboard', ${dashboard.displayName}, ${dashboard.departmentName != null ? 'Trưởng ban ' + dashboard.departmentName : 'Trưởng ban'}, ${dashboard.userInitials})}"></div>
         </header>
 
         <main class="dh-main">

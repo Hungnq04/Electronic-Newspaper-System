@@ -205,3 +205,21 @@ a.dh-button { text-decoration:none; }
   .dh-entry-actions .dh-button { flex:1 1 auto; }
   .dh-page-footer { flex-direction:column; gap:4px; }
 }
+
+@media (min-width:641px) {
+  .dh-dashboard { font-size:14px; }
+  .dh-topbar { min-height:64px; }
+  .dh-global-search input, .dh-page-heading p, .dh-entry-excerpt, .dh-empty-state p { font-size:13px; }
+  .dh-global-search kbd, .dh-shift-pill, .dh-breadcrumb, .dh-live-callout,
+  .dh-button, .dh-button--compact, .dh-button--small, .dh-tab, .dh-staffing,
+  .dh-stat-head, .dh-stat-foot, .dh-stat-badge, .dh-count-bubble,
+  .dh-filter-search input, .dh-filter-chip, .dh-select-field, .dh-select-field select,
+  .dh-sort-control, .dh-sort-control button, .dh-tag, .dh-entry-code,
+  .dh-entry-category, .dh-deadline-alert, .dh-author-info, .dh-author-info strong,
+  .dh-author-metric, .dh-author-metric b, .dh-author-metric small,
+  .dh-score > span, .dh-score > strong small,
+  .dh-entry-status, .dh-page-footer { font-size:11px; }
+  .dh-account-copy strong { font-size:14px; }
+  .dh-account-copy small { font-size:12px; }
+  .dh-avatar--account { width:32px; height:32px; font-size:11px; }
+}

@@ -3,6 +3,7 @@
 <link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link rel="stylesheet" th:href="@{/css/department-head-header.css}">
 <style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}}::-webkit-scrollbar{display:none;}
 .diff-del{background:#ffdad6;color:#93000a;text-decoration:line-through;border-radius:2px;padding:0 1px}
 .diff-ins{background:#d1fae5;color:#065f46;border-radius:2px;padding:0 1px}
@@ -21,25 +22,7 @@
 <!-- ===================== HEADER ===================== -->
 <header class="fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
   <div class="max-w-[1520px] mx-auto h-16 px-gutter flex items-center justify-between gap-space-md">
-    <div class="flex items-center gap-space-sm flex-shrink-0">
-      <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-on-primary font-headline-sm text-headline-sm font-bold shadow-sm">T</div>
-      <div class="flex flex-col">
-        <span class="font-headline-sm text-headline-sm font-bold tracking-tight text-primary leading-none">TÒA SOẠN CMS</span>
-        <span class="font-label-sm text-label-sm text-secondary tracking-widest uppercase mt-0.5">Trưởng phòng</span>
-      </div>
-    </div>
-    <div class="flex items-center gap-space-md flex-shrink-0">
-      <nav class="hidden lg:flex items-center gap-space-xs">
-        <a class="px-3 py-1.5 rounded-lg font-label-md text-label-md bg-primary-container text-on-primary font-semibold" th:href="@{/department-head/dashboard}">Bài chờ duyệt</a>
-      </nav>
-      <div class="flex items-center gap-space-sm pl-1">
-        <div class="hidden sm:flex flex-col text-right">
-          <span class="font-label-md text-label-md font-semibold leading-tight" th:text="${w.reviewerName}">Lê Hoàng Sơn</span>
-          <span class="font-label-sm text-label-sm text-secondary leading-tight" th:text="${w.departmentName} ?: 'Trưởng phòng'">Trưởng phòng Kinh tế</span>
-        </div>
-        <div class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-label-md text-label-md font-bold" th:text="${w.reviewerInitials}">LS</div>
-      </div>
-    </div>
+    <div th:replace="~{fragment/department-head-header :: header('workspace', ${w.reviewerName}, ${w.departmentName != null ? 'Trưởng ban ' + w.departmentName : 'Trưởng ban'}, ${w.reviewerInitials})}"></div>
   </div>
   <div class="w-full bg-surface-container-low">
     <div class="max-w-[1520px] mx-auto px-gutter py-2 flex items-center gap-space-sm overflow-x-auto">

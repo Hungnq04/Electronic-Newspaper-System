@@ -8,10 +8,13 @@ import com.group6.electronic_drafting_system.dto.Article.ArticleMediaUploadRespo
 import com.group6.electronic_drafting_system.dto.Article.AssignedTopicDTO;
 import com.group6.electronic_drafting_system.entity.Account;
 import com.group6.electronic_drafting_system.entity.Article;
+import com.group6.electronic_drafting_system.entity.ArticleReview;
 import com.group6.electronic_drafting_system.entity.ArticleSource;
 import com.group6.electronic_drafting_system.entity.ArticleVersion;
 import com.group6.electronic_drafting_system.entity.Assignment;
+import com.group6.electronic_drafting_system.entity.Comment;
 import com.group6.electronic_drafting_system.entity.Source;
+import com.group6.electronic_drafting_system.entity.TopicSource;
 import com.group6.electronic_drafting_system.entity.enums.ArticleStatus;
 import com.group6.electronic_drafting_system.entity.enums.AssignmentRole;
 import com.group6.electronic_drafting_system.entity.enums.AssignmentStatus;
@@ -27,16 +30,20 @@ import com.group6.electronic_drafting_system.repository.ArticleReviewRepository;
 import com.group6.electronic_drafting_system.repository.ArticleSourceRepository;
 import com.group6.electronic_drafting_system.repository.ArticleVersionRepository;
 import com.group6.electronic_drafting_system.repository.AssignmentRepository;
+import com.group6.electronic_drafting_system.repository.CommentRepository;
 import com.group6.electronic_drafting_system.repository.SourceRepository;
+import com.group6.electronic_drafting_system.repository.TopicSourceRepository;
 import com.group6.electronic_drafting_system.service.ArticleService;
 import com.group6.electronic_drafting_system.service.MediaStorageService;
 import com.group6.electronic_drafting_system.service.MediaStorageService.MediaKind;
 import com.group6.electronic_drafting_system.service.MediaStorageService.StoredMedia;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -70,25 +77,29 @@ public class ArticleServiceImpl implements ArticleService {
     private final ArticleVersionRepository versions;
     private final ArticleSourceRepository articleSources;
     private final ArticleReviewRepository reviews;
+    private final CommentRepository comments;
     private final AssignmentRepository assignments;
     private final AccountRepository accounts;
     private final ArticleMapper articleMapper;
     private final SourceRepository sourceRepository;
     private final MediaStorageService mediaStorage;
+    private final TopicSourceRepository topicSources;
 
     public ArticleServiceImpl(ArticleRepository articles, ArticleVersionRepository versions, ArticleSourceRepository articleSources,
-                              ArticleReviewRepository reviews, AssignmentRepository assignments,
+                              ArticleReviewRepository reviews, CommentRepository comments, AssignmentRepository assignments,
                               AccountRepository accounts, ArticleMapper articleMapper,
-                              SourceRepository sourceRepository, MediaStorageService mediaStorage) {
+                              SourceRepository sourceRepository, MediaStorageService mediaStorage, TopicSourceRepository topicSources) {
         this.articles = articles;
         this.versions = versions;
         this.articleSources = articleSources;
         this.reviews = reviews;
+        this.comments = comments;
         this.assignments = assignments;
         this.accounts = accounts;
         this.articleMapper = articleMapper;
         this.sourceRepository = sourceRepository;
         this.mediaStorage = mediaStorage;
+        this.topicSources = topicSources;
     }
 
     @Override
@@ -112,7 +123,8 @@ public class ArticleServiceImpl implements ArticleService {
     public ArticleEditorDTO getNewArticleForm(ArticleCreateRequestDTO form, String email) {
         Account me = currentAccount(email);
         Assignment assignment = writableAssignment(form.getAssignmentId(), me);
-        return articleMapper.toNewEditorDTO(form, assignment, me, reviewerName(assignment.getTopic().getId()));
+        Integer topicId = assignment.getTopic().getId();
+        return articleMapper.toNewEditorDTO(form, assignment, me, reviewerName(topicId), topicMedia(topicId));
     }
 
     @Override
@@ -142,8 +154,38 @@ public class ArticleServiceImpl implements ArticleService {
         return articleMapper.toEditorDTO(article, lead != null && EDITABLE.contains(article.getStatus()), lead,
                 reviewerName(topicId),
                 reviews.findFirstByVersion_Article_IdOrderByIdDesc(articleId).map(articleMapper::toReviewItem).orElse(null),
-                versions.findByArticle_IdOrderByVersionNumberDesc(articleId).stream().map(articleMapper::toVersionItem).toList(),
-                articleSources.findByArticleOrdered(articleId).stream().map(articleMapper::toSourceItem).toList());
+                versionHistory(article),
+                articleSources.findByArticleOrdered(articleId).stream().map(articleMapper::toSourceItem).toList(),
+                topicMedia(topicId));
+    }
+
+    // Ảnh / video trong kho tư liệu của đề tài để chèn vào bài
+    private List<ArticleEditorDTO.TopicMedia> topicMedia(Integer topicId) {
+        return topicSources.findByTopic_IdOrderByAttachedAtAsc(topicId).stream()
+                .map(articleMapper::toTopicMedia).filter(Objects::nonNull).toList();
+    }
+
+    // Lịch sử phiên bản: mỗi bản kèm nhận xét của từng cấp duyệt và các góp ý (comment) gắn trên bản đó
+    private List<ArticleEditorDTO.Version> versionHistory(Article article) {
+        List<ArticleVersion> all = versions.findByArticle_IdOrderByVersionNumberDesc(article.getId());
+        if (all.isEmpty()) return List.of();
+        Map<Integer, List<ArticleReview>> reviewsByVersion = reviews.findByVersionIn(all).stream()
+                .sorted(Comparator.comparing(ArticleReview::getId))
+                .collect(Collectors.groupingBy(r -> r.getVersion().getId()));
+        List<Comment> allComments = comments.findByReviewVersionArticleOrderByCreatedAtAscIdAsc(article);
+        Map<Integer, List<Comment>> repliesByParent = allComments.stream().filter(c -> c.getParent() != null)
+                .collect(Collectors.groupingBy(c -> c.getParent().getId()));
+        Map<Integer, List<ArticleEditorDTO.VersionComment>> commentsByVersion = allComments.stream()
+                .filter(c -> c.getParent() == null)
+                .collect(Collectors.groupingBy(c -> c.getReview().getVersion().getId(), Collectors.mapping(
+                        c -> articleMapper.toVersionComment(c, repliesByParent.getOrDefault(c.getId(), List.of()).stream()
+                                .map(r -> articleMapper.toVersionComment(r, List.of())).toList()),
+                        Collectors.toList())));
+        return all.stream()
+                .map(v -> articleMapper.toVersionItem(v,
+                        reviewsByVersion.getOrDefault(v.getId(), List.of()).stream().map(articleMapper::toVersionReview).toList(),
+                        commentsByVersion.getOrDefault(v.getId(), List.of())))
+                .toList();
     }
 
     @Override
@@ -170,6 +212,37 @@ public class ArticleServiceImpl implements ArticleService {
         ArticleSource chosen = all.stream().filter(s -> s.getId().equals(articleSourceId)).findFirst()
                 .orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_SOURCE_NOT_FOUND));
         all.forEach(s -> s.setFeatured(s == chosen));
+    }
+
+    // Lấy ảnh / video từ tư liệu đề tài vào bài: gắn source đó vào article_source (nếu chưa gắn) để dùng làm tư liệu / ảnh đại diện
+    @Override
+    @Transactional
+    public ArticleMediaUploadResponseDTO attachTopicMedia(Integer articleId, Integer sourceId, String email) {
+        Article article = editableArticle(articleId, email);
+        TopicSource topicSource = topicSources.findByTopic_IdAndSource_Id(article.getTopic().getId(), sourceId)
+                .orElseThrow(() -> new ApplicationException(ErrorCode.TOPIC_SOURCE_NOT_FOUND));
+        ArticleEditorDTO.TopicMedia media = articleMapper.toTopicMedia(topicSource);
+        if (media == null) throw new ApplicationException(ErrorCode.TOPIC_SOURCE_NOT_FOUND);
+        MediaKind kind = media.video() ? MediaKind.VIDEO : MediaKind.IMAGE;
+        String caption = trimTo(media.note(), 300);
+
+        Optional<ArticleSource> existing = articleSources.findByArticle_IdAndSource_Id(articleId, sourceId);
+        if (existing.isPresent()) {
+            ArticleSource attached = existing.get();
+            return new ArticleMediaUploadResponseDTO(true, "Đã chèn tư liệu đề tài", kind, media.fileUrl(), attached.getId(), media.title(),
+                    attached.getCaption() != null ? attached.getCaption() : caption, false);
+        }
+        // Bài chưa có ảnh đại diện thì lấy luôn ảnh vừa chọn
+        boolean featured = kind == MediaKind.IMAGE
+                && articleSources.findByArticleOrdered(articleId).stream().noneMatch(s -> Boolean.TRUE.equals(s.getFeatured()));
+        ArticleSource attached = new ArticleSource();
+        attached.setArticle(article);
+        attached.setSource(topicSource.getSource());
+        attached.setCaption(caption);
+        attached.setNote("Lấy từ tư liệu đề tài");
+        attached.setFeatured(featured);
+        articleSources.save(attached);
+        return new ArticleMediaUploadResponseDTO(true, "Đã chèn tư liệu đề tài", kind, media.fileUrl(), attached.getId(), media.title(), caption, featured);
     }
 
     // Tải ảnh / video từ máy lên Cloudinary; DB chỉ lưu đường dẫn (secure_url).

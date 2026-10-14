@@ -55,7 +55,7 @@ public class SecurityConfig {
                         .requestMatchers("/reporter/**").hasRole("REPORTER")
                         .requestMatchers("/articles/**").hasRole("REPORTER")
                         .anyRequest().authenticated())
-                .formLogin(form -> form.loginPage("/login").loginProcessingUrl("/process-login").usernameParameter("email").defaultSuccessUrl("/", true).permitAll())
+                .formLogin(form -> form.loginPage("/login").loginProcessingUrl("/process-login").usernameParameter("email").defaultSuccessUrl("/dashboard", true).permitAll())
                 .oauth2Login(oauth -> oauth.loginPage("/login")
                         .userInfoEndpoint(userInfo -> userInfo.userAuthoritiesMapper(googleRoleMapper(accounts)))
                         .successHandler(googleSuccessHandler)

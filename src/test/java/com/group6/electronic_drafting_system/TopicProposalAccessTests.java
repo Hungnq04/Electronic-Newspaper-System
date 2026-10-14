@@ -61,25 +61,25 @@ class TopicProposalAccessTests {
     @Test
     @WithMockUser(roles = "REPORTER")
     void reporterLandsOnTopicListAfterLogin() throws Exception {
-        mvc.perform(get("/")).andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/reporter/topics"));
+        mvc.perform(get("/dashboard")).andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/reporter/topics"));
     }
 
     @Test
     @WithMockUser(roles = "DEPARTMENT_HEAD")
     void departmentHeadLandsOnDashboard() throws Exception {
-        mvc.perform(get("/")).andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/department-head/dashboard"));
+        mvc.perform(get("/dashboard")).andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/department-head/dashboard"));
     }
 
     @Test
     @WithMockUser(roles = "EDITORIAL_SECRETARY")
     void secretaryLandsOnFinalReviews() throws Exception {
-        mvc.perform(get("/")).andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/secretary/final-reviews"));
+        mvc.perform(get("/dashboard")).andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/secretary/final-reviews"));
     }
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void adminKeepsHomePage() throws Exception {
-        mvc.perform(get("/")).andExpect(status().isOk());
+    void adminGoesToPublicHome() throws Exception {
+        mvc.perform(get("/dashboard")).andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/"));
     }
 
     @Test

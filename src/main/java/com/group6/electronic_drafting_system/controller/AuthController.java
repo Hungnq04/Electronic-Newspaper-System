@@ -42,7 +42,7 @@ public class AuthController {
                         + java.net.URLEncoder.encode(account.getEmail(), java.nio.charset.StandardCharsets.UTF_8);
             }
             authService.persistSecurityContext(request);
-            return "redirect:/";
+            return "redirect:/dashboard";
         } catch (ApplicationException ex) {
             if (ex.getErrorCode() == ErrorCode.AUTH_ACCOUNT_AWAITING_APPROVAL) return "redirect:/login?awaiting";
             return "redirect:/login?error=" + ex.getErrorCode().name();

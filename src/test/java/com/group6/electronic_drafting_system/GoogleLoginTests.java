@@ -57,7 +57,7 @@ class GoogleLoginTests {
     void existingAccountGetsItsRoleInSession() throws Exception {
         MockHttpServletResponse response = run("chau.le@cmscore.example", "Lê Minh Châu");
         // Tài khoản đã ACTIVE: vào hệ thống với đúng vai trò (Thư ký)
-        assertThat(response.getRedirectedUrl()).isEqualTo("/");
+        assertThat(response.getRedirectedUrl()).isEqualTo("/dashboard");
         assertThat(sessionAuthorities()).contains("ROLE_EDITORIAL_SECRETARY");
     }
 

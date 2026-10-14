@@ -36,7 +36,8 @@
     }
 
     /* ---------- Hộp thoại ---------- */
-    function openModal(id) { const m = document.getElementById(id); if (m) m.hidden = false; }
+    // Chỉ mở một hộp thoại tại một thời điểm (vd. danh sách phiên bản <-> chi tiết phiên bản)
+    function openModal(id) { const m = document.getElementById(id); if (!m) return; closeModals(); m.hidden = false; m.querySelector('.modal-box')?.scrollTo(0, 0); }
     function closeModals() { $$('.modal').forEach(m => { m.hidden = true; }); }
     document.addEventListener('click', e => {
         const opener = e.target.closest('[data-open]');
@@ -255,6 +256,44 @@
     $('#insertImageGrid').addEventListener('click', e => {
         const btn = e.target.closest('.insert-image');
         if (btn) insertFigure(btn.dataset.src, btn.dataset.caption, btn.dataset.id);
+    });
+
+    /* ---------- Chèn ảnh / video từ tư liệu đề tài ---------- */
+    // Bài đã lưu: gắn tư liệu vào article_source trước (để làm ảnh đại diện / hiện trong tư liệu bài) rồi chèn.
+    // Bài mới chưa có id: chèn thẳng vào nội dung.
+    async function insertTopicMedia(btn) {
+        const { sourceId, src, caption } = btn.dataset;
+        const isVideo = btn.dataset.video === 'true';
+        if (!A.topicMediaUrl) {
+            if (isVideo) insertVideo(src, caption); else insertFigure(src, caption);
+            return;
+        }
+        btn.disabled = true;
+        try {
+            const res = await fetch(A.topicMediaUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', [csrfHeader]: csrfToken },
+                body: new URLSearchParams({ sourceId })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.success) { toast(data.message || 'Không chèn được tư liệu', true); return; }
+            if (data.kind === 'VIDEO') {
+                insertVideo(data.url, data.caption);
+            } else {
+                if (!$(`#insertImageGrid .insert-image[data-id="${data.articleSourceId}"]`)) addImageOption(data);
+                insertFigure(data.url, data.caption || data.title, data.articleSourceId);
+                if (data.featured) showHero(data.url, data.caption || data.title, data.title);
+            }
+            toast(data.message);
+        } catch (ignored) {
+            toast('Mất kết nối khi chèn tư liệu', true);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+    $('#topicMediaGrid')?.addEventListener('click', e => {
+        const btn = e.target.closest('.insert-topic-media');
+        if (btn) insertTopicMedia(btn);
     });
 
     /* ---------- Tải ảnh / video từ máy lên Cloudinary ---------- */

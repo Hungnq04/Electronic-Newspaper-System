@@ -13,6 +13,9 @@ import org.springframework.data.repository.query.Param;
 public interface ArticleVersionRepository extends JpaRepository<ArticleVersion, Integer> {
     Optional<ArticleVersion> findFirstByArticleOrderByVersionNumberDesc(Article article);
 
+    // Mọi version của bài, cũ trước mới sau (1.0, 1.1, 1.2...)
+    List<ArticleVersion> findByArticleIdOrderByVersionNumberAsc(Integer articleId);
+
     // Version mới nhất của từng bài trong danh sách
     @Query("select v from ArticleVersion v where v.article in :articles and v.versionNumber = "
             + "(select max(v2.versionNumber) from ArticleVersion v2 where v2.article = v.article)")

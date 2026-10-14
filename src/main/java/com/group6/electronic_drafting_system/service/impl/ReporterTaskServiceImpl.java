@@ -8,6 +8,7 @@ import com.group6.electronic_drafting_system.entity.Article;
 import com.group6.electronic_drafting_system.entity.Assignment;
 import com.group6.electronic_drafting_system.entity.Source;
 import com.group6.electronic_drafting_system.entity.Topic;
+import com.group6.electronic_drafting_system.entity.TopicSource;
 import com.group6.electronic_drafting_system.entity.enums.AssignmentRole;
 import com.group6.electronic_drafting_system.entity.enums.AssignmentStatus;
 import com.group6.electronic_drafting_system.entity.enums.SourceType;
@@ -19,7 +20,11 @@ import com.group6.electronic_drafting_system.repository.AccountRepository;
 import com.group6.electronic_drafting_system.repository.ArticleRepository;
 import com.group6.electronic_drafting_system.repository.ArticleSourceRepository;
 import com.group6.electronic_drafting_system.repository.AssignmentRepository;
+import com.group6.electronic_drafting_system.repository.SourceRepository;
 import com.group6.electronic_drafting_system.repository.TopicSourceRepository;
+import com.group6.electronic_drafting_system.service.MediaStorageService;
+import com.group6.electronic_drafting_system.service.MediaStorageService.MediaKind;
+import com.group6.electronic_drafting_system.service.MediaStorageService.StoredMedia;
 import com.group6.electronic_drafting_system.service.ReporterTaskService;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -34,6 +39,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class ReporterTaskServiceImpl implements ReporterTaskService {
@@ -48,15 +54,20 @@ public class ReporterTaskServiceImpl implements ReporterTaskService {
     private final ArticleSourceRepository articleSources;
     private final TopicSourceRepository topicSources;
     private final AccountRepository accounts;
+    private final SourceRepository sourceRepository;
+    private final MediaStorageService mediaStorage;
     private final ReporterTaskMapper mapper;
 
     public ReporterTaskServiceImpl(AssignmentRepository assignments, ArticleRepository articles, ArticleSourceRepository articleSources,
-                                   TopicSourceRepository topicSources, AccountRepository accounts, ReporterTaskMapper mapper) {
+                                   TopicSourceRepository topicSources, AccountRepository accounts, SourceRepository sourceRepository,
+                                   MediaStorageService mediaStorage, ReporterTaskMapper mapper) {
         this.assignments = assignments;
         this.articles = articles;
         this.articleSources = articleSources;
         this.topicSources = topicSources;
         this.accounts = accounts;
+        this.sourceRepository = sourceRepository;
+        this.mediaStorage = mediaStorage;
         this.mapper = mapper;
     }
 
@@ -98,11 +109,7 @@ public class ReporterTaskServiceImpl implements ReporterTaskService {
     @Transactional(readOnly = true)
     public ReporterTaskDetailDTO getDetail(Integer assignmentId, String email) {
         Account me = currentAccount(email);
-        Assignment assignment = assignments.findWithDetailsById(assignmentId)
-                .filter(a -> a.getAccount().getId().equals(me.getId()))
-                .filter(a -> a.getStatus() != AssignmentStatus.REMOVED && REPORTER_ROLES.contains(a.getAssignmentRole()))
-                .filter(a -> a.getTopic().getStatus() == TopicStatus.ACTIVE)
-                .orElseThrow(() -> new ApplicationException(ErrorCode.TASK_NOT_FOUND));
+        Assignment assignment = myTask(assignmentId, me);
         Topic topic = assignment.getTopic();
 
         List<Article> topicArticles = articles.findByTopic_IdIn(List.of(topic.getId()));
@@ -132,7 +139,59 @@ public class ReporterTaskServiceImpl implements ReporterTaskService {
         return new ReporterTaskDetailDTO(task, me.getFullName(), departmentName(me), ReporterTaskMapper.initials(me.getFullName()),
                 topic.getDescription(), topic.getRationale(), topic.getExpectedDate(), topic.getCreator().getFullName(),
                 article == null ? null : article.getSapo(), article == null ? null : article.getSubmittedAt(),
-                team, sources);
+                team, sources, assignment.getStatus() == AssignmentStatus.ASSIGNED);
+    }
+
+    // Phóng viên (hỗ trợ hoặc viết chính) đang làm nhiệm vụ tải ảnh / video lên Cloudinary và gắn vào tư liệu của đề tài.
+    // Ảnh lưu source_type IMAGE; video lưu DOCUMENT (DB chưa có VIDEO; INTERVIEW là tư liệu nội bộ nên không dùng), nhận ra qua đường dẫn Cloudinary.
+    @Override
+    @Transactional
+    public MediaKind uploadTopicMedia(Integer assignmentId, MultipartFile file, String caption, String email) {
+        Account me = currentAccount(email);
+        Assignment assignment = myTask(assignmentId, me);
+        if (assignment.getStatus() != AssignmentStatus.ASSIGNED) throw new ApplicationException(ErrorCode.TASK_NOT_OPEN);
+        Topic topic = assignment.getTopic();
+        String note = trimTo(caption, 4000);
+        StoredMedia stored = mediaStorage.upload(file, "topic-" + topic.getId());
+        try {
+            Source source = new Source();
+            source.setAddedBy(me);
+            source.setTitle(note != null ? trimTo(note, 255) : fileTitle(file.getOriginalFilename()));
+            source.setSourceType(stored.kind() == MediaKind.VIDEO ? SourceType.DOCUMENT : SourceType.IMAGE);
+            source.setFileUrl(stored.url());
+            source.setDescription(stored.kind() == MediaKind.VIDEO ? "Video" : null);
+            sourceRepository.save(source);
+
+            TopicSource attached = new TopicSource();
+            attached.setTopic(topic);
+            attached.setSource(source);
+            attached.setNote(note);
+            topicSources.save(attached);
+            return stored.kind();
+        } catch (RuntimeException ex) {
+            mediaStorage.delete(stored);
+            throw ex;
+        }
+    }
+
+    // Nhiệm vụ của chính mình (viết chính / hỗ trợ), chưa bị gỡ, trên đề tài đang triển khai
+    private Assignment myTask(Integer assignmentId, Account me) {
+        return assignments.findWithDetailsById(assignmentId)
+                .filter(a -> a.getAccount().getId().equals(me.getId()))
+                .filter(a -> a.getStatus() != AssignmentStatus.REMOVED && REPORTER_ROLES.contains(a.getAssignmentRole()))
+                .filter(a -> a.getTopic().getStatus() == TopicStatus.ACTIVE)
+                .orElseThrow(() -> new ApplicationException(ErrorCode.TASK_NOT_FOUND));
+    }
+
+    private static String fileTitle(String filename) {
+        String name = filename == null || filename.isBlank() ? "Tệp tải lên" : filename.trim();
+        return trimTo(name, 255);
+    }
+
+    private static String trimTo(String value, int max) {
+        if (value == null || value.isBlank()) return null;
+        String trimmed = value.trim();
+        return trimmed.length() <= max ? trimmed : trimmed.substring(0, max);
     }
 
     private static ReporterTaskBoardDTO board(Account me, List<ReporterTaskDTO> tasks) {

@@ -131,6 +131,20 @@ public class ArticleController {
         }
     }
 
+    // Chèn ảnh / video lấy từ tư liệu đề tài (topic_source) vào bài
+    @PostMapping("/{id}/topic-media")
+    @ResponseBody
+    public ResponseEntity<ArticleMediaUploadResponseDTO> attachTopicMedia(@PathVariable Integer id, @RequestParam Integer sourceId, Authentication auth) {
+        try {
+            return ResponseEntity.ok(articleService.attachTopicMedia(id, sourceId, currentEmail(auth)));
+        } catch (ApplicationException ex) {
+            return ResponseEntity.status(ex.getErrorCode().getStatusCode()).body(ArticleMediaUploadResponseDTO.error(ex.getErrorCode().getMessage()));
+        } catch (Exception ex) {
+            log.error("Attach topic media {} failed for article {}", sourceId, id, ex);
+            return ResponseEntity.internalServerError().body(ArticleMediaUploadResponseDTO.error(ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage()));
+        }
+    }
+
     // Tải ảnh / video từ máy lên Cloudinary (multipart: file, caption)
     @PostMapping(value = "/{id}/media", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseBody

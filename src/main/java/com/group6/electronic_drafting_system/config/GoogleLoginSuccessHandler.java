@@ -80,8 +80,8 @@ public class GoogleLoginSuccessHandler implements AuthenticationSuccessHandler {
             return;
         }
         ensureRoleAuthority(request, response, authentication, account.get());
-        // "/" chuyển tiếp tới màn chính của từng vai trò (HomeController)
-        response.sendRedirect("/");
+        // /dashboard chuyển tiếp tới màn chính của từng vai trò (DashboardController)
+        response.sendRedirect("/dashboard");
     }
 
     // Quyền ROLE_<role> được gắn lúc Google trả về (SecurityConfig.googleRoleMapper). Tài khoản vừa tạo ở trên

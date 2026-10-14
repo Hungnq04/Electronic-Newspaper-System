@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>Tòa Soạn CMS - Thẩm định Bản thảo</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link rel="stylesheet" th:href="@{/css/sidebar.css}">
+<link rel="stylesheet" th:href="@{/css/department-head-header.css}">
+<style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}}::-webkit-scrollbar{display:none;}
+.diff-del{background:#ffdad6;color:#93000a;text-decoration:line-through;border-radius:2px;padding:0 1px}
+.diff-ins{background:#d1fae5;color:#065f46;border-radius:2px;padding:0 1px}
+.flash{animation:flash 1.2s ease-out}@keyframes flash{0%{box-shadow:0 0 0 4px #eec14b}100%{box-shadow:0 0 0 0 transparent}}
+</style>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"surface-dim":"#d8dae1","on-tertiary":"#ffffff","tertiary-fixed":"#ffdf98","secondary-fixed":"#dce3f1","on-tertiary-fixed":"#251a00","on-primary-container":"#ff9da0","on-primary":"#ffffff","tertiary":"#402f00","surface":"#f8f9ff","error-container":"#ffdad6","primary-container":"#8b1e2d","on-primary-fixed":"#40000b","surface-container-high":"#e6e8ef","surface-container-highest":"#e1e2e9","on-surface-variant":"#574142","surface-variant":"#e1e2e9","tertiary-fixed-dim":"#eec14b","surface-container-lowest":"#ffffff","error":"#ba1a1a","outline-variant":"#debfbf","on-secondary":"#ffffff","tertiary-container":"#413000","primary":"#6b0119","inverse-primary":"#ffb3b5","on-tertiary-fixed-variant":"#5a4300","surface-container-low":"#f2f3fb","success-badge":"#059669","outline":"#8b7171","on-tertiary-container":"#be9520","surface-tint":"#a93441","surface-bright":"#f8f9ff","on-error-container":"#93000a","inverse-on-surface":"#eff0f8","on-background":"#191c21","secondary-container":"#d9e0ef","on-secondary-container":"#5c6370","on-error":"#ffffff","primary-fixed-dim":"#ffb3b5","success-container":"#d1fae5","on-surface":"#191c21","on-secondary-fixed-variant":"#404753","primary-fixed":"#ffdada","on-secondary-fixed":"#151c26","secondary-fixed-dim":"#c0c7d5","inverse-surface":"#2e3036","secondary":"#585f6b","on-primary-fixed-variant":"#881b2b","background":"#f8f9ff","surface-container":"#ecedf5"},"borderRadius":{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},"spacing":{"space-md":"1rem","space-xs":"0.25rem","space-xl":"2.5rem","margin":"2rem","gutter":"1.5rem","space-sm":"0.5rem","space-lg":"1.5rem"},"fontFamily":{"stat-mono":["Inter"],"headline-sm":["Newsreader"],"body-xl":["Newsreader"],"label-md":["Inter"],"headline-md":["Newsreader"],"display-lg":["Newsreader"],"label-sm":["Inter"],"body-lg":["Newsreader"],"label-lg":["Inter"],"headline-xl":["Newsreader"],"body-sm":["Inter"],"body-md":["Inter"]},"fontSize":{"stat-mono":["13px",{"lineHeight":"16px","letterSpacing":"0.04em","fontWeight":"500"}],"headline-sm":["20px",{"lineHeight":"28px","fontWeight":"600"}],"body-xl":["21px",{"lineHeight":"34px","fontWeight":"400"}],"label-md":["12px",{"lineHeight":"16px","letterSpacing":"0.02em","fontWeight":"500"}],"headline-md":["24px",{"lineHeight":"32px","fontWeight":"600"}],"display-lg":["56px",{"lineHeight":"64px","letterSpacing":"-0.02em","fontWeight":"400"}],"label-sm":["10px",{"lineHeight":"14px","letterSpacing":"0.05em","fontWeight":"600"}],"body-lg":["18px",{"lineHeight":"28px","fontWeight":"400"}],"label-lg":["14px",{"lineHeight":"20px","letterSpacing":"0.01em","fontWeight":"600"}],"headline-xl":["40px",{"lineHeight":"48px","letterSpacing":"-0.015em","fontWeight":"500"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-md":["15px",{"lineHeight":"22px","fontWeight":"400"}]}}}}</script>
+</head>
+<!--
+  Màn thẩm định bài viết của Trưởng phòng (FL-05).
+  Controller truyền vào model: workspace (ReviewWorkspaceDTO); sau mỗi thao tác có thể có flash "toast" / "toastError".
+  Mọi thao tác (góp ý, xóa, đánh dấu đã sửa, duyệt, trả bài) đều là form POST, backend kiểm tra quyền lại từ đầu.
+-->
+<body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col" th:with="w=${workspace}">
+
+<!-- ===================== HEADER ===================== -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+  <div class="max-w-[1520px] mx-auto h-16 px-gutter flex items-center justify-between gap-space-md">
+    <div th:replace="~{fragment/department-head-header :: header('workspace', ${w.reviewerName}, ${w.departmentName != null ? 'Trưởng ban ' + w.departmentName : 'Trưởng ban'}, ${w.reviewerInitials})}"></div>
+  </div>
+  <div class="w-full bg-surface-container-low">
+    <div class="max-w-[1520px] mx-auto px-gutter py-2 flex items-center gap-space-sm overflow-x-auto">
+      <a class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container hover:bg-surface-container-high font-label-md text-label-md" th:href="@{/department-head/dashboard}"><span class="material-symbols-outlined text-[16px]">arrow_back</span>Quay lại danh sách</a>
+      <span class="text-secondary text-label-sm">/</span>
+      <span class="font-label-md text-label-md text-secondary">Bài chờ duyệt</span>
+      <span class="text-secondary text-label-sm">/</span>
+      <span class="font-label-md text-label-md text-primary font-semibold" th:text="|Bài #${w.code}|">Bài #BT-1</span>
+    </div>
+  </div>
+</header>
+
+<main class="w-full pt-28 flex-1" th:with="openPrev=${#lists.size(w.previousComments.?[!resolved])}">
+<div class="max-w-[1520px] mx-auto px-gutter py-space-md">
+
+  <!-- ===================== STATUS BAR ===================== -->
+  <div class="w-full bg-surface-container-low px-gutter py-space-sm rounded-xl mb-space-md shadow-sm flex flex-wrap items-center justify-between gap-space-sm">
+    <div class="flex items-center gap-space-sm flex-wrap">
+      <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-bold uppercase">
+        <span class="material-symbols-outlined text-[15px]">rate_review</span><span th:text="${w.statusText}">Chờ Trưởng phòng duyệt</span>
+      </span>
+      <span class="font-stat-mono text-stat-mono text-secondary">Mã: <strong class="text-on-surface" th:text="|#${w.code}|">#BT-1</strong></span>
+      <span class="text-surface-variant">|</span>
+      <span class="font-label-md text-label-md text-on-surface-variant">Topic: <strong class="text-primary font-semibold" th:text="${w.topicTitle}">Topic</strong></span>
+      <span class="text-surface-variant">|</span>
+      <span class="font-label-md text-label-md text-on-surface-variant">Chuyên mục: <strong class="text-on-surface" th:text="${w.category}">Kinh tế</strong></span>
+      <span class="text-surface-variant">|</span>
+      <span class="font-label-md text-label-md text-on-surface-variant">Phiên bản: <strong class="text-on-surface" th:text="|v${w.current.label}|">v1.0</strong></span>
+    </div>
+    <!-- So sánh chỉ có khi bài đã có từ 2 version trở lên -->
+    <div class="flex items-center gap-space-sm" th:if="${w.previous != null}">
+      <label class="font-label-md text-label-md text-secondary" for="compare-base">So với</label>
+      <select id="compare-base" class="bg-surface-container-lowest rounded-lg font-label-md text-label-md py-1.5 pl-2 pr-8 border-0 shadow-sm focus:ring-1 focus:ring-primary">
+        <option th:each="v : ${w.versions}" th:if="${v.versionId != w.current.versionId}"
+                th:value="${v.label}" th:text="|v${v.label} (${v.createdAtText})|"
+                th:selected="${v.versionId == w.previous.versionId}">v1.0</option>
+      </select>
+      <button id="btn-compare" type="button" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-surface-container-lowest hover:bg-secondary-container text-on-surface font-label-md text-label-md font-semibold shadow-sm transition-colors">
+        <span class="material-symbols-outlined text-[18px] text-primary">compare</span>
+        <span id="btn-compare-label">So sánh phiên bản</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start pb-28">
+
+    <!-- ===================== LEFT: ARTICLE ===================== -->
+    <section class="lg:col-span-8 flex flex-col gap-space-md">
+
+      <!-- Bản đang duyệt (version mới nhất). data-field / data-paragraph = vị trí lưu vào comment.anchor_field / anchor_paragraph -->
+      <article id="article-card" class="bg-surface-container-lowest p-space-lg md:p-space-xl rounded-xl shadow-sm relative">
+        <div class="absolute top-0 left-0 bottom-0 w-1.5 bg-primary rounded-l-xl"></div>
+
+        <div class="space-y-space-sm pl-space-xs">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-bold uppercase tracking-wide"
+                  th:text="${w.previous != null} ? |Bản nộp lại (v${w.current.label})| : |Bản nộp đầu (v${w.current.label})|">Bản nộp (v1.0)</span>
+            <span class="text-secondary font-stat-mono text-stat-mono" th:text="|Gửi duyệt: ${w.current.createdAtText}|">Gửi duyệt: 08:35</span>
+            <span th:if="${w.reviewable}" class="inline-flex items-center gap-1 text-secondary font-label-sm text-label-sm"><span class="material-symbols-outlined text-[15px]">info</span>Bôi đen một đoạn để góp ý</span>
+          </div>
+          <h1 data-field="TITLE" data-paragraph="1" data-anchor="Tít" class="font-headline-xl text-headline-xl leading-tight tracking-tight" th:text="${w.current.title}">Tít bài</h1>
+          <p th:if="${w.current.subtitle != null and !#strings.isEmpty(w.current.subtitle)}" data-field="SUBTITLE" data-paragraph="1" data-anchor="Tít phụ"
+             class="font-headline-sm text-headline-sm text-on-surface-variant" th:text="${w.current.subtitle}">Tít phụ</p>
+          <div class="flex flex-wrap items-center justify-between gap-space-sm pt-space-xs">
+            <div class="flex items-center gap-space-sm">
+              <div class="w-10 h-10 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-headline-sm text-headline-sm font-bold" th:text="${w.leadInitials}">MQ</div>
+              <div class="flex flex-col">
+                <span class="font-label-lg text-label-lg font-semibold"><span th:text="${w.leadName}">Lead</span> <span class="font-label-sm text-label-sm text-secondary font-medium">• Lead Reporter</span></span>
+                <span class="font-label-sm text-label-sm text-secondary" th:if="${!#strings.isEmpty(w.supportingNames)}">Supporting: <strong class="text-on-surface-variant font-medium" th:text="${w.supportingNames}">Supporting</strong></span>
+              </div>
+            </div>
+            <div class="flex items-center gap-space-xs bg-surface-container-low px-3 py-1.5 rounded-lg">
+              <span class="material-symbols-outlined text-secondary text-[16px]">subject</span>
+              <span class="font-stat-mono text-stat-mono font-bold" th:text="${w.wordCount}">0 từ</span>
+              <span class="text-surface-variant px-1">•</span>
+              <span class="material-symbols-outlined text-secondary text-[16px]">image</span>
+              <span class="font-stat-mono text-stat-mono font-bold" th:text="|${w.imageCount} ảnh|">0 ảnh</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="w-full h-px bg-surface-container-high my-space-lg"></div>
+
+        <div class="bg-surface-container-low p-space-md rounded-lg relative my-space-md">
+          <span class="absolute top-0 left-3 -translate-y-1/2 px-2 bg-surface-container-lowest font-label-sm text-label-sm text-secondary uppercase tracking-wider">Sapo</span>
+          <p data-field="SAPO" data-paragraph="1" data-anchor="Sapo" class="font-body-xl text-body-xl font-medium leading-relaxed italic whitespace-pre-line" th:text="${w.current.sapo}">Sapo</p>
+        </div>
+
+        <div id="article-body" class="mt-space-lg font-body-lg text-body-lg leading-loose space-y-space-lg">
+          <p th:each="paragraph, it : ${w.current.paragraphs}" class="whitespace-pre-line"
+             data-field="CONTENT" th:attr="data-paragraph=${it.count},data-anchor=|Đoạn ${it.count}|" th:text="${paragraph}">Đoạn nội dung</p>
+        </div>
+
+        <!-- Khung góp ý hiện khi bôi đen chữ (chỉ khi đang được duyệt) -->
+        <div th:if="${w.reviewable}" id="comment-popover" class="hidden absolute z-30 w-[min(28rem,calc(100%-2rem))] bg-surface-container-lowest rounded-xl shadow-xl p-space-md ring-1 ring-surface-container-high">
+          <div class="flex items-center justify-between pb-space-xs mb-space-xs">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded bg-primary-container text-on-primary flex items-center justify-center"><span class="material-symbols-outlined text-[14px]">comment</span></span>
+              <span class="font-label-lg text-label-lg font-bold">Góp ý</span>
+              <span id="popover-anchor" class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-fixed-variant font-label-sm text-label-sm">Đoạn</span>
+            </div>
+            <button id="popover-close" aria-label="Đóng" class="text-secondary hover:text-on-surface p-1 rounded hover:bg-surface-container" type="button"><span class="material-symbols-outlined text-[18px]">close</span></button>
+          </div>
+          <p id="popover-quote" class="font-body-sm text-body-sm text-secondary italic mb-2 line-clamp-2"></p>
+          <textarea id="popover-text" class="w-full bg-surface-container-low p-2.5 rounded-lg font-body-sm text-body-sm placeholder-secondary focus:outline-none focus:ring-1 focus:ring-primary resize-none" placeholder="Nội dung góp ý..." rows="3"></textarea>
+          <div class="flex items-center gap-1.5 flex-wrap pt-1">
+            <span class="font-label-sm text-label-sm text-secondary">Gợi ý nhanh:</span>
+            <button data-chip class="px-2 py-1 rounded bg-surface-container hover:bg-primary hover:text-on-primary font-label-sm text-label-sm" type="button">Cần ghi rõ nguồn</button>
+            <button data-chip class="px-2 py-1 rounded bg-surface-container hover:bg-primary hover:text-on-primary font-label-sm text-label-sm" type="button">Kiểm tra lại số liệu</button>
+            <button data-chip class="px-2 py-1 rounded bg-surface-container hover:bg-primary hover:text-on-primary font-label-sm text-label-sm" type="button">Nên rút gọn</button>
+          </div>
+          <div class="flex justify-end gap-space-xs pt-space-sm">
+            <button id="popover-cancel" class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high font-label-md text-label-md" type="button">Hủy</button>
+            <button id="popover-save" class="px-4 py-1.5 rounded-lg bg-primary-container hover:bg-primary text-on-primary font-label-md text-label-md font-bold flex items-center gap-1 disabled:opacity-40" type="button" disabled><span class="material-symbols-outlined text-[16px]">send</span>Thêm góp ý</button>
+          </div>
+        </div>
+      </article>
+
+      <!-- Màn so sánh: JS dựng từ dữ liệu các version ở khối #version-data bên dưới -->
+      <article id="compare-card" class="hidden bg-surface-container-lowest p-space-lg md:p-space-xl rounded-xl shadow-sm" th:if="${w.previous != null}">
+        <div class="flex flex-wrap items-start justify-between gap-space-sm mb-space-md">
+          <div>
+            <h2 class="font-headline-md text-headline-md">So sánh phiên bản</h2>
+            <p id="compare-summary" class="font-body-sm text-body-sm text-secondary mt-1"></p>
+          </div>
+          <div class="flex items-center gap-space-sm font-label-md text-label-md">
+            <span class="diff-del">đã xóa</span>
+            <span class="diff-ins">thêm mới</span>
+            <span class="inline-flex items-center gap-1.5 pl-space-sm">
+              <input id="compare-only-changed" type="checkbox" class="w-4 h-4 rounded text-primary focus:ring-primary"/>
+              <label for="compare-only-changed" class="cursor-pointer">Chỉ hiện đoạn thay đổi</label>
+            </span>
+          </div>
+        </div>
+        <div th:if="${w.current.changeSummary != null}" class="bg-tertiary-fixed/40 rounded-lg px-space-md py-space-sm mb-space-md font-body-sm text-body-sm">
+          <span class="font-semibold" th:text="|Ghi chú của Lead khi nộp v${w.current.label}:|">Ghi chú của Lead:</span>
+          <span th:text="|“${w.current.changeSummary}”|">“…”</span>
+        </div>
+        <div class="hidden md:grid grid-cols-[6rem_1fr_1fr] gap-space-md pb-space-sm mb-space-sm border-b border-surface-container-high font-label-md text-label-md text-secondary uppercase tracking-wide">
+          <span></span><span id="compare-head-old">bản trước</span><span class="text-primary" th:text="|v${w.current.label} · đang duyệt|">đang duyệt</span>
+        </div>
+        <div id="compare-rows" class="flex flex-col gap-space-md"></div>
+        <p class="mt-space-lg font-label-md text-label-md text-secondary flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">lock</span>Chế độ so sánh chỉ để xem. Quay lại bản đang duyệt để góp ý.</p>
+      </article>
+
+      <!-- Dữ liệu từng version cho phần so sánh (ẩn). Mỗi phần tử con là một "ô" để so: Tít, Tít phụ, Sapo, Đoạn n -->
+      <div id="version-data" hidden>
+        <div th:each="v : ${w.versions}" th:attr="data-label=${v.label},data-time=${v.createdAtText}">
+          <span data-key="Tít" th:text="${v.title}"></span>
+          <span data-key="Tít phụ" th:text="${v.subtitle}"></span>
+          <span data-key="Sapo" th:text="${v.sapo}"></span>
+          <span th:each="paragraph, it : ${v.paragraphs}" th:attr="data-key=|Đoạn ${it.count}|" th:text="${paragraph}"></span>
+        </div>
+      </div>
+
+      <!-- Tư liệu dùng trong bài (article_source) -->
+      <div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm">
+        <div class="flex items-center gap-2 mb-space-sm">
+          <span class="material-symbols-outlined text-primary text-[20px]">perm_media</span>
+          <span class="font-label-lg text-label-lg font-bold" th:text="|Tư liệu dùng trong bài (${#lists.size(w.sources)})|">Tư liệu dùng trong bài</span>
+        </div>
+        <p th:if="${#lists.isEmpty(w.sources)}" class="font-body-sm text-body-sm text-secondary">Bài chưa gắn tư liệu nào.</p>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-space-sm" th:unless="${#lists.isEmpty(w.sources)}">
+          <a th:each="s : ${w.sources}" th:href="${s.url}" target="_blank" rel="noopener"
+             class="bg-surface-container-low hover:bg-surface-container p-2 rounded-lg flex flex-col gap-1.5 min-w-0">
+            <div th:if="${s.image and s.url != null}" class="w-full h-20 rounded bg-surface-container-high overflow-hidden"><img class="w-full h-full object-cover" th:src="${s.url}" th:alt="${s.caption}" alt=""/></div>
+            <div th:unless="${s.image and s.url != null}" class="w-full h-20 rounded bg-surface-container-high flex flex-col items-center justify-center text-primary"><span class="material-symbols-outlined text-[32px]">description</span></div>
+            <span class="font-label-sm text-label-sm font-medium truncate" th:text="${s.title}">Tên tư liệu</span>
+            <span class="font-stat-mono text-stat-mono text-secondary truncate" th:text="${s.featured} ? 'Ảnh đại diện' : (${s.caption} ?: ${s.typeLabel})">Loại</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== RIGHT: COMMENTS ===================== -->
+    <aside class="lg:col-span-4 flex flex-col gap-space-md lg:sticky lg:top-32">
+      <div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col gap-space-md">
+        <div class="flex items-center gap-1 p-1 bg-surface-container-low rounded-lg">
+          <button data-tab="now" class="tab-btn flex-1 py-1.5 px-2 rounded font-label-md text-label-md font-semibold text-center bg-primary text-on-primary" type="button"
+                  th:text="|Vòng này (${#lists.size(w.comments)})|">Vòng này</button>
+          <button th:if="${w.previous != null}" data-tab="prev" class="tab-btn flex-1 py-1.5 px-2 rounded font-label-md text-label-md text-on-surface-variant hover:bg-surface-container text-center" type="button"
+                  th:text="|Vòng trước · v${w.previous.label} (${#lists.size(w.previousComments)})|">Vòng trước</button>
+        </div>
+
+        <!-- Tab: góp ý trên version đang duyệt -->
+        <div id="tab-now" class="flex flex-col gap-space-sm">
+          <p class="font-body-sm text-body-sm text-secondary">Góp ý trên <span th:text="|v${w.current.label}|">v1.0</span>. Lead chỉ thấy sau khi bạn bấm <strong>Yêu cầu sửa</strong> hoặc <strong>Duyệt</strong>.</p>
+          <p th:if="${#lists.isEmpty(w.comments)}" class="font-body-sm text-body-sm text-secondary italic">Chưa có góp ý nào.</p>
+          <div th:each="c : ${w.comments}" class="comment-card bg-surface-container-low p-space-sm rounded-lg flex flex-col gap-space-xs relative"
+               th:attr="data-cid=${c.id},data-field=${c.anchorField},data-paragraph=${c.anchorParagraph},data-start=${c.anchorStart},data-end=${c.anchorEnd}">
+            <div class="absolute top-2.5 left-0 w-1 h-8 bg-primary rounded-r"></div>
+            <div class="flex items-center justify-between pl-2">
+              <span class="font-label-md text-label-md font-bold" th:text="${c.anchorLabel}">Đoạn 2</span>
+              <span class="font-stat-mono text-stat-mono text-secondary" th:text="${c.timeText}">08:42</span>
+            </div>
+            <p th:if="${c.quotedText != null}" class="pl-2 font-body-sm text-body-sm text-secondary italic" th:text="|“${c.quotedText}”|">“trích dẫn”</p>
+            <p class="pl-2 font-body-sm text-body-sm leading-normal" th:text="${c.content}">Nội dung góp ý</p>
+            <div th:each="r : ${c.replies}" class="ml-2 bg-surface-container-lowest rounded p-2 font-body-sm text-body-sm"><span class="font-semibold" th:text="|${r.authorName}:|">Lead:</span> <span th:text="${r.content}">trả lời</span></div>
+            <div class="pl-2 flex items-center justify-between pt-1">
+              <button th:if="${c.anchorField != null}" data-goto class="text-primary hover:underline font-label-sm text-label-sm font-bold" type="button">Xem vị trí →</button>
+              <span th:unless="${c.anchorField != null}"></span>
+              <form th:if="${w.reviewable}" method="post" th:action="@{/department-head/articles/{a}/comments/{c}/delete(a=${w.articleId},c=${c.id})}"
+                    onsubmit="return confirm('Xóa góp ý này?');">
+                <button class="text-secondary hover:text-error font-label-sm text-label-sm" type="submit">Xóa</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Góp ý chung cho cả bài (không gắn vị trí) -->
+          <form th:if="${w.reviewable}" method="post" th:action="@{/department-head/articles/{a}/comments(a=${w.articleId})}" class="flex flex-col gap-space-xs pt-space-xs">
+            <label for="general-comment" class="font-label-md text-label-md font-semibold">Góp ý chung</label>
+            <textarea id="general-comment" name="content" rows="2" required class="w-full bg-surface-container-low p-2.5 rounded-lg font-body-sm text-body-sm placeholder-secondary focus:outline-none focus:ring-1 focus:ring-primary resize-none" placeholder="Nhận xét cho cả bài..."></textarea>
+            <button type="submit" class="self-end px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high font-label-md text-label-md font-semibold">Thêm góp ý chung</button>
+          </form>
+        </div>
+
+        <!-- Tab: góp ý trên version liền trước - xác nhận Lead đã sửa hay chưa (comment.status OPEN / RESOLVED) -->
+        <div th:if="${w.previous != null}" id="tab-prev" class="hidden flex flex-col gap-space-sm">
+          <p class="font-body-sm text-body-sm text-secondary">Góp ý vòng trước trên <span th:text="|v${w.previous.label}|">v1.0</span>. Kiểm tra bản mới rồi đánh dấu đã sửa hay chưa.</p>
+          <p th:if="${#lists.isEmpty(w.previousComments)}" class="font-body-sm text-body-sm text-secondary italic">Vòng trước không có góp ý.</p>
+          <div th:each="c : ${w.previousComments}" class="prev-card bg-surface-container-low p-space-sm rounded-lg flex flex-col gap-space-xs" th:classappend="${c.resolved} ? 'opacity-70'">
+            <div class="flex items-center justify-between">
+              <span class="font-label-md text-label-md font-bold" th:text="${c.anchorLabel}">Đoạn 1</span>
+              <span th:if="${c.resolved}" class="px-2 py-0.5 rounded bg-success-container text-success-badge font-label-sm text-label-sm font-bold">Đã sửa</span>
+              <span th:unless="${c.resolved}" class="px-2 py-0.5 rounded bg-error-container text-on-error-container font-label-sm text-label-sm font-bold">Chưa sửa</span>
+            </div>
+            <p th:if="${c.quotedText != null}" class="font-body-sm text-body-sm text-secondary italic" th:text="|“${c.quotedText}”|">“trích dẫn”</p>
+            <p class="font-body-sm text-body-sm" th:text="${c.content}">Nội dung góp ý</p>
+            <span class="font-label-sm text-label-sm text-secondary" th:text="|${c.authorName} · ${c.timeText}|">Người góp ý</span>
+            <div th:each="r : ${c.replies}" class="bg-surface-container-lowest rounded p-2 font-body-sm text-body-sm"><span class="font-semibold" th:text="|${r.authorName}:|">Lead:</span> <span th:text="${r.content}">Đã sửa.</span></div>
+            <div th:if="${w.reviewable}" class="flex items-center gap-space-xs pt-1">
+              <form method="post" th:action="@{/department-head/articles/{a}/comments/{c}/resolve(a=${w.articleId},c=${c.id},resolved=true)}">
+                <button class="px-2.5 py-1 rounded bg-success-container text-success-badge font-label-sm text-label-sm font-bold flex items-center gap-0.5" type="submit"><span class="material-symbols-outlined text-[14px]">check</span>Đã sửa</button>
+              </form>
+              <form method="post" th:action="@{/department-head/articles/{a}/comments/{c}/resolve(a=${w.articleId},c=${c.id},resolved=false)}">
+                <button class="px-2.5 py-1 rounded bg-surface-container font-label-sm text-label-sm" type="submit">Chưa sửa</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- ===================== ACTION BAR ===================== -->
+<footer id="action-bar" class="fixed bottom-0 left-0 right-0 z-40 bg-surface-container-lowest/95 backdrop-blur-xl shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
+  <div class="max-w-[1520px] mx-auto px-gutter py-space-sm flex flex-col md:flex-row items-center justify-between gap-space-sm">
+    <div class="flex items-center gap-space-sm">
+      <div class="w-3 h-3 rounded-full" th:classappend="${w.reviewable} ? 'bg-primary animate-pulse' : 'bg-success-badge'"></div>
+      <span th:if="${w.reviewable}" class="font-label-md text-label-md font-semibold">Đang duyệt bài <strong class="text-primary" th:text="|#${w.code}|">#BT-1</strong> · <span th:text="|v${w.current.label}|">v1.0</span></span>
+      <span th:unless="${w.reviewable}" class="font-label-md text-label-md font-semibold" th:text="|${w.statusText} · chỉ xem, không thao tác được|">Chỉ xem</span>
+    </div>
+    <div th:if="${w.reviewable}" class="flex items-center gap-space-sm w-full md:w-auto justify-end flex-wrap">
+      <a class="px-4 py-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high font-label-md text-label-md font-semibold flex items-center gap-1.5" th:href="@{/department-head/dashboard}"><span class="material-symbols-outlined text-[18px] text-secondary">schedule</span>Để sau</a>
+      <button id="btn-revise" class="px-5 py-2.5 rounded-lg bg-tertiary-fixed hover:bg-tertiary-fixed-dim text-on-tertiary-fixed font-label-md text-label-md font-bold flex items-center gap-1.5" type="button"><span class="material-symbols-outlined text-[18px]">replay</span>Yêu cầu sửa<span class="w-5 h-5 rounded-full bg-on-tertiary-fixed text-tertiary-fixed flex items-center justify-center text-[10px] font-bold" th:text="${#lists.size(w.comments)}">0</span></button>
+      <button id="btn-approve" class="px-6 py-2.5 rounded-lg bg-primary-container hover:bg-primary text-on-primary font-label-lg text-label-lg font-bold flex items-center gap-2 shadow-md active:scale-95" type="button"><span class="material-symbols-outlined text-[20px]">assignment_turned_in</span>Duyệt, chuyển Thư ký</button>
+    </div>
+  </div>
+
+</footer>
+
+  <!-- ===================== MODALS ===================== -->
+  <div th:if="${w.reviewable}" id="modal-revise" class="hidden fixed inset-0 z-[60] bg-inverse-surface/50 flex items-center justify-center p-4">
+    <form method="post" th:action="@{/department-head/articles/{a}/request-revision(a=${w.articleId})}" class="w-full max-w-lg bg-surface-container-lowest rounded-xl shadow-xl p-space-lg">
+      <h3 class="font-headline-sm text-headline-sm mb-space-sm">Yêu cầu sửa bài</h3>
+      <label for="revise-feedback" class="font-label-md text-label-md font-semibold">Nhận xét chung <span class="text-error">*</span></label>
+      <textarea id="revise-feedback" name="feedback" rows="4" required class="mt-1 w-full bg-surface-container-low p-2.5 rounded-lg font-body-sm text-body-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none" placeholder="Tóm tắt những gì Lead cần sửa..."></textarea>
+      <p class="font-label-md text-label-md font-semibold mt-space-md">Kèm theo <span th:text="${#lists.size(w.comments)}">0</span> góp ý trong bài<span th:if="${openPrev > 0}" th:text="| và ${openPrev} góp ý vòng trước chưa sửa|"></span>:</p>
+      <ul class="mt-1 space-y-1 font-body-sm text-body-sm text-on-surface-variant max-h-40 overflow-auto list-disc pl-5">
+        <li th:each="c : ${w.comments}"><strong th:text="${c.anchorLabel}">Đoạn 1</strong> – <span th:text="${c.content}">nội dung</span></li>
+        <li th:each="c : ${w.previousComments}" th:if="${!c.resolved}"><strong>Vòng trước, chưa sửa</strong> – <span th:text="${c.content}">nội dung</span></li>
+        <li th:if="${#lists.isEmpty(w.comments) and openPrev == 0}" class="list-none -ml-5 text-secondary">Không có góp ý trong bài, chỉ gửi nhận xét chung.</li>
+      </ul>
+      <div class="flex justify-end gap-space-sm mt-space-lg">
+        <button data-close class="px-4 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high font-label-md text-label-md" type="button">Hủy</button>
+        <button id="revise-submit" disabled class="px-4 py-2 rounded-lg bg-tertiary-fixed hover:bg-tertiary-fixed-dim text-on-tertiary-fixed font-label-md text-label-md font-bold disabled:opacity-40" type="submit">Gửi trả bài</button>
+      </div>
+    </form>
+  </div>
+
+  <div th:if="${w.reviewable}" id="modal-approve" class="hidden fixed inset-0 z-[60] bg-inverse-surface/50 flex items-center justify-center p-4">
+    <form method="post" th:action="@{/department-head/articles/{a}/approve(a=${w.articleId})}" class="w-full max-w-md bg-surface-container-lowest rounded-xl shadow-xl p-space-lg">
+      <h3 class="font-headline-sm text-headline-sm mb-space-sm">Duyệt bài cấp phòng?</h3>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">Bài <span th:text="|v${w.current.label}|">v1.0</span> sẽ chuyển sang Thư ký tòa soạn duyệt cuối.</p>
+      <div th:if="${openPrev > 0 or !#lists.isEmpty(w.comments)}" class="mt-space-md bg-error-container text-on-error-container rounded-lg p-space-sm font-body-sm text-body-sm flex gap-2">
+        <span class="material-symbols-outlined text-[18px]">warning</span>
+        <span th:text="|Còn ${openPrev} góp ý vòng trước chưa xác nhận đã sửa và ${#lists.size(w.comments)} góp ý ở vòng này. Vẫn duyệt?|">Cảnh báo</span>
+      </div>
+      <label for="approve-feedback" class="block font-label-md text-label-md font-semibold mt-space-md">Ghi chú (không bắt buộc)</label>
+      <textarea id="approve-feedback" name="feedback" rows="2" class="mt-1 w-full bg-surface-container-low p-2.5 rounded-lg font-body-sm text-body-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none"></textarea>
+      <div class="flex justify-end gap-space-sm mt-space-lg">
+        <button data-close class="px-4 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high font-label-md text-label-md" type="button">Hủy</button>
+        <button class="px-4 py-2 rounded-lg bg-primary-container hover:bg-primary text-on-primary font-label-md text-label-md font-bold" type="submit">Xác nhận duyệt</button>
+      </div>
+    </form>
+  </div>
+</main>
+
+<!-- Form ẩn để gửi góp ý gắn vị trí: JS điền vị trí đã bôi đen rồi submit -->
+<form th:if="${w.reviewable}" id="comment-form" method="post" th:action="@{/department-head/articles/{a}/comments(a=${w.articleId})}" hidden>
+  <input type="hidden" name="anchorField"/>
+  <input type="hidden" name="anchorParagraph"/>
+  <input type="hidden" name="anchorStart"/>
+  <input type="hidden" name="anchorEnd"/>
+  <input type="hidden" name="content"/>
+</form>
+
+<!-- Thông báo sau mỗi thao tác (flash từ controller) -->
+<div id="toast" class="hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-[70] px-4 py-2.5 rounded-lg shadow-lg font-label-md text-label-md bg-inverse-surface text-inverse-on-surface"
+     th:attr="data-message=${toast ?: toastError},data-error=${toastError != null}"></div>
+
+<script th:inline="none">
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const articleCard = document.getElementById('article-card');
+
+// ---------- Toast ----------
+let toastTimer;
+function toast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.remove('hidden');
+  t.classList.toggle('bg-error', !!isError);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.add('hidden'), 3500);
+}
+(() => {
+  const t = document.getElementById('toast');
+  if (t.dataset.message) toast(t.dataset.message, t.dataset.error === 'true');
+})();
+
+// ---------- Vị trí ký tự trong một đoạn ----------
+// Vị trí (đếm từ 0) của điểm (node, offset) tính từ đầu phần tử el = độ dài chữ đứng trước điểm đó
+function offsetIn(el, node, offset) {
+  const r = document.createRange();
+  r.setStart(el, 0);
+  r.setEnd(node, offset);
+  return r.toString().length;
+}
+// Ngược lại: từ vị trí [start, end) trong el tạo ra Range để tô màu
+function rangeFromOffsets(el, start, end) {
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  const range = document.createRange();
+  let pos = 0, node, startSet = false;
+  while ((node = walker.nextNode())) {
+    const len = node.textContent.length;
+    if (!startSet && start <= pos + len) { range.setStart(node, start - pos); startSet = true; }
+    if (startSet && end <= pos + len) { range.setEnd(node, end - pos); return range; }
+    pos += len;
+  }
+  return null;
+}
+function anchorElement(field, paragraph) {
+  return articleCard.querySelector(`[data-field="${field}"][data-paragraph="${paragraph}"]`);
+}
+
+// ---------- Tô màu các góp ý đã lưu ----------
+document.querySelectorAll('.comment-card[data-field]').forEach(card => {
+  const el = anchorElement(card.dataset.field, card.dataset.paragraph);
+  if (!el) return;
+  const range = rangeFromOffsets(el, Number(card.dataset.start), Number(card.dataset.end));
+  if (!range) return;
+  const mark = document.createElement('mark');
+  mark.dataset.cid = card.dataset.cid;
+  mark.className = 'bg-tertiary-fixed text-on-tertiary-fixed font-semibold px-0.5 rounded cursor-pointer';
+  try { range.surroundContents(mark); } catch (_) { /* hai góp ý chồng lên nhau: bỏ qua phần tô màu */ }
+});
+
+function flash(el) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+
+// Bấm "Xem vị trí" ở thẻ góp ý -> cuộn tới chữ được tô
+document.getElementById('tab-now').addEventListener('click', e => {
+  if (!e.target.closest('[data-goto]')) return;
+  const card = e.target.closest('.comment-card');
+  if (comparing) toggleCompare();
+  const mark = document.querySelector(`mark[data-cid="${card.dataset.cid}"]`);
+  if (mark) { mark.scrollIntoView({ behavior: 'smooth', block: 'center' }); flash(mark); }
+});
+// Bấm vào chữ được tô -> nhảy tới thẻ góp ý
+articleCard.addEventListener('click', e => {
+  const m = e.target.closest('mark[data-cid]');
+  if (!m) return;
+  showTab('now');
+  const card = document.querySelector(`.comment-card[data-cid="${m.dataset.cid}"]`);
+  if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); flash(card); }
+});
+
+// ---------- Bôi đen -> khung góp ý ----------
+const popover = document.getElementById('comment-popover');
+if (popover) {
+  const popText = document.getElementById('popover-text');
+  const popSave = document.getElementById('popover-save');
+  let pending = null;
+  const hidePopover = () => { popover.classList.add('hidden'); pending = null; popText.value = ''; popSave.disabled = true; };
+  window.hidePopover = hidePopover;
+  const anchorOf = node => { const el = node.nodeType === 1 ? node : node.parentElement; return el ? el.closest('[data-field]') : null; };
+
+  articleCard.addEventListener('mouseup', e => {
+    if (popover.contains(e.target)) return;
+    setTimeout(() => {
+      const sel = window.getSelection();
+      if (!sel.rangeCount || sel.isCollapsed) return;
+      const range = sel.getRangeAt(0);
+      const a1 = anchorOf(range.startContainer), a2 = anchorOf(range.endContainer);
+      if (!sel.toString().trim() || !a1) return;
+      if (a1 !== a2) { toast('Chỉ chọn trong một đoạn để góp ý.'); return; }
+      pending = {
+        field: a1.dataset.field,
+        paragraph: a1.dataset.paragraph,
+        start: offsetIn(a1, range.startContainer, range.startOffset),
+        end: offsetIn(a1, range.endContainer, range.endOffset)
+      };
+      document.getElementById('popover-anchor').textContent = a1.dataset.anchor;
+      document.getElementById('popover-quote').textContent = `“${sel.toString()}”`;
+      const r = range.getBoundingClientRect(), c = articleCard.getBoundingClientRect();
+      popover.classList.remove('hidden');
+      popover.style.top = (r.bottom - c.top + 10) + 'px';
+      popover.style.left = Math.max(16, Math.min(r.left - c.left, c.width - popover.offsetWidth - 16)) + 'px';
+      popText.focus();
+    }, 0);
+  });
+  popText.addEventListener('input', () => { popSave.disabled = !popText.value.trim(); });
+  document.querySelectorAll('[data-chip]').forEach(b => b.addEventListener('click', () => {
+    popText.value = (popText.value ? popText.value.trim() + ' ' : '') + b.textContent.trim() + '.';
+    popSave.disabled = false;
+    popText.focus();
+  }));
+  document.getElementById('popover-close').addEventListener('click', hidePopover);
+  document.getElementById('popover-cancel').addEventListener('click', hidePopover);
+
+  // Lưu góp ý: điền vào form ẩn rồi gửi lên server (server kiểm tra lại vị trí và tự lấy đoạn trích)
+  popSave.addEventListener('click', () => {
+    if (!pending) return;
+    const form = document.getElementById('comment-form');
+    form.anchorField.value = pending.field;
+    form.anchorParagraph.value = pending.paragraph;
+    form.anchorStart.value = pending.start;
+    form.anchorEnd.value = pending.end;
+    form.content.value = popText.value.trim();
+    popSave.disabled = true;
+    form.submit();
+  });
+}
+
+// ---------- So sánh phiên bản ----------
+// Đọc dữ liệu một version từ khối ẩn #version-data: { "Tít": "...", "Sapo": "...", "Đoạn 1": "..." }
+function readVersion(label) {
+  const box = document.querySelector(`#version-data > [data-label="${label}"]`);
+  const out = {};
+  if (box) box.querySelectorAll('[data-key]').forEach(el => { out[el.dataset.key] = el.textContent.trim(); });
+  return out;
+}
+function tokenize(s) { return s.match(/\s+|[^\s]+/g) || []; }
+// So sánh theo từng từ (thuật toán dãy con chung dài nhất - LCS)
+function diffTokens(a, b) {
+  const n = a.length, m = b.length;
+  const dp = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--)
+    dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+  const ops = []; let i = 0, j = 0;
+  while (i < n && j < m) {
+    if (a[i] === b[j]) { ops.push(['eq', a[i]]); i++; j++; }
+    else if (dp[i + 1][j] >= dp[i][j + 1]) ops.push(['del', a[i++]]);
+    else ops.push(['ins', b[j++]]);
+  }
+  while (i < n) ops.push(['del', a[i++]]);
+  while (j < m) ops.push(['ins', b[j++]]);
+  return ops;
+}
+
+const compareCard = document.getElementById('compare-card');
+const baseSelect = document.getElementById('compare-base');
+let comparing = false;
+
+function renderCompare() {
+  const versionsBox = document.querySelectorAll('#version-data > [data-label]');
+  const currentLabel = versionsBox[versionsBox.length - 1].dataset.label;
+  const baseLabel = baseSelect.value;
+  const oldV = readVersion(baseLabel), newV = readVersion(currentLabel);
+  const onlyChanged = document.getElementById('compare-only-changed').checked;
+  document.getElementById('compare-head-old').textContent = `v${baseLabel} · bản trước`;
+
+  // Thứ tự các ô: Tít, Tít phụ, Sapo, rồi Đoạn 1..n (lấy số đoạn nhiều hơn của hai bản)
+  const countParagraphs = v => Object.keys(v).filter(k => k.startsWith('Đoạn ')).length;
+  const keys = ['Tít', 'Tít phụ', 'Sapo'];
+  for (let i = 1; i <= Math.max(countParagraphs(oldV), countParagraphs(newV)); i++) keys.push('Đoạn ' + i);
+
+  let changed = 0, added = 0, removed = 0, html = '';
+  keys.forEach(key => {
+    const oldT = oldV[key] || '', newT = newV[key] || '';
+    if (!oldT && !newT) return;
+    const same = oldT === newT;
+    if (!same) { if (!oldT) added++; else if (!newT) removed++; else changed++; }
+    if (onlyChanged && same) return;
+    let left = '', right = '';
+    if (!oldT) {
+      left = `<span class="text-secondary italic">(Chưa có trong v${baseLabel})</span>`;
+      right = `<span class="diff-ins">${esc(newT)}</span>`;
+    } else if (!newT) {
+      left = `<span class="diff-del">${esc(oldT)}</span>`;
+      right = '<span class="text-secondary italic">(Đã bỏ)</span>';
+    } else {
+      diffTokens(tokenize(oldT), tokenize(newT)).forEach(([t, v]) => {
+        if (t === 'eq') { left += esc(v); right += esc(v); }
+        else if (t === 'del') left += `<span class="diff-del">${esc(v)}</span>`;
+        else right += `<span class="diff-ins">${esc(v)}</span>`;
+      });
+    }
+    const tag = same ? '<span class="font-label-sm text-label-sm text-secondary">Không đổi</span>'
+      : !oldT ? '<span class="font-label-sm text-label-sm font-bold text-success-badge">Thêm mới</span>'
+      : !newT ? '<span class="font-label-sm text-label-sm font-bold text-error">Đã bỏ</span>'
+      : '<span class="font-label-sm text-label-sm font-bold text-on-tertiary-container">Đã sửa</span>';
+    html += `<div class="grid grid-cols-1 md:grid-cols-[6rem_1fr_1fr] gap-x-space-md gap-y-1 py-space-sm border-b border-surface-container-high last:border-0">
+      <div class="flex md:flex-col gap-2 md:gap-1"><span class="font-label-md text-label-md font-bold">${esc(key)}</span>${tag}</div>
+      <div class="font-body-md text-body-md leading-relaxed whitespace-pre-line ${same ? 'text-secondary' : ''}"><span class="md:hidden font-label-sm text-label-sm text-secondary block">v${baseLabel}</span>${left}</div>
+      <div class="font-body-md text-body-md leading-relaxed whitespace-pre-line ${same ? 'text-secondary' : ''}"><span class="md:hidden font-label-sm text-label-sm text-primary block">v${currentLabel}</span>${right}</div>
+    </div>`;
+  });
+  document.getElementById('compare-rows').innerHTML = html || '<p class="text-secondary font-body-sm text-body-sm">Không có đoạn nào thay đổi.</p>';
+  document.getElementById('compare-summary').textContent =
+    `${changed} phần đã sửa, ${added} phần thêm mới, ${removed} phần đã bỏ so với v${baseLabel}.`;
+}
+
+function toggleCompare() {
+  comparing = !comparing;
+  if (window.hidePopover) window.hidePopover();
+  articleCard.classList.toggle('hidden', comparing);
+  compareCard.classList.toggle('hidden', !comparing);
+  document.getElementById('btn-compare-label').textContent = comparing ? 'Quay lại bản đang duyệt' : 'So sánh phiên bản';
+  if (comparing) renderCompare();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+if (compareCard) {
+  document.getElementById('btn-compare').addEventListener('click', toggleCompare);
+  document.getElementById('compare-only-changed').addEventListener('change', renderCompare);
+  baseSelect.addEventListener('change', () => { if (comparing) renderCompare(); });
+}
+
+// ---------- Tab góp ý ----------
+function showTab(name) {
+  document.getElementById('tab-now').classList.toggle('hidden', name !== 'now');
+  const prev = document.getElementById('tab-prev');
+  if (prev) prev.classList.toggle('hidden', name !== 'prev');
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    const on = b.dataset.tab === name;
+    b.classList.toggle('bg-primary', on); b.classList.toggle('text-on-primary', on); b.classList.toggle('font-semibold', on);
+    b.classList.toggle('text-on-surface-variant', !on);
+  });
+}
+document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+
+// ---------- Hộp thoại Duyệt / Yêu cầu sửa ----------
+const modals = document.querySelectorAll('#modal-revise, #modal-approve');
+const closeModals = () => modals.forEach(m => m.classList.add('hidden'));
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeModals));
+modals.forEach(m => m.addEventListener('click', e => { if (e.target === m) closeModals(); }));
+const btnRevise = document.getElementById('btn-revise');
+if (btnRevise) {
+  btnRevise.addEventListener('click', () => {
+    document.getElementById('modal-revise').classList.remove('hidden');
+    document.getElementById('revise-feedback').focus();
+  });
+  const feedback = document.getElementById('revise-feedback');
+  feedback.addEventListener('input', () => { document.getElementById('revise-submit').disabled = !feedback.value.trim(); });
+  document.getElementById('btn-approve').addEventListener('click', () => document.getElementById('modal-approve').classList.remove('hidden'));
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if (window.hidePopover) window.hidePopover(); closeModals(); }
+});
+</script>
+</body></html>

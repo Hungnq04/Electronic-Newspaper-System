@@ -4,11 +4,12 @@
 <div class="dh-shared-header"
      th:fragment="header(mode, userName, userRole, userInitials)"
      th:classappend="${mode == 'dashboard'} ? ' dh-shared-header--dashboard' : ' dh-shared-header--workspace'">
-    <a class="dh-shared-brand" th:href="@{/department-head/dashboard}" aria-label="Tòa soạn số - về dashboard">
-        <span class="dh-shared-brand-mark">T</span>
-        <span class="dh-shared-brand-copy">
-            <span class="dh-shared-brand-name">TÒA SOẠN SỐ</span>
-            <span class="dh-shared-brand-subtitle">HỆ THỐNG XUẤT BẢN SỐ</span>
+    <a class="dh-shared-brand" th:if="${mode == 'workspace'}"
+       th:href="@{/department-head/dashboard}" aria-label="Tòa soạn số - về dashboard">
+        <span class="sidebar-brand-mark">T</span>
+        <span class="sidebar-brand-copy">
+            <span class="sidebar-brand-name">TÒA SOẠN SỐ</span>
+            <span class="sidebar-brand-subtitle">HỆ THỐNG XUẤT BẢN SỐ</span>
         </span>
     </a>
 

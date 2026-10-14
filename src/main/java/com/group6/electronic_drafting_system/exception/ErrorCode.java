@@ -30,6 +30,13 @@ public enum ErrorCode {
     REVIEW_NOT_OPENED(1315, "Lượt duyệt chưa được mở. Vui lòng mở lại bài rồi thử lại.", HttpStatus.CONFLICT),
     REVIEW_FEEDBACK_REQUIRED(1316, "Vui lòng nhập nội dung yêu cầu chỉnh sửa.", HttpStatus.BAD_REQUEST),
 
+    // Trưởng phòng duyệt bài (màn workspace)
+    ARTICLE_REVIEW_FORBIDDEN(3001, "Bạn không phụ trách Topic của bài này nên không được duyệt.", HttpStatus.FORBIDDEN),
+    ARTICLE_NOT_IN_DEPARTMENT_REVIEW(3003, "Bài không còn ở trạng thái chờ Trưởng phòng duyệt.", HttpStatus.CONFLICT),
+    ARTICLE_REVIEW_TAKEN(3004, "Bài đang có lượt duyệt mở của người khác.", HttpStatus.CONFLICT),
+    COMMENT_NOT_FOUND(3006, "Không tìm thấy góp ý.", HttpStatus.NOT_FOUND),
+    COMMENT_INVALID(3007, "Góp ý không hợp lệ (thiếu nội dung hoặc sai vị trí).", HttpStatus.BAD_REQUEST),
+
     ARTICLE_FORBIDDEN(1320, "Bạn không có quyền chỉnh sửa bài viết này.", HttpStatus.FORBIDDEN),
     ARTICLE_NOT_EDITABLE(1321, "Bài viết đang trong quy trình duyệt nên không thể chỉnh sửa.", HttpStatus.CONFLICT),
     ARTICLE_TITLE_REQUIRED(1322, "Tiêu đề bài viết không được để trống.", HttpStatus.BAD_REQUEST),

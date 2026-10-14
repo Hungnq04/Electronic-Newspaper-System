@@ -7,8 +7,9 @@
     --bg: #f6f5f1;
     --accent: #a5262c;
     --accent-soft: #f6e7e7;
-    --serif: Georgia, "Times New Roman", serif;
-    --sans: "Segoe UI", Arial, sans-serif;
+    /* Cả trang dùng Be Vietnam Pro (đủ dấu tiếng Việt); mất mạng thì dùng Segoe UI / Arial */
+    --serif: "Be Vietnam Pro", "Segoe UI", Arial, sans-serif;
+    --sans: "Be Vietnam Pro", "Segoe UI", Arial, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -116,7 +117,7 @@ section { margin-bottom: 36px; }
 .byline { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--muted); font-size: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
 .lead { font-weight: 700; font-size: 18px; margin: 20px 0; }
 .caption { margin: 8px 0 0; font-size: 14px; font-style: italic; color: var(--muted); text-align: center; }
-.body { font: 19px/1.75 var(--serif); margin-top: 22px; }
+.body { font: 17px/1.8 var(--serif); margin-top: 22px; }
 .body p { margin: 0 0 1.1em; }
 .related { max-width: 1120px; }
 

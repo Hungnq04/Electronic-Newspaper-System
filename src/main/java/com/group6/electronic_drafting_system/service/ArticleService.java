@@ -16,5 +16,6 @@ public interface ArticleService {
     OffsetDateTime saveDraft(Integer articleId, ArticleDraftRequestDTO request, String email);
     void submit(Integer articleId, ArticleDraftRequestDTO request, String email);
     void setFeaturedImage(Integer articleId, Integer articleSourceId, String email);
+    ArticleMediaUploadResponseDTO attachTopicMedia(Integer articleId, Integer sourceId, String email);
     ArticleMediaUploadResponseDTO uploadMedia(Integer articleId, MultipartFile file, String caption, String email);
 }

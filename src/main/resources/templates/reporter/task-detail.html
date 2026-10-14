@@ -8,6 +8,8 @@
         <header th:replace="~{reporter/tasks :: reporterTopbar(${detail.fullName()}, ${detail.departmentName()}, ${detail.initials()}, false)}"></header>
 
         <main class="rp-main rp-main--detail">
+            <div class="rp-flash rp-flash--error" th:if="${error}" th:text="${error}"></div>
+            <div class="rp-flash rp-flash--ok" th:if="${message}" th:text="${message}"></div>
             <div class="rp-detail-nav">
                 <nav class="rp-breadcrumb" aria-label="Breadcrumb">
                     <a th:href="@{/reporter/tasks}"><svg class="rp-icon"><use href="#rp-icon-arrow-left"></use></svg>Nhiệm vụ tác nghiệp</a>
@@ -51,7 +53,7 @@
                     </a>
                     <div class="rp-support-note" th:if="${!t.lead()}">
                         <svg class="rp-icon"><use href="#rp-icon-users"></use></svg>
-                        <span>Bạn tham gia <b>hỗ trợ tác nghiệp</b>. Bài viết do phóng viên viết chính soạn và nộp duyệt.</span>
+                        <span>Bạn tham gia <b>hỗ trợ tác nghiệp</b>. Tải ảnh / video vào kho tư liệu bên dưới để phóng viên viết chính dùng trong bài.</span>
                     </div>
                 </div>
             </section>
@@ -97,11 +99,28 @@
                     <div class="rp-card-head">
                         <h2><svg class="rp-icon"><use href="#rp-icon-folder"></use></svg>Kho tư liệu tác nghiệp <span class="rp-count-pill" th:text="|${#lists.size(detail.sources())} tệp|">4 tệp</span></h2>
                     </div>
+                    <!-- Tải ảnh / video lên Cloudinary và gắn vào tư liệu của đề tài (topic_source) -->
+                    <form class="rp-upload" th:if="${detail.canUploadMedia()}" method="post" enctype="multipart/form-data"
+                          th:action="@{/reporter/tasks/{id}/media(id=${t.assignmentId()})}" data-rp-upload>
+                        <label class="rp-upload-drop" data-rp-upload-drop>
+                            <svg class="rp-icon"><use href="#rp-icon-camera"></use></svg>
+                            <span><b data-rp-upload-name>Chọn hoặc kéo thả ảnh / video tác nghiệp</b>
+                                <small>Ảnh JPG, PNG, WebP, GIF ≤ 10MB · Video MP4, WebM, MOV ≤ 100MB · Tư liệu được gắn vào đề tài</small></span>
+                            <input type="file" name="file" required data-rp-upload-file
+                                   accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime">
+                        </label>
+                        <div class="rp-upload-row">
+                            <input type="text" name="caption" maxlength="255" class="rp-upload-caption" placeholder="Chú thích / mô tả (vd. Hiện trường lúc 9h sáng)">
+                            <button type="submit" class="rp-button rp-button--primary" data-rp-upload-submit disabled>
+                                <svg class="rp-icon"><use href="#rp-icon-send"></use></svg><span>Tải lên</span></button>
+                        </div>
+                    </form>
                     <div class="rp-media-grid" th:unless="${#lists.isEmpty(detail.sources())}">
                         <article class="rp-media-card" th:each="s : ${detail.sources()}">
                             <div class="rp-media-thumb" th:classappend="|rp-media-thumb--${#strings.toLowerCase(s.type())}|">
                                 <img th:if="${s.image()}" th:src="${s.fileUrl()}" th:alt="${s.title()}" loading="lazy">
-                                <svg class="rp-icon" th:unless="${s.image()}"><use th:href="${s.type().name() == 'INTERVIEW'} ? '#rp-icon-mic' : (${s.type().name() == 'WEBSITE'} ? '#rp-icon-link' : (${s.type().name() == 'INTERNAL_DOC'} ? '#rp-icon-lock' : '#rp-icon-file'))" href="#rp-icon-file"></use></svg>
+                                <video th:if="${s.video()}" th:src="${s.fileUrl()}" preload="metadata" muted playsinline></video>
+                                <svg class="rp-icon" th:unless="${s.image() or s.video()}"><use th:href="${s.type().name() == 'INTERVIEW'} ? '#rp-icon-mic' : (${s.type().name() == 'WEBSITE'} ? '#rp-icon-link' : (${s.type().name() == 'INTERNAL_DOC'} ? '#rp-icon-lock' : '#rp-icon-file'))" href="#rp-icon-file"></use></svg>
                                 <span class="rp-media-type" th:text="${#strings.toUpperCase(s.typeLabel())}">ẢNH</span>
                                 <span class="rp-media-origin" th:text="${s.origin()}">Đề tài</span>
                             </div>
@@ -122,7 +141,7 @@
                     <div class="rp-empty" th:if="${#lists.isEmpty(detail.sources())}">
                         <svg class="rp-icon"><use href="#rp-icon-image"></use></svg>
                         <strong>Chưa có tư liệu</strong>
-                        <span>Tư liệu gắn với đề tài hoặc bài viết sẽ hiển thị tại đây.</span>
+                        <span th:text="${detail.canUploadMedia()} ? 'Tải ảnh / video lên bằng khung phía trên.' : 'Tư liệu gắn với đề tài hoặc bài viết sẽ hiển thị tại đây.'">Tư liệu gắn với đề tài hoặc bài viết sẽ hiển thị tại đây.</span>
                     </div>
                 </section>
 

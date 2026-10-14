@@ -119,8 +119,47 @@
         setInterval(tick, 30000);
     }
 
+    // Tải ảnh / video vào tư liệu đề tài: kiểm tra loại / dung lượng trước khi gửi, hỗ trợ kéo thả
+    const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    const VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
+    const MB = 1024 * 1024;
+
+    function initUpload() {
+        const form = document.querySelector('[data-rp-upload]');
+        if (!form) return;
+        const input = form.querySelector('[data-rp-upload-file]');
+        const name = form.querySelector('[data-rp-upload-name]');
+        const submit = form.querySelector('[data-rp-upload-submit]');
+        const defaultName = name.textContent;
+
+        function check() {
+            const file = input.files[0];
+            submit.disabled = true;
+            if (!file) { name.textContent = defaultName; return; }
+            const isImage = IMAGE_TYPES.includes(file.type), isVideo = VIDEO_TYPES.includes(file.type);
+            if (!isImage && !isVideo) { name.textContent = 'Chỉ hỗ trợ ảnh JPG, PNG, WebP, GIF và video MP4, WebM, MOV'; input.value = ''; return; }
+            if (file.size > (isImage ? 10 : 100) * MB) { name.textContent = isImage ? 'Ảnh tối đa 10MB' : 'Video tối đa 100MB'; input.value = ''; return; }
+            name.textContent = file.name + ' (' + (file.size / MB).toFixed(1) + ' MB)';
+            submit.disabled = false;
+        }
+        input.addEventListener('change', check);
+        ['dragenter', 'dragover'].forEach(t => form.addEventListener(t, e => { e.preventDefault(); form.classList.add('is-over'); }));
+        ['dragleave', 'drop'].forEach(t => form.addEventListener(t, () => form.classList.remove('is-over')));
+        form.addEventListener('drop', e => {
+            e.preventDefault();
+            if (!e.dataTransfer.files.length) return;
+            input.files = e.dataTransfer.files;
+            check();
+        });
+        form.addEventListener('submit', () => {
+            submit.disabled = true;
+            submit.querySelector('span').textContent = 'Đang tải lên…';
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         initBoard();
         initCountdown();
+        initUpload();
     });
 })();

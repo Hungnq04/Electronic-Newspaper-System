@@ -11,4 +11,11 @@ public interface MediaStorageService {
     enum MediaKind { IMAGE, VIDEO }
 
     record StoredMedia(MediaKind kind, String url, String publicId) {}
+
+    // source_type trong DB chưa có VIDEO nên video được lưu là DOCUMENT; nhận ra video qua đường dẫn Cloudinary / đuôi tệp
+    static boolean isVideoUrl(String url) {
+        if (url == null || url.isBlank()) return false;
+        String lower = url.toLowerCase(java.util.Locale.ROOT);
+        return lower.contains("/video/upload/") || lower.matches(".*\\.(mp4|webm|mov)(\\?.*)?$");
+    }
 }

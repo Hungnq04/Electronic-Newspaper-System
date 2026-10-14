@@ -1,6 +1,7 @@
 package com.group6.electronic_drafting_system.config;
 
 import com.group6.electronic_drafting_system.entity.enums.AccountStatus;
+import com.group6.electronic_drafting_system.exception.ErrorCode;
 import com.group6.electronic_drafting_system.repository.AccountRepository;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.HashSet;
@@ -25,6 +26,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 
 @Configuration
 public class SecurityConfig {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SecurityConfig.class);
     public static final String CSRF_EXPIRED_ATTR = "CSRF_EXPIRED";
 
     @Bean AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
@@ -56,7 +58,12 @@ public class SecurityConfig {
                 .formLogin(form -> form.loginPage("/login").loginProcessingUrl("/process-login").usernameParameter("email").defaultSuccessUrl("/", true).permitAll())
                 .oauth2Login(oauth -> oauth.loginPage("/login")
                         .userInfoEndpoint(userInfo -> userInfo.userAuthoritiesMapper(googleRoleMapper(accounts)))
-                        .successHandler(googleSuccessHandler))
+                        .successHandler(googleSuccessHandler)
+                        // Lỗi ở bước Google trả về (hủy chọn tài khoản, đổi mã thất bại...): ghi log lý do, báo lỗi rõ trên pop-up Login
+                        .failureHandler((request, response, ex) -> {
+                            log.warn("Google login failed: {}", ex.getMessage(), ex);
+                            response.sendRedirect(request.getContextPath() + "/login?error=" + ErrorCode.AUTH_GOOGLE_LOGIN_FAILED.name());
+                        }))
                 .logout(logout -> logout.logoutSuccessUrl("/login?logout"))
                 // Token CSRF hết hạn (session cũ mất sau khi restart app / để trang mở quá lâu): quay lại trang trước thay vì trang 403
                 .exceptionHandling(ex -> ex.accessDeniedHandler((request, response, denied) -> {

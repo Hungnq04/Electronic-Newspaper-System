@@ -72,6 +72,8 @@ public class AuthServiceImpl implements AuthService {
         switch (account.getStatus()) {
             case LOCKED -> throw new ApplicationException(ErrorCode.AUTH_ACCOUNT_LOCKED);
             case INACTIVE -> throw new ApplicationException(ErrorCode.AUTH_ACCOUNT_INACTIVE);
+            // Mật khẩu đã đúng (kiểm tra ở trên) mới báo đang chờ duyệt
+            case AWAITING_APPROVAL -> throw new ApplicationException(ErrorCode.AUTH_ACCOUNT_AWAITING_APPROVAL);
             case PENDING -> {
                 SecurityContextHolder.clearContext();
                 issueOtpIfNoValidCode(account, OtpPurpose.VERIFY_EMAIL);
@@ -151,7 +153,8 @@ public class AuthServiceImpl implements AuthService {
         }
         otp.setUsedAt(now);
         otps.save(otp);
-        account.setStatus(AccountStatus.ACTIVE);
+        // Web nội bộ: xác minh email xong vẫn phải chờ Admin duyệt và cấp vai trò (AccountApprovalService)
+        account.setStatus(AccountStatus.AWAITING_APPROVAL);
         accounts.save(account);
     }
 
@@ -170,6 +173,29 @@ public class AuthServiceImpl implements AuthService {
         Account account = accounts.findByEmailIgnoreCase(normalize(email))
                 .orElseThrow(() -> new ApplicationException(ErrorCode.AUTH_ACCOUNT_NOT_REGISTERED));
         if (account.getStatus() == AccountStatus.PENDING) issueOtpIfNoValidCode(account, OtpPurpose.VERIFY_EMAIL);
+    }
+
+    @Override
+    @Transactional
+    public void registerWithGoogle(String email, String fullName) {
+        String normalizedEmail = normalize(email);
+        if (accounts.existsByEmailIgnoreCase(normalizedEmail)) return;
+        // Cùng quy tắc với đăng ký bằng form: chỉ nhận Gmail
+        if (!normalizedEmail.endsWith("@gmail.com")) throw new ApplicationException(ErrorCode.AUTH_REGISTRATION_FAILED);
+        String name = fullName == null || fullName.isBlank()
+                ? normalizedEmail.substring(0, normalizedEmail.indexOf('@')) : fullName.trim();
+        Account account = new Account();
+        account.setUsername(createUsername(normalizedEmail));
+        account.setEmail(normalizedEmail);
+        account.setFullName(name.length() > 100 ? name.substring(0, 100) : name);
+        // Không có mật khẩu: lưu băm của chuỗi ngẫu nhiên (cột NOT NULL); muốn đăng nhập bằng mật khẩu thì dùng Quên mật khẩu
+        byte[] secret = new byte[32];
+        random.nextBytes(secret);
+        account.setPasswordHash(encoder.encode(java.util.HexFormat.of().formatHex(secret)));
+        account.setRole(getReporterRole());
+        // Google đã xác minh email nên bỏ qua OTP, nhưng vẫn chờ Admin duyệt và cấp vai trò như đăng ký form
+        account.setStatus(AccountStatus.AWAITING_APPROVAL);
+        accounts.saveAndFlush(account);
     }
 
     private String normalize(String email) {

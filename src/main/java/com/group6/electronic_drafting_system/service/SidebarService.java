@@ -17,6 +17,7 @@ public class SidebarService {
                             new SidebarItem("Duyệt bản thảo", "/department-head/dashboard", "clipboard-check", null))));
             case REPORTER -> List.of(
                     new SidebarGroup("TÁC NGHIỆP", List.of(
+                            new SidebarItem("Danh sách đề tài", "/reporter/topics", "file-text", null),
                             new SidebarItem("Nhiệm vụ tác nghiệp", "/reporter/tasks", "clipboard-check", null),
                             new SidebarItem("Bài viết của tôi", "/articles", "edit", null))));
             // TODO: bổ sung menu khi làm màn hình cho các quyền còn lại

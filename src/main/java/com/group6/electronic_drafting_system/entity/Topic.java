@@ -21,9 +21,15 @@ public class Topic {
     @Column(name = "expected_date") private LocalDate expectedDate;
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 10) private Priority priority = Priority.NORMAL;
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20) private TopicStatus status = TopicStatus.DEPARTMENT_REVIEW;
+    // FL-01: ban phụ trách (Topic cũ được gán theo category trong fl01_iter1_migration.sql)
+    @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "department_id") private Department department;
+    // Trưởng ban yêu cầu sửa: status giữ DEPARTMENT_REVIEW, chỉ bật cờ này
+    @Column(name = "awaiting_revision", nullable = false) private boolean awaitingRevision = false;
+    @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "reviewed_by_head_id") private Account reviewedByHead;
     @Column(name = "created_at", nullable = false, updatable = false) private OffsetDateTime createdAt;
     @Column(name = "updated_at", nullable = false) private OffsetDateTime updatedAt;
     @OneToMany(mappedBy = "topic") private List<TopicReview> reviews;
+    @OneToMany(mappedBy = "topic") private List<TopicFeedback> feedbacks;
     @OneToMany(mappedBy = "topic") private List<Assignment> assignments;
     @OneToMany(mappedBy = "topic") private List<TopicSource> sources;
     @OneToMany(mappedBy = "topic") private List<Article> articles;

@@ -1,0 +1,11 @@
+/* Màn thẩm định bài viết của Trưởng phòng (workspacereview.html) */
+@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}}
+::-webkit-scrollbar{display:none;}
+
+/* Màu cho phần so sánh phiên bản: chữ bị xóa / chữ thêm mới */
+.diff-del{background:#ffdad6;color:#93000a;text-decoration:line-through;border-radius:2px;padding:0 1px}
+.diff-ins{background:#d1fae5;color:#065f46;border-radius:2px;padding:0 1px}
+
+/* Hiệu ứng nháy viền khi nhảy tới góp ý / chữ được tô */
+.flash{animation:flash 1.2s ease-out}
+@keyframes flash{0%{box-shadow:0 0 0 4px #eec14b}100%{box-shadow:0 0 0 0 transparent}}

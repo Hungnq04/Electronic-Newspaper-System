@@ -41,7 +41,6 @@
                 </div>
                 <div class="dh-heading-actions">
                     <button class="dh-button dh-button--soft" type="button" data-dh-action="open-log"><svg class="dh-icon"><use href="#dh-icon-clock"></use></svg><span>Nhật ký duyệt</span></button>
-                    <button class="dh-button dh-button--primary" type="button" data-dh-action="bulk-approve"><svg class="dh-icon"><use href="#dh-icon-check-circle"></use></svg><span>Phê duyệt hàng loạt</span></button>
                 </div>
             </div>
 
@@ -58,7 +57,6 @@
                     <button class="dh-tab is-active" id="dh-tab-articles" type="button" role="tab" aria-selected="true" data-dh-tab="article"><svg class="dh-icon"><use href="#dh-icon-file-check"></use></svg><span>Duyệt bản thảo bài viết</span><b class="dh-count-bubble" th:text="${dashboard.articleCount}">12</b></button>
                     <button class="dh-tab" id="dh-tab-topics" type="button" role="tab" aria-selected="false" data-dh-tab="topic"><svg class="dh-icon"><use href="#dh-icon-book-open"></use></svg><span>Duyệt đề cương / Đề tài (Topic)</span><b class="dh-count-bubble dh-count-bubble--amber" th:text="${dashboard.topicCount}">7</b></button>
                 </div>
-                <div class="dh-queue-subrow"><button class="dh-button dh-button--primary dh-button--compact" type="button" data-dh-action="create-topic"><svg class="dh-icon"><use href="#dh-icon-sparkles"></use></svg>Đăng ký đề tài đột xuất</button></div>
             </section>
 
             <section class="dh-filter-panel" aria-label="Bộ lọc bản thảo">

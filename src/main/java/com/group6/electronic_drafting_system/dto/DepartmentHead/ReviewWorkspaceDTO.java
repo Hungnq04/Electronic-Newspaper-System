@@ -31,6 +31,8 @@ public class ReviewWorkspaceDTO {
     private List<VersionViewDTO> versions;
 
     private List<SourceItemDTO> sources;
+    // Ảnh đại diện của bài (article_source.is_featured), null nếu chưa chọn
+    private SourceItemDTO featuredImage;
     // Góp ý của lượt duyệt trên version đang duyệt / góp ý trên version liền trước
     private List<ReviewCommentDTO> comments;
     private List<ReviewCommentDTO> previousComments;

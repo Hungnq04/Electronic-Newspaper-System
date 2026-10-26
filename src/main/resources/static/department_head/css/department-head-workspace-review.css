@@ -9,3 +9,46 @@
 /* Hiệu ứng nháy viền khi nhảy tới góp ý / chữ được tô */
 .flash{animation:flash 1.2s ease-out}
 @keyframes flash{0%{box-shadow:0 0 0 4px #eec14b}100%{box-shadow:0 0 0 0 transparent}}
+
+/* ---------- Thân bài theo đúng bố cục phóng viên sắp xếp ---------- */
+/* Khoảng cách giữa các khối (đoạn, ảnh, bảng) */
+.ws-body > * + * { margin-top: 1.25rem; }
+
+/* Tít phụ trong bài (h2 / h3 / h4 trong trình soạn thảo) */
+.ws-h1, .ws-h2 { font-family: "Newsreader", Georgia, serif; font-size: 26px; line-height: 34px; font-weight: 600; }
+.ws-h3 { font-family: "Newsreader", Georgia, serif; font-size: 22px; line-height: 30px; font-weight: 600; }
+.ws-h4, .ws-h5, .ws-h6 { font-size: 19px; line-height: 28px; font-weight: 600; }
+
+/* Trích dẫn, đoạn mã, gạch đầu dòng */
+.ws-blockquote { border-left: 3px solid #8b1e2d; padding-left: 1rem; font-style: italic; color: #574142; }
+.ws-pre { font-family: Consolas, monospace; font-size: 14px; line-height: 22px; background: #f2f3fb; padding: .75rem 1rem; border-radius: 6px; }
+.ws-li { position: relative; padding-left: 1.4rem; }
+.ws-li::before { content: "•"; position: absolute; left: .3rem; color: #8b1e2d; }
+.ws-body > .ws-li + .ws-li { margin-top: .4rem; }
+
+/* Định dạng chữ bên trong đoạn (Tailwind đã xóa kiểu mặc định) */
+.ws-text a { color: #6b0119; text-decoration: underline; }
+.ws-text strong, .ws-text b { font-weight: 700; }
+.ws-text em, .ws-text i { font-style: italic; }
+.ws-text u { text-decoration: underline; }
+
+/* Ảnh / video chèn giữa bài */
+.ws-figure { margin: 1.5rem 0; }
+.ws-figure img, .ws-figure video { display: block; width: 100%; max-height: 560px; object-fit: contain; background: #ecedf5; border-radius: 8px; }
+.ws-figure figcaption { margin-top: .4rem; font-family: "Inter", sans-serif; font-size: 13px; line-height: 18px; font-style: italic; color: #585f6b; text-align: center; }
+
+/* Ảnh đại diện (cover) ngay dưới sapo */
+.ws-cover { margin: 1.5rem 0 0; }
+.ws-cover img { display: block; width: 100%; max-height: 520px; object-fit: cover; border-radius: 10px; }
+.ws-cover figcaption { margin-top: .5rem; font-family: "Inter", sans-serif; font-size: 13px; line-height: 18px; color: #585f6b; }
+.ws-cover-badge { display: inline-block; margin-right: 8px; padding: 1px 8px; border-radius: 4px; background: #ffdf98; color: #251a00; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+
+/* Bảng trong bài */
+.ws-table { overflow-x: auto; }
+.ws-table table { border-collapse: collapse; width: 100%; font-family: "Inter", sans-serif; font-size: 14px; line-height: 20px; }
+.ws-table th, .ws-table td { border: 1px solid #e1e2e9; padding: 6px 10px; text-align: left; vertical-align: top; }
+.ws-table th { background: #f2f3fb; font-weight: 600; }
+
+/* Nhãn trên thẻ tư liệu đính kèm */
+.ws-source-tag { align-self: flex-start; padding: 0 6px; border-radius: 4px; background: #e1e2e9; color: #585f6b; font-family: "Inter", sans-serif; font-size: 10px; line-height: 16px; font-weight: 600; }
+.ws-source-tag.is-in-body { background: #d1fae5; color: #065f46; }

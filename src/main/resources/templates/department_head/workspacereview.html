@@ -109,9 +109,28 @@
           <p data-field="SAPO" data-paragraph="1" data-anchor="Sapo" class="font-body-xl text-body-xl font-medium leading-relaxed italic whitespace-pre-line" th:text="${w.current.sapo}">Sapo</p>
         </div>
 
-        <div id="article-body" class="mt-space-lg font-body-lg text-body-lg leading-loose space-y-space-lg">
-          <p th:each="paragraph, it : ${w.current.paragraphs}" class="whitespace-pre-line"
-             data-field="CONTENT" th:attr="data-paragraph=${it.count},data-anchor=|Đoạn ${it.count}|" th:text="${paragraph}">Đoạn nội dung</p>
+        <!-- Ảnh đại diện (article_source.is_featured), giống ảnh cover phóng viên thấy trong trình soạn thảo -->
+        <figure th:if="${w.featuredImage != null}" class="ws-cover">
+          <img th:src="${w.featuredImage.url}" th:alt="${w.featuredImage.caption ?: w.featuredImage.title}" alt=""/>
+          <figcaption><span class="ws-cover-badge">Ảnh đại diện</span><span th:text="${w.featuredImage.caption ?: w.featuredImage.title}">Chú thích</span></figcaption>
+        </figure>
+
+        <!-- Thân bài theo đúng thứ tự phóng viên sắp xếp (ContentBlockDTO).
+             Chỉ khối chữ có data-field / data-paragraph nên chỉ bôi đen chữ mới góp ý được; ảnh, video, bảng thì không. -->
+        <div id="article-body" class="ws-body mt-space-lg font-body-lg text-body-lg leading-loose">
+          <th:block th:each="b : ${w.current.blocks}" th:switch="${b.kind.name()}">
+            <div th:case="'TEXT'" class="ws-text whitespace-pre-line" th:classappend="|ws-${b.tag}|"
+                 data-field="CONTENT" th:attr="data-paragraph=${b.paragraph},data-anchor=|Đoạn ${b.paragraph}|" th:utext="${b.html}">Đoạn nội dung</div>
+            <figure th:case="'IMAGE'" class="ws-figure">
+              <img th:src="${b.url}" th:alt="${b.caption}" alt="" loading="lazy"/>
+              <figcaption th:if="${b.caption != null}" th:text="${b.caption}">Chú thích ảnh</figcaption>
+            </figure>
+            <figure th:case="'VIDEO'" class="ws-figure">
+              <video th:src="${b.url}" controls preload="metadata" playsinline></video>
+              <figcaption th:if="${b.caption != null}" th:text="${b.caption}">Chú thích video</figcaption>
+            </figure>
+            <div th:case="'TABLE'" class="ws-table" th:utext="${b.html}">Bảng</div>
+          </th:block>
         </div>
 
         <!-- Khung góp ý hiện khi bôi đen chữ (chỉ khi đang được duyệt) -->
@@ -176,11 +195,11 @@
         </div>
       </div>
 
-      <!-- Tư liệu dùng trong bài (article_source) -->
+      <!-- Tư liệu đính kèm bài (article_source). Ảnh / video đã chèn trong bài được đánh dấu "Có trong bài" -->
       <div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm">
         <div class="flex items-center gap-2 mb-space-sm">
           <span class="material-symbols-outlined text-primary text-[20px]">perm_media</span>
-          <span class="font-label-lg text-label-lg font-bold" th:text="|Tư liệu dùng trong bài (${#lists.size(w.sources)})|">Tư liệu dùng trong bài</span>
+          <span class="font-label-lg text-label-lg font-bold" th:text="|Tư liệu đính kèm (${#lists.size(w.sources)})|">Tư liệu đính kèm</span>
         </div>
         <p th:if="${#lists.isEmpty(w.sources)}" class="font-body-sm text-body-sm text-secondary">Bài chưa gắn tư liệu nào.</p>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-space-sm" th:unless="${#lists.isEmpty(w.sources)}">
@@ -190,6 +209,7 @@
             <div th:unless="${s.image and s.url != null}" class="w-full h-20 rounded bg-surface-container-high flex flex-col items-center justify-center text-primary"><span class="material-symbols-outlined text-[32px]">description</span></div>
             <span class="font-label-sm text-label-sm font-medium truncate" th:text="${s.title}">Tên tư liệu</span>
             <span class="font-stat-mono text-stat-mono text-secondary truncate" th:text="${s.featured} ? 'Ảnh đại diện' : (${s.caption} ?: ${s.typeLabel})">Loại</span>
+            <span th:unless="${s.featured}" class="ws-source-tag" th:classappend="${s.inBody} ? 'is-in-body'" th:text="${s.inBody} ? 'Có trong bài' : 'Chưa dùng trong bài'">Có trong bài</span>
           </a>
         </div>
       </div>

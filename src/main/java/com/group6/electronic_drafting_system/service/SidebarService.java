@@ -24,7 +24,9 @@ public class SidebarService {
             case EDITORIAL_SECRETARY -> List.of(
                     new SidebarGroup("BIÊN TẬP TÒA SOẠN", List.of(
                             new SidebarItem("Duyệt cuối", "/secretary/final-reviews", "clipboard-check", null))));
-            case ADMIN -> List.of();
+            case ADMIN -> List.of(
+                    new SidebarGroup("QUẢN TRỊ", List.of(
+                            new SidebarItem("Tài khoản", "/admin/accounts", "users", null))));
         };
     }
 }

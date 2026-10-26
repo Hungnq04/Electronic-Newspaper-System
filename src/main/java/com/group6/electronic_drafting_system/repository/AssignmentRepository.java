@@ -41,4 +41,8 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Integer>
     @Query("select s from Assignment s join fetch s.account where s.topic.id = :topicId and s.assignmentRole = :role "
             + "and s.status <> com.group6.electronic_drafting_system.entity.enums.AssignmentStatus.REMOVED")
     List<Assignment> findActiveByTopicAndRole(@Param("topicId") Integer topicId, @Param("role") AssignmentRole role);
+
+    // Admin: việc đang làm của một tài khoản (status = ASSIGNED, đúng điều kiện của rule R23)
+    @EntityGraph(attributePaths = "topic")
+    List<Assignment> findByAccount_IdAndStatusOrderByAssignedAtDesc(Integer accountId, AssignmentStatus status);
 }

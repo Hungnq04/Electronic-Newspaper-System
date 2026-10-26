@@ -63,6 +63,14 @@ public enum ErrorCode {
     ACCOUNT_ROLE_NOT_ALLOWED(1703, "Chỉ được cấp vai trò Phóng viên, Trưởng ban hoặc Thư ký tòa soạn.", HttpStatus.BAD_REQUEST),
     ACCOUNT_DEPARTMENT_REQUIRED(1704, "Trưởng ban phải được gán một phòng ban.", HttpStatus.BAD_REQUEST),
 
+    // TV4 - Quản trị tài khoản của Admin (FR-15)
+    ADMIN_FORBIDDEN(1810, "Chỉ Quản trị viên đang hoạt động mới được quản lý tài khoản.", HttpStatus.FORBIDDEN),
+    ADMIN_ACCOUNT_PROTECTED(1811, "Không được khóa hoặc đổi vai trò của tài khoản Quản trị viên.", HttpStatus.FORBIDDEN),
+    ADMIN_ACCOUNT_STATUS_INVALID(1812, "Thao tác không phù hợp với trạng thái hiện tại của tài khoản. Vui lòng tải lại trang.", HttpStatus.CONFLICT),
+    ADMIN_LOCK_HAS_ASSIGNMENT(1813, "Tài khoản đang phụ trách Topic chưa xong. Hãy nhờ Thư ký / Trưởng phòng giao lại cho người khác trước khi khóa.", HttpStatus.CONFLICT),
+    ADMIN_CHANGE_HAS_HISTORY(1814, "Tài khoản đã tham gia biên tập nên không đổi được vai trò hay phòng ban (để giữ đúng lịch sử). Nếu cần vai trò khác, hãy dùng một tài khoản mới.", HttpStatus.CONFLICT),
+    ADMIN_NOTHING_CHANGED(1815, "Vai trò và phòng ban không thay đổi.", HttpStatus.BAD_REQUEST),
+
     MEDIA_FILE_REQUIRED(1500, "Vui lòng chọn ảnh hoặc video để tải lên.", HttpStatus.BAD_REQUEST),
     MEDIA_TYPE_NOT_SUPPORTED(1501, "Chỉ hỗ trợ ảnh JPG, PNG, WebP, GIF và video MP4, WebM, MOV.", HttpStatus.BAD_REQUEST),
     MEDIA_TOO_LARGE(1502, "Tệp quá lớn: ảnh tối đa 10MB, video tối đa 100MB.", HttpStatus.PAYLOAD_TOO_LARGE),

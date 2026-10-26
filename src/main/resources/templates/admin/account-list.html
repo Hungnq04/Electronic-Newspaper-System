@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="content">
+<main class="page">
+    <div class="page-head">
+        <div>
+            <h1>Quản lý tài khoản</h1>
+            <p>Xem tài khoản, duyệt người mới đăng ký, đổi vai trò / phòng ban, khóa hoặc mở tài khoản.</p>
+        </div>
+        <span class="badge badge-warning" th:if="${counts['AWAITING_APPROVAL'] > 0}"
+              th:text="${counts['AWAITING_APPROVAL']} + ' tài khoản chờ duyệt'"></span>
+    </div>
+
+    <div class="alert alert-success" th:if="${message}" th:text="${message}"></div>
+    <div class="alert alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <!-- Tab lọc theo trạng thái (giữ nguyên ô lọc vai trò và từ khóa) -->
+    <nav class="tabs">
+        <a th:href="@{/admin/accounts(role=${roleFilter}, q=${q})}" th:classappend="${statusFilter == ''} ? 'active'">Tất cả</a>
+        <a th:href="@{/admin/accounts(status='AWAITING_APPROVAL', role=${roleFilter}, q=${q})}"
+           th:classappend="${statusFilter == 'AWAITING_APPROVAL'} ? 'active'">
+            Chờ duyệt <span class="count" th:text="${counts['AWAITING_APPROVAL']}"></span></a>
+        <a th:href="@{/admin/accounts(status='ACTIVE', role=${roleFilter}, q=${q})}"
+           th:classappend="${statusFilter == 'ACTIVE'} ? 'active'">
+            Đang hoạt động <span class="count" th:text="${counts['ACTIVE']}"></span></a>
+        <a th:href="@{/admin/accounts(status='LOCKED', role=${roleFilter}, q=${q})}"
+           th:classappend="${statusFilter == 'LOCKED'} ? 'active'">
+            Đã khóa <span class="count" th:text="${counts['LOCKED']}"></span></a>
+        <a th:href="@{/admin/accounts(status='PENDING', role=${roleFilter}, q=${q})}"
+           th:classappend="${statusFilter == 'PENDING'} ? 'active'">
+            Chưa xác minh <span class="count" th:text="${counts['PENDING']}"></span></a>
+        <a th:href="@{/admin/accounts(status='INACTIVE', role=${roleFilter}, q=${q})}"
+           th:classappend="${statusFilter == 'INACTIVE'} ? 'active'">
+            Ngừng hoạt động <span class="count" th:text="${counts['INACTIVE']}"></span></a>
+    </nav>
+
+    <form class="filters" method="get" th:action="@{/admin/accounts}">
+        <input type="hidden" name="status" th:value="${statusFilter}">
+        <input type="search" name="q" th:value="${q}" placeholder="Tìm theo họ tên, username, email">
+        <select name="role">
+            <option value="" th:selected="${roleFilter == ''}">Mọi vai trò</option>
+            <option value="REPORTER" th:selected="${roleFilter == 'REPORTER'}">Phóng viên</option>
+            <option value="DEPARTMENT_HEAD" th:selected="${roleFilter == 'DEPARTMENT_HEAD'}">Trưởng phòng</option>
+            <option value="EDITORIAL_SECRETARY" th:selected="${roleFilter == 'EDITORIAL_SECRETARY'}">Thư ký tòa soạn</option>
+            <option value="ADMIN" th:selected="${roleFilter == 'ADMIN'}">Quản trị viên</option>
+        </select>
+        <button type="submit" class="btn btn-sm">Lọc</button>
+        <a class="btn btn-sm btn-ghost" th:href="@{/admin/accounts}" th:if="${q != '' or roleFilter != '' or statusFilter != ''}">Bỏ lọc</a>
+    </form>
+
+    <section class="card">
+        <div class="empty" th:if="${#lists.isEmpty(rows)}">Không có tài khoản nào khớp bộ lọc.</div>
+        <div class="table-wrap" th:unless="${#lists.isEmpty(rows)}">
+            <table class="data">
+                <thead>
+                <tr>
+                    <th>Tài khoản</th>
+                    <th>Vai trò</th>
+                    <th>Phòng ban</th>
+                    <th>Trạng thái</th>
+                    <th>Ngày tạo</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="row : ${rows}">
+                    <td class="title-cell">
+                        <a th:href="@{/admin/accounts/{id}(id=${row.id})}" th:text="${row.fullName}"></a>
+                        <span class="sub" th:text="${row.username} + ' · ' + ${row.email}"></span>
+                    </td>
+                    <td th:text="${row.status.name() == 'AWAITING_APPROVAL'} ? '—' : ${row.roleLabel}"></td>
+                    <td th:text="${row.departmentName} ?: '—'"></td>
+                    <td><span class="badge" th:text="${row.statusLabel}"
+                              th:classappend="${row.status.name() == 'ACTIVE'} ? 'badge-success'
+                                            : (${row.status.name() == 'AWAITING_APPROVAL'} ? 'badge-warning'
+                                            : (${row.status.name() == 'LOCKED'} ? 'badge-danger' : ''))"></span></td>
+                    <td th:text="${#temporals.format(row.createdAt, 'dd/MM/yyyy')}"></td>
+                    <td class="actions">
+                        <a class="btn btn-sm" th:if="${row.status.name() == 'AWAITING_APPROVAL'}"
+                           th:href="@{/admin/accounts/{id}(id=${row.id})}">Duyệt</a>
+                        <a class="btn btn-sm btn-ghost" th:unless="${row.status.name() == 'AWAITING_APPROVAL'}"
+                           th:href="@{/admin/accounts/{id}(id=${row.id})}">Chi tiết</a>
+                        <button type="button" class="btn btn-sm btn-danger" th:if="${row.canLock}"
+                                th:attr="data-open='lock-' + ${row.id}">Khóa</button>
+                        <button type="button" class="btn btn-sm btn-ghost" th:if="${row.canUnlock}"
+                                th:attr="data-open='unlock-' + ${row.id}">Mở khóa</button>
+
+                        <!-- Lock / Unlock Account Confirmation -->
+                        <dialog th:if="${row.canLock}" th:id="'lock-' + ${row.id}">
+                            <form method="post" th:action="@{/admin/accounts/{id}/lock(id=${row.id})}">
+                                <h2>Khóa tài khoản?</h2>
+                                <p>
+                                    <strong th:text="${row.fullName}"></strong> sẽ không đăng nhập được cho tới khi được mở khóa.
+                                    Nếu người này còn phụ trách Topic, hệ thống sẽ chặn và báo để giao lại trước.
+                                </p>
+                                <div class="dialog-actions">
+                                    <button type="button" class="btn btn-ghost" data-close>Hủy</button>
+                                    <button type="submit" class="btn btn-danger">Khóa tài khoản</button>
+                                </div>
+                            </form>
+                        </dialog>
+                        <dialog th:if="${row.canUnlock}" th:id="'unlock-' + ${row.id}">
+                            <form method="post" th:action="@{/admin/accounts/{id}/unlock(id=${row.id})}">
+                                <h2>Mở khóa tài khoản?</h2>
+                                <p><strong th:text="${row.fullName}"></strong> sẽ đăng nhập lại được với vai trò hiện tại.</p>
+                                <div class="dialog-actions">
+                                    <button type="button" class="btn btn-ghost" data-close>Hủy</button>
+                                    <button type="submit" class="btn">Mở khóa</button>
+                                </div>
+                            </form>
+                        </dialog>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <script>
+        // Mở / đóng hộp thoại xác nhận
+        document.querySelectorAll('[data-open]').forEach(btn =>
+            btn.addEventListener('click', () => document.getElementById(btn.dataset.open).showModal()));
+        document.querySelectorAll('dialog [data-close]').forEach(btn =>
+            btn.addEventListener('click', () => btn.closest('dialog').close()));
+    </script>
+</main>
+</th:block>
+</body>
+</html>

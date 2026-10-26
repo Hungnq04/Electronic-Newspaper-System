@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="departmentHeadAssignmentContent">
+    <!-- SVG sprite nội bộ của trang -->
+    <svg class="dht-svg-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+        <symbol id="dha-icon-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></symbol>
+        <symbol id="dha-icon-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+        <symbol id="dha-icon-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></symbol>
+        <symbol id="dha-icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+        <symbol id="dha-icon-star" viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"/></symbol>
+        <symbol id="dha-icon-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM20 8a3.5 3.5 0 0 1-2.5 3.3M17 15h1a3 3 0 0 1 3 3v3"/></symbol>
+        <symbol id="dha-icon-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></symbol>
+        <symbol id="dha-icon-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/></symbol>
+        <symbol id="dha-icon-search" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.7"/><path d="m16 16 4.5 4.5"/></symbol>
+        <symbol id="dha-icon-send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></symbol>
+        <symbol id="dha-icon-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+        <symbol id="dha-icon-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></symbol>
+    </svg>
+
+    <section class="dht-page" aria-label="Giao việc đề tài">
+        <header class="dht-topbar">
+            <nav class="dht-breadcrumb" aria-label="Breadcrumb">
+                <span>PHÂN CÔNG</span><svg class="dht-icon dht-icon--tiny"><use href="#dha-icon-chevron-right"></use></svg>
+                <a th:href="@{/department-head/topics}">Đề tài đã duyệt</a><svg class="dht-icon dht-icon--tiny"><use href="#dha-icon-chevron-right"></use></svg>
+                <strong th:text="${page.editable()} ? 'Giao việc' : 'Quản lý nhóm'">Giao việc</strong>
+            </nav>
+            <div class="dht-account">
+                <span class="dht-avatar" th:text="${page.initials()}">MT</span>
+                <div class="dht-account-copy">
+                    <strong th:text="${page.fullName()}">Trần Minh Tuấn</strong>
+                    <small th:text="${page.departmentName() != null} ? |Trưởng phòng · ${page.departmentName()}| : 'Trưởng phòng'">Trưởng phòng</small>
+                </div>
+            </div>
+        </header>
+
+        <main class="dht-main" th:with="t=${page.topic()}">
+            <div class="dha-flash dha-flash--error" th:if="${error}" th:text="${error}">Vui lòng nhập hạn hoàn thành.</div>
+            <div class="dha-flash dha-flash--ok" th:if="${message}" th:text="${message}">Đã thêm phóng viên hỗ trợ vào nhóm.</div>
+
+            <!-- Tiêu đề + thông tin nhanh của đề tài -->
+            <div class="dha-heading">
+                <a class="dha-back" th:href="@{/department-head/topics}"><svg class="dht-icon"><use href="#dha-icon-arrow-left"></use></svg>Trở về danh sách đề tài</a>
+                <h1 th:text="${(page.editable() ? 'Giao việc đề tài: ' : 'Quản lý nhóm đề tài: ') + t.title()}">Giao việc đề tài: Điều tra quy hoạch quỹ đất công viên ven sông</h1>
+                <div class="dha-meta">
+                    <span class="dht-code" th:text="|#${t.topicId()}|">#12</span>
+                    <span class="dht-priority" th:classappend="|dht-priority--${#strings.toLowerCase(t.priority())}|" th:text="${t.priorityLabel()}">Thường</span>
+                    <span>Chuyên mục: <b th:text="${t.category()}">Đô thị &amp; Môi trường</b></span>
+                    <span class="dha-dot">•</span>
+                    <span><svg class="dht-icon"><use href="#dha-icon-calendar"></use></svg>
+                        <th:block th:text="${t.editorial()} ? 'Ngày tạo: ' : 'Ngày duyệt: '">Ngày duyệt: </th:block><b th:text="${#temporals.format(t.approvedAt(), 'dd/MM/yyyy')}">24/10/2026</b></span>
+                    <span class="dht-state" th:classappend="|dht-state--${#strings.toLowerCase(t.state())}|"><i></i><span th:text="${t.state().label}">Chờ giao nhiệm vụ</span></span>
+                </div>
+            </div>
+
+            <div class="dha-grid">
+                <!-- CỘT TRÁI: Lead + hồ sơ đề tài -->
+                <aside class="dha-left">
+                    <section class="dha-card dha-card--accent">
+                        <div class="dha-card-title">
+                            <h2><svg class="dht-icon"><use href="#dha-icon-star"></use></svg>Lead phụ trách</h2>
+                            <span class="dht-role">LEAD</span>
+                        </div>
+                        <th:block th:if="${page.hasLead()}">
+                            <div class="dha-person-card">
+                                <span class="dht-avatar dha-avatar--lg" th:text="${page.lead().initials()}">HL</span>
+                                <div>
+                                    <strong th:text="${page.lead().name()}">Lê Hoàng Long</strong>
+                                    <span class="dht-muted" th:text="${page.lead().departmentName() ?: 'Chưa gán phòng ban'}">Phòng Điều tra</span>
+                                    <span class="dha-email"><svg class="dht-icon"><use href="#dha-icon-mail"></use></svg><span th:text="${page.lead().email()}">long@toasoan.vn</span></span>
+                                </div>
+                            </div>
+                            <p class="dha-note" th:unless="${t.editorial()}">
+                                <svg class="dht-icon"><use href="#dha-icon-info"></use></svg>
+                                <span>Phóng viên đề xuất đề tài được hệ thống tự động xác định là <b>Lead</b> khi Thư ký duyệt. Lead là người <b>duy nhất</b> viết bài của đề tài; Trưởng phòng bổ sung nhiệm vụ và deadline.</span>
+                            </p>
+                        </th:block>
+                        <p class="dha-note dha-note--warning" th:unless="${page.hasLead()}">
+                            <svg class="dht-icon"><use href="#dha-icon-info"></use></svg>
+                            <span>Đề tài do Thư ký giao xuống, <b>chưa có Lead</b>. Hãy chọn đúng một phóng viên làm Lead ở danh sách bên phải.</span>
+                        </p>
+                    </section>
+
+                    <section class="dha-card">
+                        <div class="dha-card-title"><h2><svg class="dht-icon"><use href="#dha-icon-file"></use></svg>Hồ sơ tóm tắt đề tài</h2></div>
+                        <div class="dha-field">
+                            <span class="dha-label">Mô tả đề tài</span>
+                            <p class="dha-box" th:text="${t.description() ?: 'Chưa có mô tả.'}">Làm rõ tình trạng lấn chiếm…</p>
+                        </div>
+                        <div class="dha-field" th:if="${page.rationale() != null}">
+                            <span class="dha-label">Lý do / góc tiếp cận</span>
+                            <p class="dha-box" th:text="${page.rationale()}">Tiếp cận đa chiều…</p>
+                        </div>
+                        <dl class="dha-facts">
+                            <div><dt>Người đề xuất</dt><dd th:text="${t.proposerName()}">Lê Hoàng Long</dd></div>
+                            <div th:if="${t.approvedByName() != null}"><dt>Thư ký duyệt</dt><dd th:text="${t.approvedByName()}">Lê Thư Ký</dd></div>
+                            <div><dt>Ngày dự kiến đăng</dt><dd th:text="${page.expectedDate() != null} ? ${#temporals.format(page.expectedDate(), 'dd/MM/yyyy')} : 'Chưa đặt'">05/11/2026</dd></div>
+                        </dl>
+                    </section>
+                </aside>
+
+                <!-- CỘT PHẢI: form giao việc -->
+                <div class="dha-right">
+                    <!-- ===== ĐỀ TÀI ĐÃ GIAO XONG: QUẢN LÝ NHÓM ===== -->
+                    <th:block th:unless="${page.editable()}">
+                        <!-- Đội hiện tại -->
+                        <section class="dha-card">
+                            <div class="dha-card-title">
+                                <h2><svg class="dht-icon"><use href="#dha-icon-users"></use></svg>Đội ngũ thực hiện đề tài</h2>
+                                <span class="dha-count-badge" th:text="|${page.topic().teamSize()} người đang phụ trách|">3 người đang phụ trách</span>
+                            </div>
+                            <div class="dha-member dha-member--lead" th:if="${page.hasLead()}">
+                                <span class="dht-avatar dht-avatar--sm" th:text="${page.lead().initials()}">HL</span>
+                                <div class="dha-member-copy">
+                                    <strong th:text="${page.lead().name()}">Lê Hoàng Long</strong> <span class="dht-role">LEAD</span>
+                                    <span class="dht-muted dha-inline" th:text="${page.lead().departmentName()}">Phòng Điều tra</span>
+                                    <span class="dha-dates">
+                                        <span th:if="${page.leadAssignedAt() != null}">Ngày giao: <b th:text="${#temporals.format(page.leadAssignedAt(), 'dd/MM/yyyy')}">24/10/2026</b></span>
+                                        <span th:if="${page.leadDeadline() != null}">Hạn: <b th:text="${#temporals.format(page.leadDeadline(), 'HH:mm dd/MM/yyyy')}">17:00 05/11/2026</b></span>
+                                    </span>
+                                    <p th:text="${page.leadRequirements()}">01 bài phóng sự 2000 chữ…</p>
+                                </div>
+                            </div>
+                            <div class="dha-member" th:each="s : ${page.supporters()}">
+                                <span class="dht-avatar dht-avatar--sm dht-avatar--support" th:text="${s.initials()}">TH</span>
+                                <div class="dha-member-copy">
+                                    <strong th:text="${s.name()}">Phạm Thu Hương</strong> <span class="dha-support-tag">SUPPORTING</span>
+                                    <span class="dha-status" th:classappend="${s.removable()} ? '' : ' is-done'" th:text="${s.statusLabel()}">Đang thực hiện</span>
+                                    <span class="dha-dates">
+                                        <span th:if="${s.assignedAt() != null}">Ngày giao: <b th:text="${#temporals.format(s.assignedAt(), 'dd/MM/yyyy')}">24/10/2026</b></span>
+                                        <span th:if="${s.deadline() != null}">Hạn: <b th:text="${#temporals.format(s.deadline(), 'HH:mm dd/MM/yyyy')}">17:00 01/11/2026</b></span>
+                                    </span>
+                                    <p th:text="${s.requirements()}">Bộ ảnh hiện trường</p>
+                                </div>
+                                <!-- Gỡ khỏi nhóm: chỉ khi Supporting chưa hoàn thành -->
+                                <form class="dha-member-action" method="post" th:if="${s.removable()}"
+                                      th:action="@{/department-head/topics/{id}/supporters/{aid}/remove(id=${t.topicId()},aid=${s.assignmentId()})}"
+                                      th:attr="data-dha-confirm=|Gỡ ${s.name()} khỏi nhóm? Tư liệu người này đã thêm vẫn được giữ.|">
+                                    <button class="dht-button dht-button--small dha-button--danger" type="submit">Gỡ khỏi nhóm</button>
+                                </form>
+                                <span class="dht-muted dha-member-action" th:unless="${s.removable()}">Đã xong phần việc, không gỡ được</span>
+                            </div>
+                            <p class="dha-empty" th:if="${#lists.isEmpty(page.supporters())}">Chưa có phóng viên hỗ trợ. Lead đang thực hiện độc lập.</p>
+                        </section>
+
+                        <!-- Đổi Lead (EC-01) -->
+                        <details class="dha-card dha-collapsible" th:open="${leadFormOpen != null}">
+                            <summary><svg class="dht-icon"><use href="#dha-icon-star"></use></svg>Đổi Lead</summary>
+                            <p class="dha-note dha-note--warning" th:if="${page.blockingArticleCount() > 0}">
+                                <svg class="dht-icon"><use href="#dha-icon-lock"></use></svg>
+                                <span>Lead hiện tại còn <b th:text="${page.blockingArticleCount()}">1</b> bài đang trong quy trình duyệt. Chờ bài duyệt xong hoặc bị trả về rồi mới đổi Lead được.</span>
+                            </p>
+                            <form method="post" class="dha-lead-form" th:if="${page.canChangeLead()}" data-dha-confirm="Xác nhận đổi Lead? Lead hiện tại sẽ rời đề tài."
+                                  th:action="@{/department-head/topics/{id}/lead(id=${t.topicId()})}">
+                                <p class="dha-note">
+                                    <svg class="dht-icon"><use href="#dha-icon-info"></use></svg>
+                                    <span>Lead hiện tại rời đề tài (lưu trong lịch sử). Bài <b>nháp</b> và bài <b>cần sửa</b> của Lead hiện tại chuyển sang Lead mới; bài đã đăng giữ nguyên. Nếu Lead mới đang là Supporting, vai trò Supporting của họ được đóng lại.</span>
+                                </p>
+                                <label class="dha-input">
+                                    <span>Lead mới <b class="dha-required">*</b></span>
+                                    <select name="newLeadAccountId" required>
+                                        <option value="">-- Chọn phóng viên --</option>
+                                        <option th:each="o : ${page.leadOptions()}" th:value="${o.accountId()}"
+                                                th:selected="${leadForm.newLeadAccountId != null and leadForm.newLeadAccountId == o.accountId()}"
+                                                th:text="${o.name() + (o.departmentName() != null ? ' — ' + o.departmentName() : '') + (o.currentSupporter() ? ' (đang là Supporting)' : '')}">Ngô Mai Chi — Phòng Văn hóa</option>
+                                    </select>
+                                </label>
+                                <div class="dha-two-cols">
+                                    <label class="dha-input">
+                                        <span>Deadline của Lead mới <b class="dha-required">*</b></span>
+                                        <input type="datetime-local" name="deadline" required data-dha-deadline th:value="${leadForm.deadline}">
+                                    </label>
+                                    <label class="dha-input dha-input--wide">
+                                        <span>Nhiệm vụ của Lead mới <b class="dha-required">*</b></span>
+                                        <textarea name="requirements" rows="3" required maxlength="4000" th:text="${leadForm.requirements}"
+                                                  placeholder="Ví dụ: tiếp tục hoàn thiện bài, bổ sung phỏng vấn…"></textarea>
+                                    </label>
+                                </div>
+                                <div class="dha-buttons">
+                                    <button class="dht-button dht-button--primary" type="submit"><svg class="dht-icon"><use href="#dha-icon-send"></use></svg>Xác nhận đổi Lead</button>
+                                </div>
+                            </form>
+                            <p class="dha-empty" th:if="${page.blockingArticleCount() == 0 and #lists.isEmpty(page.leadOptions())}">Không có phóng viên ACTIVE nào để nhận Lead.</p>
+                        </details>
+
+                        <!-- Thêm Supporting -->
+                        <form class="dha-card dha-form" method="post" data-dha-form data-has-lead="true"
+                              th:action="@{/department-head/topics/{id}/supporters(id=${t.topicId()})}"
+                              th:attr="data-existing-supporters=${#lists.size(page.supporters())}">
+                            <div class="dha-card-title"><h2><svg class="dht-icon"><use href="#dha-icon-users"></use></svg>Thêm phóng viên hỗ trợ</h2></div>
+                            <th:block th:replace="~{department_head/topic-assignment :: candidateList(false)}"></th:block>
+                            <div class="dha-actions">
+                                <span class="dht-muted">Mỗi người được thêm có nhiệm vụ và deadline riêng.</span>
+                                <div class="dha-buttons">
+                                    <button class="dht-button dht-button--primary" type="submit" th:disabled="${#lists.isEmpty(page.candidates())}">
+                                        <svg class="dht-icon"><use href="#dha-icon-send"></use></svg>Thêm vào nhóm</button>
+                                </div>
+                            </div>
+                        </form>
+
+                        <!-- Lịch sử nhân sự: các assignment đã REMOVED -->
+                        <section class="dha-card">
+                            <div class="dha-card-title"><h2><svg class="dht-icon"><use href="#dha-icon-file"></use></svg>Lịch sử thay đổi nhân sự</h2></div>
+                            <div class="dht-table-wrap" th:unless="${#lists.isEmpty(page.history())}">
+                                <table class="dha-history">
+                                    <thead><tr><th>Thời gian gỡ</th><th>Phóng viên</th><th>Vai trò cũ</th><th>Ngày được giao</th><th>Người gỡ</th></tr></thead>
+                                    <tbody>
+                                    <tr th:each="h : ${page.history()}">
+                                        <td class="dha-mono" th:text="${h.removedAt() != null} ? ${#temporals.format(h.removedAt(), 'HH:mm dd/MM/yyyy')} : '—'">09:15 25/10/2026</td>
+                                        <td><span class="dht-avatar dht-avatar--xs dht-avatar--support" th:text="${h.initials()}">NP</span> <span th:text="${h.name()}">Nguyễn Vũ Phong</span></td>
+                                        <td><span class="dha-support-tag" th:text="${h.roleLabel()}">Supporting</span></td>
+                                        <td class="dha-mono" th:text="${h.assignedAt() != null} ? ${#temporals.format(h.assignedAt(), 'dd/MM/yyyy')} : '—'">24/10/2026</td>
+                                        <td th:text="${h.removedByName() ?: '—'}">Trần Minh Tuấn</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="dha-empty" th:if="${#lists.isEmpty(page.history())}">Chưa có thay đổi nhân sự nào.</p>
+                        </section>
+                    </th:block>
+
+                    <form class="dha-card dha-form" th:if="${page.editable()}" method="post" data-dha-form
+                          th:action="@{/department-head/topics/{id}/assignment(id=${t.topicId()})}"
+                          th:attr="data-has-lead=${page.hasLead()},data-existing-supporters=${#lists.size(page.supporters())}">
+                        <div class="dha-form-head">
+                            <div>
+                                <h2>Biểu mẫu phân công</h2>
+                                <span class="dht-muted">Mỗi người được giao có nhiệm vụ và deadline riêng.</span>
+                            </div>
+                            <span class="dha-assigner">Người giao việc: <b th:text="${page.fullName()}">Trần Minh Tuấn</b> (Trưởng phòng)</span>
+                        </div>
+
+                        <!-- MỤC 1: nhiệm vụ của Lead -->
+                        <fieldset class="dha-section">
+                            <legend>1. Nhiệm vụ của Lead <span class="dha-required">*</span></legend>
+                            <p class="dha-chosen-lead">Lead:
+                                <b data-dha-lead-name th:text="${page.hasLead()} ? ${page.lead().name()} : 'Chưa chọn – chọn ở mục 3'">Lê Hoàng Long</b>
+                            </p>
+                            <div class="dha-two-cols">
+                                <label class="dha-input">
+                                    <span>Hạn hoàn thành (deadline)</span>
+                                    <input type="datetime-local" name="leadDeadline" required data-dha-deadline th:value="${form.leadDeadline}">
+                                    <small class="dht-muted">Giờ Việt Nam, phải ở tương lai.</small>
+                                </label>
+                                <label class="dha-input dha-input--wide">
+                                    <span>Nhiệm vụ / yêu cầu công việc</span>
+                                    <textarea name="leadRequirements" rows="4" required maxlength="4000"
+                                              placeholder="Ví dụ: 01 bài phóng sự khoảng 2.000 chữ, kèm ảnh hiện trường có chú thích…"
+                                              th:text="${form.leadRequirements}"></textarea>
+                                </label>
+                            </div>
+                        </fieldset>
+
+                        <!-- MỤC 2: Supporting đã có trên đề tài (chỉ xem) -->
+                        <fieldset class="dha-section" th:unless="${#lists.isEmpty(page.supporters())}">
+                            <legend>2. Supporting đang tham gia</legend>
+                            <div class="dha-member" th:each="s : ${page.supporters()}">
+                                <span class="dht-avatar dht-avatar--sm dht-avatar--support" th:text="${s.initials()}">TH</span>
+                                <div class="dha-member-copy">
+                                    <strong th:text="${s.name()}">Phạm Thu Hương</strong> <span class="dha-support-tag">SUPPORTING</span>
+                                    <span class="dha-deadline" th:if="${s.deadline() != null}"><svg class="dht-icon"><use href="#dha-icon-clock"></use></svg><span th:text="${#temporals.format(s.deadline(), 'HH:mm dd/MM/yyyy')}">17:00 01/11/2026</span></span>
+                                    <p th:text="${s.requirements()}">Bộ ảnh hiện trường</p>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <!-- MỤC 3: chọn phóng viên -->
+                        <fieldset class="dha-section">
+                            <legend>
+                                <th:block th:text="${#lists.isEmpty(page.supporters())} ? '2. ' : '3. '">3. </th:block>
+                                <th:block th:text="${page.hasLead()} ? 'Thêm phóng viên hỗ trợ (Supporting)' : 'Chọn Lead và phóng viên hỗ trợ (Supporting)'">Thêm phóng viên hỗ trợ</th:block>
+                                <span class="dha-count-badge">Đã chọn: <b data-dha-support-count>0</b> Supporting</span>
+                            </legend>
+                            <th:block th:replace="~{department_head/topic-assignment :: candidateList(${!page.hasLead()})}"></th:block>
+                        </fieldset>
+
+                        <!-- Tóm tắt trước khi xác nhận -->
+                        <div class="dha-summary">
+                            <svg class="dht-icon"><use href="#dha-icon-users"></use></svg>
+                            <span>Sau khi xác nhận, đội gồm <b data-dha-total>1</b> người: Lead <b data-dha-summary-lead th:text="${page.hasLead()} ? ${page.lead().name()} : '(chưa chọn)'">Lê Hoàng Long</b>
+                                và <b data-dha-summary-support th:text="${#lists.size(page.supporters())}">0</b> Supporting.</span>
+                        </div>
+
+                        <div class="dha-actions">
+                            <span class="dht-muted">Nhiệm vụ sẽ xuất hiện trong danh sách "Nhiệm vụ tác nghiệp" của từng phóng viên.</span>
+                            <div class="dha-buttons">
+                                <a class="dht-button dht-button--outline" th:href="@{/department-head/topics}">Hủy</a>
+                                <button class="dht-button dht-button--primary" type="submit"><svg class="dht-icon"><use href="#dha-icon-send"></use></svg>Xác nhận giao việc</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </section>
+</th:block>
+
+<!-- Danh sách chọn phóng viên dùng chung: form giao việc lần đầu + form thêm Supporting.
+     showLeadRadio = true thì có thêm lựa chọn Lead (đề tài chưa có Lead). Cần biến page + form trong model. -->
+<th:block th:fragment="candidateList(showLeadRadio)">
+    <p class="dht-muted dha-hint">
+        Supporting chỉ đóng góp tư liệu (ảnh, video, tài liệu, ghi chú phỏng vấn), <b>không</b> viết bài. Không bắt buộc chọn.
+    </p>
+    <label class="dht-filter-search dha-member-search">
+        <svg class="dht-icon"><use href="#dha-icon-search"></use></svg>
+        <input type="search" placeholder="Lọc theo tên, email hoặc phòng ban…" aria-label="Lọc phóng viên" data-dha-search>
+    </label>
+
+    <div class="dha-candidates">
+        <div class="dha-candidate" th:each="c : ${page.candidates()}" data-dha-candidate
+             th:with="picked=${form.isSupporter(c.accountId())}"
+             th:classappend="${picked} ? ' is-picked' : ''"
+             th:attr="data-search=${#strings.toLowerCase(c.name() + ' ' + c.email() + ' ' + (c.departmentName() ?: ''))},data-name=${c.name()}">
+            <div class="dha-candidate-row">
+                <span class="dht-avatar dht-avatar--sm dht-avatar--support" th:text="${c.initials()}">MC</span>
+                <div class="dha-candidate-copy">
+                    <strong th:text="${c.name()}">Ngô Mai Chi</strong>
+                    <span class="dht-muted">
+                        <th:block th:text="${c.departmentName() ?: 'Chưa gán phòng ban'}">Phòng Văn hóa</th:block> · <th:block th:text="${c.email()}">chi@toasoan.vn</th:block>
+                    </span>
+                </div>
+                <span class="dha-same-dept" th:if="${c.sameDepartment()}">Cùng phòng</span>
+                <div class="dha-choices">
+                    <label class="dha-choice dha-choice--lead" th:if="${showLeadRadio}">
+                        <input type="radio" name="leadAccountId" th:value="${c.accountId()}" data-dha-lead-radio
+                               th:checked="${form.leadAccountId != null and form.leadAccountId == c.accountId()}">
+                        <span>Lead</span>
+                    </label>
+                    <label class="dha-choice">
+                        <input type="checkbox" name="supporterIds" th:value="${c.accountId()}" data-dha-support-check th:checked="${picked}">
+                        <span>Supporting</span>
+                    </label>
+                </div>
+            </div>
+            <!-- Nhiệm vụ + deadline riêng của Supporting này: chỉ hiện khi được tick -->
+            <div class="dha-two-cols dha-support-panel" data-dha-panel th:hidden="${!picked}">
+                <label class="dha-input">
+                    <span>Deadline</span>
+                    <input type="datetime-local" data-dha-deadline
+                           th:name="|supporterDeadlines[${c.accountId()}]|" th:value="${form.supporterDeadlines[c.accountId()]}">
+                </label>
+                <label class="dha-input dha-input--wide">
+                    <span>Nhiệm vụ</span>
+                    <textarea rows="2" maxlength="4000" placeholder="Ví dụ: chụp bộ ảnh hiện trường, quay clip 3 phút…"
+                              th:name="|supporterRequirements[${c.accountId()}]|" th:text="${form.supporterRequirements[c.accountId()]}"></textarea>
+                </label>
+            </div>
+        </div>
+        <p class="dha-empty" th:if="${#lists.isEmpty(page.candidates())}">Không còn phóng viên ACTIVE nào chưa tham gia đề tài này.</p>
+        <p class="dha-empty" data-dha-no-match hidden>Không có phóng viên phù hợp bộ lọc.</p>
+    </div>
+</th:block>
+</body>
+</html>

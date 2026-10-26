@@ -14,7 +14,9 @@ public class SidebarService {
         return switch (role) {
             case DEPARTMENT_HEAD -> List.of(
                     new SidebarGroup("THẨM ĐỊNH NỘI DUNG", List.of(
-                            new SidebarItem("Duyệt bản thảo", "/department-head/dashboard", "clipboard-check", null))));
+                            new SidebarItem("Duyệt bản thảo", "/department-head/dashboard", "clipboard-check", null))),
+                    new SidebarGroup("PHÂN CÔNG", List.of(
+                            new SidebarItem("Đề tài đã duyệt", "/department-head/topics", "file-text", null))));
             case REPORTER -> List.of(
                     new SidebarGroup("TÁC NGHIỆP", List.of(
                             new SidebarItem("Nhiệm vụ tác nghiệp", "/reporter/tasks", "clipboard-check", null),

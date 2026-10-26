@@ -28,4 +28,14 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Integer>
             Integer accountId, Collection<AssignmentRole> roles, AssignmentStatus status, TopicStatus topicStatus);
     @EntityGraph(attributePaths = {"topic", "assignedBy", "account"})
     Optional<Assignment> findWithDetailsById(Integer id);
+    // Đề tài mà một người đang phụ trách với một vai trò (ví dụ Trưởng phòng), kèm người đề xuất đề tài
+    @EntityGraph(attributePaths = {"topic", "topic.creator"})
+    List<Assignment> findByAccount_IdAndAssignmentRoleAndStatusNotAndTopic_Status(
+            Integer accountId, AssignmentRole role, AssignmentStatus status, TopicStatus topicStatus);
+    // Lịch sử nhân sự: các dòng đã REMOVED của một đề tài, mới nhất trước
+    @EntityGraph(attributePaths = {"account", "removedBy"})
+    List<Assignment> findByTopic_IdAndStatusOrderByRemovedAtDesc(Integer topicId, AssignmentStatus status);
+    // Thành viên hiện tại của nhiều đề tài cùng lúc, tránh truy vấn theo từng dòng
+    @EntityGraph(attributePaths = "account")
+    List<Assignment> findByTopic_IdInAndStatusNot(Collection<Integer> topicIds, AssignmentStatus status);
 }

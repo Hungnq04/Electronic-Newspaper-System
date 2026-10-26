@@ -89,7 +89,7 @@ public class ReporterTaskMapper {
         return (left.isNegative() ? "Quá hạn " : "Còn ") + formatDuration(left.abs());
     }
 
-    static String formatDuration(Duration d) {
+    public static String formatDuration(Duration d) {
         if (d.toDays() > 0) return d.toDays() + " ngày" + (d.toHoursPart() > 0 ? " " + d.toHoursPart() + " giờ" : "");
         if (d.toHours() > 0) return d.toHours() + " giờ " + d.toMinutesPart() + " phút";
         return Math.max(d.toMinutes(), 1) + " phút";

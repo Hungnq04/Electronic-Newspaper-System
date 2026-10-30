@@ -2,30 +2,66 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <body>
 <th:block th:fragment="content">
+<!-- Thanh trên cùng dùng chung với màn Trưởng phòng; tên người đăng nhập do SecretaryHeaderAdvice đưa vào -->
+<header class="sec-topbar">
+    <div th:replace="~{fragment/department-head-header :: header('dashboard', ${headerName}, ${headerRole}, ${headerInitials})}"></div>
+</header>
 <main class="page">
     <div class="page-head">
         <div>
+            <nav class="breadcrumb" aria-label="Breadcrumb"><span>QUY TRÌNH CẤP 3</span> › <strong>Duyệt cuối &amp; Xuất bản</strong></nav>
             <h1>Hàng đợi duyệt cuối</h1>
             <p>Bài đã được Trưởng phòng duyệt, chờ Thư ký tòa soạn duyệt cuối.</p>
         </div>
-        <span class="badge badge-info" th:text="${#lists.size(items)} + ' bài đang chờ'"></span>
     </div>
 
     <div class="alert alert-success" th:if="${message}" th:text="${message}"></div>
     <div class="alert alert-error" th:if="${error}" th:text="${error}"></div>
 
+    <!-- Thống kê: đếm ngay trên danh sách items, không thêm truy vấn -->
+    <section class="stats">
+        <article class="stat">
+            <div class="stat-head"><span>Chờ duyệt cuối</span>
+                <span class="stat-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg></span></div>
+            <div class="stat-value"><strong th:text="${#lists.size(items)}">0</strong><span>bài</span></div>
+            <div class="stat-note">Đã qua Trưởng phòng duyệt</div>
+        </article>
+        <article class="stat stat-green">
+            <div class="stat-head"><span>Bạn đang duyệt</span>
+                <span class="stat-icon"><svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div>
+            <div class="stat-value"><strong th:text="${#lists.size(items.?[reviewingByMe and !ownArticle])}">0</strong><span>bài</span></div>
+            <div class="stat-note">Bạn đã mở, chưa ra quyết định</div>
+        </article>
+        <article class="stat stat-amber">
+            <div class="stat-head"><span>Người khác đang duyệt</span>
+                <span class="stat-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></span></div>
+            <div class="stat-value"><strong th:text="${#lists.size(items.?[!ownArticle and reviewingBy != null and !reviewingByMe])}">0</strong><span>bài</span></div>
+            <div class="stat-note">Thư ký khác đã mở bài</div>
+        </article>
+        <article class="stat stat-slate">
+            <div class="stat-head"><span>Chưa ai mở</span>
+                <span class="stat-icon"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M4 13h4l2 3h4l2-3h4"/></svg></span></div>
+            <div class="stat-value"><strong th:text="${#lists.size(items.?[!ownArticle and reviewingBy == null])}">0</strong><span>bài</span></div>
+            <div class="stat-note">Sẵn sàng để duyệt</div>
+        </article>
+    </section>
+
     <section class="card">
+        <div class="card-head">
+            <h2>Danh sách chờ duyệt cuối <span class="count-pill" th:text="${#lists.size(items)} + ' bản ghi'"></span></h2>
+            <span class="hint">Bấm tiêu đề để mở bài</span>
+        </div>
         <div class="empty" th:if="${#lists.isEmpty(items)}">Hiện không có bài nào chờ duyệt cuối.</div>
         <div class="table-wrap" th:unless="${#lists.isEmpty(items)}">
             <table class="data">
                 <thead>
                 <tr>
-                    <th>Bài viết</th>
+                    <th>Bài viết &amp; Chuyên mục</th>
                     <th>Lead Reporter</th>
                     <th>Phiên bản</th>
                     <th>Trưởng phòng duyệt</th>
                     <th>Trạng thái</th>
-                    <th></th>
+                    <th>Thao tác</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -58,7 +94,8 @@
                     </td>
                     <td>
                         <a class="btn btn-sm" th:href="@{/secretary/final-reviews/{id}(id=${item.articleId})}"
-                           th:text="${item.ownArticle or (item.reviewingBy != null and !item.reviewingByMe)} ? 'Xem' : 'Duyệt'"></a>
+                           th:classappend="${item.ownArticle or (item.reviewingBy != null and !item.reviewingByMe)} ? 'btn-ghost'"
+                           th:text="${item.ownArticle or (item.reviewingBy != null and !item.reviewingByMe)} ? 'Xem' : 'Đọc & Duyệt cuối'"></a>
                     </td>
                 </tr>
                 </tbody>

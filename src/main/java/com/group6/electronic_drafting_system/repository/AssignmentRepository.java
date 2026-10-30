@@ -41,4 +41,14 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Integer>
     @Query("select s from Assignment s join fetch s.account where s.topic.id = :topicId and s.assignmentRole = :role "
             + "and s.status <> com.group6.electronic_drafting_system.entity.enums.AssignmentStatus.REMOVED")
     List<Assignment> findActiveByTopicAndRole(@Param("topicId") Integer topicId, @Param("role") AssignmentRole role);
+    @EntityGraph(attributePaths = {"account", "account.department", "topic"})
+    List<Assignment> findByTopicInAndStatusNot(Collection<Topic> topics, AssignmentStatus status);
+
+    // Số Topic mỗi Trưởng phòng đang phụ trách: mỗi phần tử là [accountId, count]
+    @Query("select a.account.id, count(a) from Assignment a where a.assignmentRole = :role and a.status <> :removed group by a.account.id")
+    List<Object[]> countActiveByRole(@Param("role") AssignmentRole role, @Param("removed") AssignmentStatus removed);
+
+    // Trưởng phòng đang phụ trách Topic (tối đa một - BR-38)
+    @EntityGraph(attributePaths = "account")
+    Optional<Assignment> findFirstByTopicAndAssignmentRoleAndStatusNot(Topic topic, AssignmentRole role, AssignmentStatus status);
 }

@@ -5,8 +5,6 @@
     <svg th:replace="~{reporter/tasks :: reporterSprite}"></svg>
 
     <section class="rp-page" aria-label="Chi tiết nhiệm vụ tác nghiệp">
-        <header th:replace="~{reporter/tasks :: reporterTopbar(${detail.fullName()}, ${detail.departmentName()}, ${detail.initials()}, false)}"></header>
-
         <main class="rp-main rp-main--detail">
             <div class="rp-flash rp-flash--error" th:if="${error}" th:text="${error}"></div>
             <div class="rp-flash rp-flash--ok" th:if="${message}" th:text="${message}"></div>

@@ -17,37 +17,14 @@
     <symbol id="tp-icon-inbox" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1Z"/></symbol>
 </svg>
 
-<!-- Thanh trên cùng: tên hệ thống, người đăng nhập, Đăng xuất (POST /logout kèm CSRF) -->
-<header th:fragment="tpTopbar(list)" class="tp-topbar">
-    <div class="tp-topbar-brand">
-        <svg class="tp-icon"><use href="#tp-icon-news"></use></svg>
-        <span>Hệ Thống Tòa Soạn Số</span>
-    </div>
-    <div class="tp-topbar-right">
-        <div class="tp-account">
-            <div class="tp-account-copy">
-                <strong th:text="${list.fullName()}">Nguyễn Văn A</strong>
-                <small th:text="${list.roleLabel()}">Phóng viên · Phòng Kinh tế</small>
-            </div>
-            <span class="tp-avatar" th:text="${list.initials()}">VA</span>
-        </div>
-        <span class="tp-topbar-divider"></span>
-        <form th:action="@{/logout}" method="post" class="tp-logout">
-            <button type="submit" class="tp-link-button">
-                <svg class="tp-icon"><use href="#tp-icon-logout"></use></svg> Đăng xuất
-            </button>
-        </form>
-    </div>
-</header>
-
+<!-- Header (tên, vai trò, avatar) dùng header chung fragment/header.html do layout/app.html tự gắn.
+     Đăng xuất nằm ở cuối sidebar. -->
 
 <!-- Topic Proposal List -->
 <th:block th:fragment="topicProposalListContent">
     <svg th:replace="~{reporter/topic-proposal-list :: tpSprite}"></svg>
 
     <div class="tp-page">
-        <header th:replace="~{reporter/topic-proposal-list :: tpTopbar(${list})}"></header>
-
         <main class="tp-main">
             <div class="tp-flash tp-flash--ok" role="status" th:if="${success}" th:text="${success}" data-tp-flash>Đã gửi đề tài thành công.</div>
             <div class="tp-flash tp-flash--error" role="alert" th:if="${error}" th:text="${error}">Lỗi</div>

@@ -1,0 +1,175 @@
+/*
+  Giao diện chung cho mọi role (Phóng viên, Trưởng ban, Thư ký, Admin).
+  Chuẩn lấy theo màn /reporter/tasks. layout/app.html nạp file này cho mọi trang.
+
+  Quy ước cho cả nhóm:
+  - Màu / chữ / bo góc: chỉ dùng biến --ui-* bên dưới, không tự đặt mã màu mới.
+  - Class dùng chung có tiền tố ui- (ui-button, ui-card, ui-stat...). CSS riêng của từng màn
+    chỉ giữ phần thật sự đặc thù (Kanban, trình soạn thảo...).
+  - File này chỉ chứa selector .ui-* và biến --ui-*, không đổi style của thẻ HTML chung (body, a, button...)
+    để không làm vỡ các màn chưa chuyển sang.
+*/
+
+/* ===== Biến màu, phông chữ (design token) ===== */
+:root {
+    --ui-ink:#1d2433;          /* chữ chính */
+    --ui-ink-soft:#3a4254;     /* chữ phụ đậm */
+    --ui-muted:#6b7385;        /* chữ mờ, ghi chú */
+    --ui-line:#e4e8f1;         /* đường viền */
+    --ui-page:#f6f7fb;         /* nền trang */
+    --ui-panel:#fff;           /* nền thẻ */
+    --ui-panel-soft:#f8f9fc;   /* nền ô nhập, đầu thẻ */
+
+    --ui-primary:#8b1e2d;      /* đỏ đô: màu chính */
+    --ui-primary-dark:#6f1622;
+    --ui-primary-pale:#fbeef0;
+    --ui-orange:#e8590c;       /* gấp / cần chú ý */
+    --ui-orange-dark:#c84a07;
+    --ui-orange-pale:#fff1e8;
+    --ui-red:#c92a2a;          /* lỗi / quá hạn */
+    --ui-red-pale:#fff0f0;
+    --ui-amber:#b7791f;        /* chờ duyệt */
+    --ui-amber-pale:#fff7e6;
+    --ui-green:#2b8a3e;        /* hoàn thành */
+    --ui-green-pale:#ebfbee;
+    --ui-blue:#2457c5;         /* thông tin */
+    --ui-blue-pale:#edf2ff;
+
+    --ui-font:Inter,"Segoe UI",Roboto,Arial,sans-serif;
+    --ui-serif:"Noto Serif","Times New Roman",serif;
+    --ui-radius:10px;
+    --ui-radius-sm:7px;
+}
+
+/* ===== Khung trang: bọc nội dung một màn bằng <section class="ui-page"> ===== */
+.ui-page { color:var(--ui-ink); background:var(--ui-page); min-height:100vh; font-family:var(--ui-font); font-size:13px; line-height:1.45; }
+.ui-page *, .ui-page *::before, .ui-page *::after { box-sizing:border-box; }
+.ui-page button, .ui-page input, .ui-page select, .ui-page textarea { font:inherit; }
+.ui-page button { cursor:pointer; }
+.ui-page a { color:inherit; text-decoration:none; }
+.ui-page [hidden] { display:none !important; }
+.ui-main { width:100%; max-width:1500px; margin:0 auto; padding:20px clamp(16px,2.3vw,32px) 32px; }
+.ui-icon { display:inline-block; width:16px; height:16px; flex:0 0 auto; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; vertical-align:middle; }
+.ui-muted { color:var(--ui-muted); font-size:11px; }
+.ui-right { text-align:right; }
+
+/* ===== Header chung (fragment/header.html) ===== */
+.ui-topbar { box-sizing:border-box; min-height:58px; padding:9px clamp(16px,2.3vw,32px); display:flex; align-items:center; justify-content:space-between; gap:16px;
+    background:var(--ui-panel); border-bottom:1px solid var(--ui-line); color:var(--ui-ink); font-family:var(--ui-font); font-size:13px; line-height:1.45; }
+.ui-topbar-date { font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ui-muted); }
+.ui-account { display:flex; align-items:center; gap:9px; }
+.ui-account-copy { display:flex; flex-direction:column; line-height:1.3; }
+.ui-account-copy strong { font-size:12px; }
+.ui-account-copy small { font-size:9px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ui-orange); }
+.ui-avatar { width:32px; height:32px; display:grid; place-items:center; flex:0 0 auto; border-radius:50%; color:#fff; background:var(--ui-primary); font-size:11px; font-weight:800; }
+.ui-avatar--sm { width:24px; height:24px; font-size:9px; background:#3b4a6b; }
+
+/* ===== Tiêu đề trang ===== */
+.ui-heading-row { display:flex; justify-content:space-between; align-items:flex-end; gap:20px; margin-bottom:18px; }
+.ui-breadcrumb { display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin-bottom:6px; font-size:10px; letter-spacing:.06em; color:var(--ui-muted); }
+.ui-breadcrumb > span:first-child { color:var(--ui-orange); font-weight:800; }
+.ui-breadcrumb strong { color:var(--ui-ink-soft); font-weight:700; }
+.ui-heading h1 { margin:0; color:var(--ui-ink); font-family:var(--ui-serif); font-weight:600; font-size:clamp(22px,2vw,28px); line-height:1.2; letter-spacing:-.02em; }
+.ui-heading p { margin:6px 0 0; color:var(--ui-muted); font-size:12px; }
+.ui-heading p b { color:var(--ui-ink-soft); }
+.ui-heading-actions { display:flex; gap:8px; flex-wrap:wrap; }
+
+/* ===== Thông báo (flash) ===== */
+.ui-flash { margin-bottom:14px; padding:10px 14px; border-radius:8px; font-size:12px; font-weight:600; }
+.ui-flash--error { color:var(--ui-red); background:var(--ui-red-pale); border:1px solid #ffd4d4; }
+.ui-flash--ok { color:var(--ui-green); background:var(--ui-green-pale); border:1px solid #c7f0cf; }
+
+/* ===== Nút ===== */
+.ui-button { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:36px; padding:7px 13px; border:1px solid transparent; border-radius:var(--ui-radius-sm);
+    font-size:12px; font-weight:700; line-height:1.2; white-space:nowrap; cursor:pointer; text-decoration:none; transition:background .15s ease,border-color .15s ease; }
+.ui-button--small { min-height:30px; padding:5px 10px; font-size:11px; }
+.ui-button--primary { color:#fff !important; background:var(--ui-primary); border-color:var(--ui-primary); }
+.ui-button--primary:hover { background:var(--ui-primary-dark); }
+.ui-button--danger { color:#fff !important; background:var(--ui-orange); border-color:var(--ui-orange); }
+.ui-button--danger:hover { background:var(--ui-orange-dark); }
+.ui-button--success { color:#fff !important; background:#1b5e3b; border-color:#1b5e3b; }
+.ui-button--success:hover { background:#144a2e; }
+.ui-button--outline { color:var(--ui-ink-soft); background:#fff; border-color:#d6dbe7; }
+.ui-button--outline:hover { border-color:#b5bdd0; background:#fdf8f9; }
+.ui-button--ghost { color:var(--ui-ink-soft); background:#f1f3f8; }
+.ui-button--ghost:hover { background:#e6e9f2; }
+.ui-button[disabled] { opacity:.55; cursor:not-allowed; }
+
+/* ===== Ô thống kê (fragment/stat-card.html) ===== */
+.ui-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:16px; }
+.ui-stat { box-sizing:border-box; min-width:0; padding:14px 16px 12px; border:1px solid var(--ui-line); border-radius:var(--ui-radius); background:var(--ui-panel); display:flex; flex-direction:column; gap:4px; font-family:var(--ui-font); }
+.ui-stat-head { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; font-size:10px; font-weight:700; letter-spacing:.07em; color:var(--ui-muted); }
+.ui-stat-icon { width:30px; height:30px; display:grid; place-items:center; flex:0 0 auto; border-radius:7px; color:var(--ui-primary); background:var(--ui-primary-pale); }
+.ui-stat-value { font-size:32px; line-height:1.1; font-weight:800; color:var(--ui-primary); letter-spacing:-.03em; }
+.ui-stat-unit { margin-left:4px; font-size:12px; font-weight:600; letter-spacing:0; color:var(--ui-muted); }
+.ui-stat-foot { display:flex; flex-wrap:wrap; justify-content:space-between; gap:4px 10px; font-size:11px; color:var(--ui-muted); }
+/* Màu theo tone: danger (cam, gấp), warning (vàng, chờ duyệt), success (xanh lá, xong), info (xanh dương), neutral (xám) */
+.ui-stat--danger { border-top:3px solid var(--ui-orange); }
+.ui-stat--danger .ui-stat-head, .ui-stat--danger .ui-stat-value { color:var(--ui-orange); }
+.ui-stat--danger .ui-stat-icon { color:var(--ui-orange); background:var(--ui-orange-pale); }
+.ui-stat--warning .ui-stat-value { color:var(--ui-amber); }
+.ui-stat--warning .ui-stat-icon { color:var(--ui-amber); background:var(--ui-amber-pale); }
+.ui-stat--success .ui-stat-value { color:var(--ui-green); }
+.ui-stat--success .ui-stat-icon { color:var(--ui-green); background:var(--ui-green-pale); }
+.ui-stat--info .ui-stat-value { color:var(--ui-blue); }
+.ui-stat--info .ui-stat-icon { color:var(--ui-blue); background:var(--ui-blue-pale); }
+.ui-stat--neutral .ui-stat-value { color:var(--ui-ink-soft); }
+.ui-stat--neutral .ui-stat-icon { color:var(--ui-ink-soft); background:#eef0f5; }
+.ui-pulse { display:inline-block; width:7px; height:7px; margin-left:3px; border-radius:50%; background:var(--ui-red); animation:ui-pulse 1.6s ease-in-out infinite; vertical-align:middle; }
+@keyframes ui-pulse { 50% { opacity:.35; } }
+
+/* ===== Bộ lọc: tab + ô tìm + dropdown ===== */
+.ui-filter-panel { margin-bottom:16px; padding:14px 16px; border:1px solid var(--ui-line); border-radius:var(--ui-radius); background:var(--ui-panel); display:flex; flex-direction:column; gap:12px; }
+.ui-filter-top { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px; }
+.ui-tabs { display:flex; flex-wrap:wrap; gap:6px; }
+.ui-tab { display:inline-flex; align-items:center; gap:7px; min-height:32px; padding:6px 12px; border:1px solid var(--ui-line); border-radius:var(--ui-radius-sm); background:#f7f8fc; color:var(--ui-ink-soft); font-size:12px; font-weight:600; }
+.ui-tab b { min-width:18px; padding:1px 6px; border-radius:20px; background:#e3e7f1; font-size:10px; text-align:center; }
+.ui-tab:hover { border-color:#e2bcc3; }
+.ui-tab.is-active { color:#fff; background:var(--ui-primary); border-color:var(--ui-primary); }
+.ui-tab.is-active b { background:rgba(255,255,255,.22); }
+.ui-search { flex:0 1 340px; min-width:220px; height:34px; display:flex; align-items:center; gap:8px; padding:0 10px; border:1px solid var(--ui-line); border-radius:var(--ui-radius-sm); background:var(--ui-panel-soft); color:#8d94a6; }
+.ui-search input { width:100%; min-width:0; border:0; outline:0; background:transparent; color:var(--ui-ink); font-size:12px; }
+.ui-search:focus-within { border-color:#e2a9b2; box-shadow:0 0 0 3px rgba(139,30,45,.1); }
+.ui-select { appearance:none; min-width:170px; height:32px; padding:4px 10px; border:1px solid #d6dbe7; border-radius:6px; outline:0; background:#fff; color:var(--ui-ink); font-size:12px; font-weight:600; }
+.ui-select:focus { border-color:#e2a9b2; box-shadow:0 0 0 3px rgba(139,30,45,.1); }
+
+/* ===== Thẻ (card) ===== */
+.ui-card { border:1px solid var(--ui-line); border-radius:var(--ui-radius); background:var(--ui-panel); overflow:hidden; }
+.ui-card-head { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px; padding:12px 16px; border-bottom:1px solid var(--ui-line); background:#fafbfe; }
+.ui-card-head h2 { display:flex; align-items:center; gap:8px; margin:0; font-size:13px; font-weight:700; }
+.ui-card-body { padding:16px; }
+.ui-count-pill { padding:2px 8px; border-radius:20px; background:var(--ui-primary-pale); color:var(--ui-primary); font-size:10px; font-weight:700; }
+
+/* ===== Bảng ===== */
+.ui-table-wrap { overflow-x:auto; }
+.ui-table { width:100%; border-collapse:collapse; }
+.ui-table th { padding:10px 14px; border-bottom:1px solid var(--ui-line); text-align:left; font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ui-muted); white-space:nowrap; }
+.ui-table td { padding:14px; border-bottom:1px solid #eef1f6; vertical-align:top; }
+.ui-table tbody tr:hover { background:#fdf8f9; }
+
+/* ===== Nhãn trạng thái ===== */
+.ui-status { display:inline-flex; align-items:center; gap:6px; padding:3px 8px; border-radius:5px; font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; white-space:nowrap; }
+.ui-status i { width:6px; height:6px; border-radius:50%; background:currentColor; }
+.ui-status--neutral { color:#5d6577; background:#eef0f5; }
+.ui-status--primary { color:var(--ui-primary); background:var(--ui-primary-pale); }
+.ui-status--warning { color:var(--ui-amber); background:var(--ui-amber-pale); }
+.ui-status--success { color:var(--ui-green); background:var(--ui-green-pale); }
+.ui-status--danger { color:var(--ui-red); background:var(--ui-red-pale); }
+.ui-status--info { color:var(--ui-blue); background:var(--ui-blue-pale); }
+
+/* ===== Thanh tiến độ ===== */
+.ui-progress { height:5px; border-radius:5px; background:#e8ebf3; overflow:hidden; }
+.ui-progress span { display:block; height:100%; border-radius:inherit; background:var(--ui-primary); }
+
+/* ===== Trạng thái rỗng ===== */
+.ui-empty { display:flex; flex-direction:column; align-items:center; gap:6px; padding:40px 16px; text-align:center; color:var(--ui-muted); }
+.ui-empty strong { color:var(--ui-ink); }
+.ui-empty--compact { padding:18px 12px; }
+
+/* ===== Màn hình nhỏ ===== */
+@media (max-width:640px) {
+    .ui-heading-row { flex-direction:column; align-items:flex-start; }
+    .ui-topbar-date, .ui-account-copy { display:none; }
+    .ui-search { flex-basis:100%; }
+    .ui-select { min-width:0; width:100%; }
+}

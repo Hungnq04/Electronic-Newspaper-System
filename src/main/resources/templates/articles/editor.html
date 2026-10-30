@@ -6,11 +6,7 @@
   CSS/JS (editor.css, reporter-tasks.css, lucide, editor.js) do ArticleController khai báo qua pageCss / pageJs.
 -->
 <th:block th:fragment="articleEditorContent">
-<svg th:replace="~{reporter/tasks :: reporterSprite}"></svg>
-<div class="rp-page ae-head">
-    <header th:replace="~{reporter/tasks :: reporterTopbar(${article.leadName}, ${article.departmentName}, ${article.leadInitials()}, false)}"></header>
-</div>
-
+<!-- Header (tên, vai trò, avatar) dùng header chung fragment/header.html do layout/app.html tự gắn -->
 <div class="workspace" th:classappend="${article.editable} ? '' : 'readonly'">
     <!-- ===== Thanh trên cùng ===== -->
     <header class="topbar">

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  Ô thống kê dùng chung cho mọi role. Đặt các ô trong <section class="ui-stats">, mỗi ô gọi fragment này:
+
+    <section class="ui-stats" aria-label="Thống kê">
+        <article th:replace="~{fragment/stat-card :: statCard('CẦN NỘP GẤP', ${board.urgentCount()}, null,
+                 'Hạn dưới 24 giờ hoặc quá hạn', 'danger', 'alarm')}"></article>
+    </section>
+
+  Tham số (không dùng thì truyền null):
+    label - tên ô, viết HOA
+    value - con số
+    unit  - đơn vị nhỏ cạnh con số, vd "bài", "đề tài"
+    note  - dòng ghi chú bên dưới
+    tone  - màu: null (đỏ đô) | danger | warning | success | info | neutral
+    icon  - clipboard | alarm | hourglass | check-circle | file | x-circle | users | calendar | edit | book-open | inbox
+  Style: .ui-stat trong static/css/theme.css
+-->
+<article class="ui-stat" th:fragment="statCard(label, value, unit, note, tone, icon)"
+         th:classappend="${tone != null} ? |ui-stat--${tone}|">
+    <div class="ui-stat-head">
+        <!-- Ô màu danger có số khác 0 thì hiện chấm nhấp nháy để gây chú ý -->
+        <span><th:block th:text="${label}">TỔNG NHIỆM VỤ</th:block> <i class="ui-pulse" th:if="${tone == 'danger' and value != null and #strings.toString(value) != '0'}"></i></span>
+        <span class="ui-stat-icon" th:if="${icon != null}" th:switch="${icon}">
+            <svg class="ui-icon" th:case="'clipboard'" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5h6a1.5 1.5 0 0 0-1.5-1.5h-3A1.5 1.5 0 0 0 9 4.5ZM9 10h6M9 14h6M9 18h3"/></svg>
+            <svg class="ui-icon" th:case="'alarm'" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5M5 3 2 6M19 3l3 3"/></svg>
+            <svg class="ui-icon" th:case="'hourglass'" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h12M6 22h12M7 2v4a5 5 0 0 0 10 0V2M7 22v-4a5 5 0 0 1 10 0v4"/></svg>
+            <svg class="ui-icon" th:case="'check-circle'" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16.5 9"/></svg>
+            <svg class="ui-icon" th:case="'file'" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg>
+            <svg class="ui-icon" th:case="'x-circle'" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/></svg>
+            <svg class="ui-icon" th:case="'users'" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM20 8a3.5 3.5 0 0 1-2.5 3.3M17 15h1a3 3 0 0 1 3 3v3"/></svg>
+            <svg class="ui-icon" th:case="'calendar'" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+            <svg class="ui-icon" th:case="'edit'" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>
+            <svg class="ui-icon" th:case="'book-open'" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v14M3 5.5A2.5 2.5 0 0 1 5.5 3H12v18H5.5A2.5 2.5 0 0 0 3 23ZM21 5.5A2.5 2.5 0 0 0 18.5 3H12v18h6.5a2.5 2.5 0 0 1 2.5 2Z"/></svg>
+            <svg class="ui-icon" th:case="'inbox'" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1Z"/></svg>
+            <!-- Tên icon lạ: hiện đồng hồ -->
+            <svg class="ui-icon" th:case="*" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+        </span>
+    </div>
+    <strong class="ui-stat-value"><th:block th:text="${value}">12</th:block><small class="ui-stat-unit" th:if="${unit != null}" th:text="${unit}">bài</small></strong>
+    <div class="ui-stat-foot" th:if="${note != null}"><span th:text="${note}">4 việc đang mở</span></div>
+</article>
+</body>
+</html>

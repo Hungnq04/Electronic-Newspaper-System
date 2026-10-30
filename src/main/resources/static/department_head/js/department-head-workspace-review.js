@@ -18,7 +18,8 @@ function toast(msg, isError) {
   if (t.dataset.message) toast(t.dataset.message, t.dataset.error === 'true');
 })();
 
-// ---------- Hỏi lại trước khi gửi form có data-confirm (ví dụ: Xóa góp ý) ----------
+// ---------- Hỏi lại trước
+//  khi gửi form có data-confirm (ví dụ: Xóa góp ý) ----------
 document.querySelectorAll('form[data-confirm]').forEach(form => {
   form.addEventListener('submit', e => {
     if (!confirm(form.dataset.confirm)) e.preventDefault();

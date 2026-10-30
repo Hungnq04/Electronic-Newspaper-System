@@ -2,10 +2,14 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <body>
 <th:block th:fragment="content">
-<main class="page" style="max-width:860px">
+<header class="sec-topbar">
+    <div th:replace="~{fragment/department-head-header :: header('dashboard', ${headerName}, ${headerRole}, ${headerInitials})}"></div>
+</header>
+<main class="page" style="max-width:920px">
     <a class="back-link" th:href="@{/secretary/topics}">← Topic tòa soạn</a>
     <div class="page-head">
         <div>
+            <nav class="breadcrumb" aria-label="Breadcrumb"><span>TOPIC TÒA SOẠN</span> › <strong>Tạo Editorial Topic</strong></nav>
             <h1>Tạo Editorial Topic</h1>
             <p>Topic cấp tòa soạn được kích hoạt ngay khi lưu, không cần qua duyệt. Sau khi lưu, chọn Trưởng phòng để giao.</p>
         </div>

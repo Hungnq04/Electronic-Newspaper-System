@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- FL-07 Màn #62 Publication Detail + pop-up #64 Publish Now, #65 Schedule Form, #66 Schedule Confirmation -->
+<th:block th:fragment="content">
+<main class="page">
+    <a class="back-link" th:href="@{/secretary/publications}">← Danh sách chờ xuất bản</a>
+    <div class="page-head">
+        <div>
+            <h1>Xuất bản bài viết</h1>
+            <p th:text="'Topic: ' + ${pub.topicTitle}"></p>
+        </div>
+        <div class="article-meta">
+            <span class="badge badge-info" th:text="'Phiên bản ' + ${pub.versionLabel}"></span>
+            <span class="badge" th:classappend="${pub.canPublish} ? 'badge-warning' : 'badge-success'"
+                  th:text="${pub.statusLabel}"></span>
+        </div>
+    </div>
+
+    <div class="alert alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <div class="workspace">
+        <!-- Nội dung đúng phiên bản sẽ được đăng (bản chụp đã duyệt cuối, không phải bản đang soạn) -->
+        <article class="card article-preview">
+            <div class="category" th:text="${pub.category}"></div>
+            <h1 th:text="${pub.title}"></h1>
+            <p class="subtitle" th:if="${pub.subtitle}" th:text="${pub.subtitle}"></p>
+            <figure th:if="${pub.featuredImageUrl}">
+                <img th:src="${pub.featuredImageUrl}" th:alt="${pub.featuredImageCaption}"
+                     onerror="this.closest('figure').classList.add('img-missing')">
+                <figcaption th:text="${pub.featuredImageCaption}"></figcaption>
+            </figure>
+            <p class="sapo" th:text="${pub.sapo}"></p>
+            <p class="pub-paragraph" th:each="p : ${pub.paragraphs}" th:text="${p}"></p>
+        </article>
+
+        <aside>
+            <!-- Quyết định xuất bản -->
+            <section class="card decision-card">
+                <div class="card-body">
+                    <h2>Xuất bản</h2>
+                    <th:block th:if="${pub.canPublish}">
+                        <p th:text="'Phiên bản ' + ${pub.versionLabel} + ' là bản đã được duyệt cuối và sẽ được đăng lên trang công khai.'"></p>
+                        <div class="actions">
+                            <button type="button" class="btn btn-block" data-open="publish-dialog">Đăng ngay</button>
+                            <button type="button" class="btn btn-ghost btn-block" data-open="schedule-dialog">Hẹn giờ đăng</button>
+                        </div>
+                    </th:block>
+                    <th:block th:unless="${pub.canPublish}">
+                        <p>Bài không còn ở trạng thái chờ xuất bản. Trang này chỉ để xem.</p>
+                        <dl class="pub-facts">
+                            <dt>Hình thức</dt><dd th:text="${pub.publicationTypeLabel} ?: '—'"></dd>
+                            <th:block th:if="${pub.scheduledAt}">
+                                <dt>Hẹn đăng lúc</dt><dd th:text="${#temporals.format(pub.scheduledAt, 'HH:mm, dd/MM/yyyy')}"></dd>
+                            </th:block>
+                            <th:block th:if="${pub.publishedAt}">
+                                <dt>Đã đăng lúc</dt><dd th:text="${#temporals.format(pub.publishedAt, 'HH:mm, dd/MM/yyyy')}"></dd>
+                            </th:block>
+                            <dt>Thư ký thực hiện</dt><dd th:text="${pub.publishedBy} ?: '—'"></dd>
+                        </dl>
+                        <a class="btn btn-ghost btn-block" th:if="${pub.status == 'PUBLISHED'}"
+                           th:href="@{/news/{id}(id=${pub.articleId})}" target="_blank">Xem trên trang công khai</a>
+                    </th:block>
+                </div>
+            </section>
+
+            <!-- Thông tin duyệt -->
+            <section class="card">
+                <div class="card-body">
+                    <h2>Thông tin bài</h2>
+                    <dl class="pub-facts">
+                        <dt>Lead Reporter</dt><dd th:text="${pub.leadName}"></dd>
+                        <dt>Trưởng phòng duyệt</dt>
+                        <dd th:text="${pub.departmentApprovedBy} ? ${pub.departmentApprovedBy} + ' · ' + ${#temporals.format(pub.departmentApprovedAt, 'dd/MM/yyyy HH:mm')} : '—'"></dd>
+                        <dt>Thư ký duyệt cuối</dt>
+                        <dd th:text="${pub.finalApprovedBy} ? ${pub.finalApprovedBy} + ' · ' + ${#temporals.format(pub.finalApprovedAt, 'dd/MM/yyyy HH:mm')} : '—'"></dd>
+                        <th:block th:if="${pub.finalFeedback}">
+                            <dt>Nhận xét duyệt cuối</dt><dd th:text="${pub.finalFeedback}"></dd>
+                        </th:block>
+                    </dl>
+                </div>
+            </section>
+        </aside>
+    </div>
+</main>
+
+<th:block th:if="${pub.canPublish}">
+<!-- #64 Publish Now Confirmation -->
+<dialog id="publish-dialog">
+    <form method="post" th:action="@{/secretary/publications/{id}/publish(id=${pub.articleId})}">
+        <h2>Đăng bài ngay?</h2>
+        <p>
+            Bài "<strong th:text="${pub.title}"></strong>" (phiên bản <span th:text="${pub.versionLabel}"></span>)
+            sẽ xuất hiện ngay trên trang công khai. Bài đã đăng không gỡ được trong Phase 1.
+        </p>
+        <div class="dialog-actions">
+            <button type="button" class="btn btn-ghost" data-close>Hủy</button>
+            <button type="submit" class="btn">Xác nhận đăng ngay</button>
+        </div>
+    </form>
+</dialog>
+
+<!-- #65 Schedule Publication Form: chọn ngày giờ (giờ Việt Nam) -->
+<dialog id="schedule-dialog">
+    <form id="schedule-form" method="dialog">
+        <h2>Hẹn giờ đăng</h2>
+        <p>Chọn thời điểm đăng, phải sau thời điểm hiện tại ít nhất 5 phút. Đến giờ, hệ thống sẽ tự đăng nếu bài vẫn còn trong lịch.</p>
+        <label for="schedule-at">Ngày giờ đăng (giờ Việt Nam)</label>
+        <input id="schedule-at" type="datetime-local" required th:min="${pub.minScheduleAt}" th:value="${scheduledAt}">
+        <div class="dialog-actions">
+            <button type="button" class="btn btn-ghost" data-close>Hủy</button>
+            <button type="button" class="btn" id="schedule-next">Tiếp tục</button>
+        </div>
+    </form>
+</dialog>
+
+<!-- #66 Schedule Confirmation -->
+<dialog id="schedule-confirm-dialog">
+    <form method="post" th:action="@{/secretary/publications/{id}/schedule(id=${pub.articleId})}">
+        <h2>Xác nhận hẹn giờ</h2>
+        <p>
+            Bài "<strong th:text="${pub.title}"></strong>" sẽ được tự động đăng lúc
+            <strong id="schedule-confirm-text"></strong> (giờ Việt Nam).
+        </p>
+        <input type="hidden" name="scheduledAt" id="schedule-confirm-value">
+        <div class="dialog-actions">
+            <button type="button" class="btn btn-ghost" id="schedule-back">Chọn lại giờ</button>
+            <button type="submit" class="btn">Xác nhận hẹn giờ</button>
+        </div>
+    </form>
+</dialog>
+</th:block>
+
+<script th:inline="javascript">
+    (() => {
+        // Mở / đóng pop-up
+        document.querySelectorAll('[data-open]').forEach(btn =>
+            btn.addEventListener('click', () => document.getElementById(btn.dataset.open).showModal()));
+        document.querySelectorAll('dialog [data-close]').forEach(btn =>
+            btn.addEventListener('click', () => btn.closest('dialog').close()));
+
+        const input = document.getElementById('schedule-at');
+        if (!input) return;   // bài không còn chờ xuất bản: không có pop-up
+        const formDialog = document.getElementById('schedule-dialog');
+        const confirmDialog = document.getElementById('schedule-confirm-dialog');
+
+        // #65 -> #66: trình duyệt kiểm tra ô giờ (bắt buộc, không sớm hơn min); server kiểm tra lại lần nữa
+        document.getElementById('schedule-next').addEventListener('click', () => {
+            if (!input.reportValidity()) return;
+            const [date, time] = input.value.split('T');           // "2026-11-01T08:30"
+            const [y, m, d] = date.split('-');
+            document.getElementById('schedule-confirm-text').textContent = time + ', ' + d + '/' + m + '/' + y;
+            document.getElementById('schedule-confirm-value').value = input.value;
+            formDialog.close();
+            confirmDialog.showModal();
+        });
+        // #66 -> #65: quay lại chọn giờ khác
+        document.getElementById('schedule-back').addEventListener('click', () => {
+            confirmDialog.close();
+            formDialog.showModal();
+        });
+
+        // Server báo lỗi hẹn giờ (vd giờ quá sớm): mở lại pop-up chọn giờ với giờ đã chọn
+        if (/*[[${scheduledAt != null}]]*/ false) formDialog.showModal();
+    })();
+</script>
+</th:block>
+</body>
+</html>

@@ -67,7 +67,14 @@ public enum ErrorCode {
     MEDIA_TYPE_NOT_SUPPORTED(1501, "Chỉ hỗ trợ ảnh JPG, PNG, WebP, GIF và video MP4, WebM, MOV.", HttpStatus.BAD_REQUEST),
     MEDIA_TOO_LARGE(1502, "Tệp quá lớn: ảnh tối đa 10MB, video tối đa 100MB.", HttpStatus.PAYLOAD_TOO_LARGE),
     MEDIA_STORAGE_NOT_CONFIGURED(1503, "Hệ thống chưa cấu hình Cloudinary nên chưa thể tải tệp lên.", HttpStatus.SERVICE_UNAVAILABLE),
-    MEDIA_UPLOAD_FAILED(1504, "Tải tệp lên Cloudinary không thành công. Vui lòng thử lại.", HttpStatus.BAD_GATEWAY);
+    MEDIA_UPLOAD_FAILED(1504, "Tải tệp lên Cloudinary không thành công. Vui lòng thử lại.", HttpStatus.BAD_GATEWAY),
+
+    // FL-07 Xuất bản (Vanh)
+    PUBLICATION_ACCESS_DENIED(1800, "Chỉ Thư ký tòa soạn đang hoạt động mới được xuất bản bài viết.", HttpStatus.FORBIDDEN),
+    PUBLICATION_NOT_APPROVED(1801, "Bài viết không còn ở trạng thái chờ xuất bản (có thể đã được đăng hoặc hẹn giờ).", HttpStatus.CONFLICT),
+    PUBLICATION_FINAL_APPROVAL_MISSING(1802, "Phiên bản mới nhất chưa được Thư ký tòa soạn duyệt cuối nên chưa thể xuất bản.", HttpStatus.CONFLICT),
+    PUBLICATION_SCHEDULE_TIME_REQUIRED(1803, "Vui lòng chọn ngày giờ đăng hợp lệ.", HttpStatus.BAD_REQUEST),
+    PUBLICATION_SCHEDULE_TIME_TOO_SOON(1804, "Thời điểm đăng phải sau thời điểm hiện tại ít nhất 5 phút.", HttpStatus.BAD_REQUEST);
 
     private final int code;
     private final String message;

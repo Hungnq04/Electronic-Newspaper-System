@@ -23,8 +23,10 @@
     </svg>
 
     <section class="dh-dashboard" aria-label="Màn hình thẩm định và phê duyệt bản thảo">
-        <!-- Header (tên, vai trò, avatar) dùng header chung fragment/header.html do layout/app.html tự gắn.
-             Ô tìm kiếm của dashboard nằm trong bộ lọc bên dưới (#dh-draft-search). -->
+        <header class="dh-topbar">
+            <div th:replace="~{fragment/department-head-header :: header('dashboard', ${dashboard.displayName}, ${dashboard.departmentName != null ? 'Trưởng ban ' + dashboard.departmentName : 'Trưởng ban'}, ${dashboard.userInitials})}"></div>
+        </header>
+
         <main class="dh-main">
             <div class="dh-page-heading-row">
                 <div class="dh-page-heading">

@@ -6,6 +6,8 @@
     <svg th:replace="~{reporter/topic-proposal-list :: tpSprite}"></svg>
 
     <div class="tp-page">
+        <header th:replace="~{reporter/topic-proposal-list :: tpTopbar(${list})}"></header>
+
         <main class="tp-main tp-main--narrow">
             <a class="tp-back" th:href="@{/reporter/topics}">
                 <svg class="tp-icon"><use href="#tp-icon-arrow-left"></use></svg> Quay lại danh sách đề tài

@@ -38,6 +38,10 @@ svg.lucide { width: 16px; height: 16px; stroke-width: 2; flex-shrink: 0; }
 .deadline-left { margin: 4px 0 0; font-weight: 600; }
 .deadline-left.late { color: var(--brand); }
 
+/* Topbar phóng viên dùng chung: cuộn theo trang để thanh lưu / nộp bài bám đỉnh */
+.ae-head { min-height: 0; }
+.ae-head .rp-topbar { position: static; }
+
 /* ---------- Khung làm việc ---------- */
 .workspace { min-height: 100vh; }
 .topbar {

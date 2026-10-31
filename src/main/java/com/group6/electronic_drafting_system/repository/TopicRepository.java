@@ -41,8 +41,19 @@ public interface TopicRepository extends JpaRepository<Topic, Integer> {
     @EntityGraph(attributePaths = {"department", "creator", "reviewedByHead"})
     Optional<Topic> findWithPeopleById(Integer id);
 
-    // Khóa dòng khi đổi trạng thái: hai người bấm cùng lúc thì người sau phải chờ, rồi thấy status đã đổi
+    @EntityGraph(attributePaths = {"creator", "creator.role"})
+    List<Topic> findByStatusOrderByCreatedAtDesc(TopicStatus status);
+
+    @EntityGraph(attributePaths = {"creator", "creator.role"})
+    Optional<Topic> findWithCreatorById(Integer id);
+
+    // Khóa dòng khi đổi trạng thái / giao việc: hai người bấm cùng lúc thì người sau phải chờ, rồi thấy dữ liệu mới
+    // (dùng chung cho FL-01 duyệt đề tài và FL-02 giao Topic tòa soạn)
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select t from Topic t where t.id = :id")
     Optional<Topic> findByIdForUpdate(@Param("id") Integer id);
+
+    // Gợi ý chuyên mục khi tạo Topic
+    @Query("select distinct t.category from Topic t order by t.category")
+    List<String> findDistinctCategories();
 }

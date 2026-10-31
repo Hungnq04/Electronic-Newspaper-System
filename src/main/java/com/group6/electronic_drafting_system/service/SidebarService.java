@@ -24,8 +24,10 @@ public class SidebarService {
             // TODO: bổ sung menu khi làm màn hình cho các quyền còn lại
             case EDITORIAL_SECRETARY -> List.of(
                     new SidebarGroup("BIÊN TẬP TÒA SOẠN", List.of(
+                            new SidebarItem("Topic tòa soạn", "/secretary/topics", "shapes", null),
                             new SidebarItem("Duyệt cuối", "/secretary/final-reviews", "clipboard-check", null),
-                            new SidebarItem("Duyệt đề tài cuối", "/secretary/topics", "file-text", null))));
+                            // FL-01 Iter2: đổi URL sang /secretary/topic-reviews vì /secretary/topics là màn Topic tòa soạn (FL-02)
+                            new SidebarItem("Duyệt đề tài cuối", "/secretary/topic-reviews", "file-text", null))));
             case ADMIN -> List.of();
         };
     }

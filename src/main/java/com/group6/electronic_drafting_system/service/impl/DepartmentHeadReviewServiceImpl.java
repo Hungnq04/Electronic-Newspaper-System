@@ -4,6 +4,7 @@ import com.group6.electronic_drafting_system.dto.DepartmentHead.CommentRequestDT
 import com.group6.electronic_drafting_system.dto.DepartmentHead.ReviewCommentDTO;
 import com.group6.electronic_drafting_system.dto.DepartmentHead.ReviewWorkspaceDTO;
 import com.group6.electronic_drafting_system.dto.DepartmentHead.SourceItemDTO;
+import com.group6.electronic_drafting_system.dto.DepartmentHead.VersionViewDTO;
 import com.group6.electronic_drafting_system.entity.Account;
 import com.group6.electronic_drafting_system.entity.Article;
 import com.group6.electronic_drafting_system.entity.ArticleReview;
@@ -31,7 +32,9 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.stream.Collectors;
+import org.jsoup.Jsoup;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -80,7 +83,14 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
             reviewable = open.getReviewer().getId().equals(head.getId());
         }
 
-        List<SourceItemDTO> sources = articles.findSources(articleId).stream().map(mapper::toSource).toList();
+        // Thân bài theo bố cục phóng viên; link ảnh / video trong bài dùng để đánh dấu tư liệu "Có trong bài"
+        VersionViewDTO currentView = mapper.toVersionView(current);
+        Set<String> bodyUrls = mapper.mediaUrls(currentView.getBlocks());
+        List<SourceItemDTO> sources = articles.findSources(articleId).stream()
+                .map(source -> mapper.toSource(source, bodyUrls)).toList();
+        // Ảnh đại diện: mỗi bài tối đa một (uq_article_featured), luôn là Source loại IMAGE (R16)
+        SourceItemDTO featuredImage = sources.stream()
+                .filter(source -> source.isFeatured() && source.getUrl() != null).findFirst().orElse(null);
         String supportingNames = assignments.findActiveByTopicAndRole(article.getTopic().getId(), AssignmentRole.SUPPORTING)
                 .stream().map(s -> s.getAccount().getFullName()).collect(Collectors.joining(", "));
 
@@ -99,10 +109,11 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
                 .supportingNames(supportingNames)
                 .wordCount(String.format(Locale.forLanguageTag("vi-VN"), "%,d từ", countWords(current.getContent())))
                 .imageCount((int) sources.stream().filter(SourceItemDTO::isImage).count())
-                .current(mapper.toVersionView(current))
+                .current(currentView)
                 .previous(previous != null ? mapper.toVersionView(previous) : null)
                 .versions(allVersions.stream().map(mapper::toVersionView).toList())
                 .sources(sources)
+                .featuredImage(featuredImage)
                 .comments(rootComments(current))
                 .previousComments(previous != null ? rootComments(previous) : List.of())
                 .build();
@@ -266,9 +277,11 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
         }
     }
 
+    // Nội dung có thể là HTML từ trình soạn thảo: bỏ thẻ trước rồi mới đếm, để không đếm "<p>", "<img ...>" thành chữ
     private static int countWords(String content) {
         if (content == null || content.isBlank()) return 0;
-        return content.trim().split("\\s+").length;
+        String text = Jsoup.parse(content).text().trim();
+        return text.isEmpty() ? 0 : text.split("\\s+").length;
     }
 
     private static String statusText(ArticleStatus status) {

@@ -24,7 +24,7 @@
 
         <!-- Lọc theo ban (server) + tìm nhanh trong hàng chờ (trên trang) -->
         <section class="tp-filter-panel" aria-label="Bộ lọc đề tài">
-            <form method="get" th:action="@{/secretary/topics}">
+            <form method="get" th:action="@{/secretary/topic-reviews}">
                 <label class="tp-select-field">BAN:
                     <select name="department" onchange="this.form.submit()">
                         <option value="">Tất cả các ban</option>
@@ -41,7 +41,7 @@
         </section>
 
         <div class="tp-workspace">
-            <th:block th:replace="~{fragment/topic-review :: queue(${ws}, '/secretary/topics', ${ws.departmentFilter()})}"></th:block>
+            <th:block th:replace="~{fragment/topic-review :: queue(${ws}, '/secretary/topic-reviews', ${ws.departmentFilter()})}"></th:block>
 
             <div class="tp-workspace-detail">
                 <section class="tp-card">
@@ -77,7 +77,7 @@
     <th:block th:if="${ws.selected() != null and ws.canDecide()}">
         <!-- Final Topic Approval Confirmation -->
         <dialog id="approve-dialog" class="tp-dialog">
-            <form method="post" th:action="@{/secretary/topics/{id}/approve(id=${ws.selected().id()})}">
+            <form method="post" th:action="@{/secretary/topic-reviews/{id}/approve(id=${ws.selected().id()})}">
                 <h2>Duyệt đề tài lần cuối?</h2>
                 <dl class="tp-confirm-summary">
                     <div><dt>Tiêu đề</dt><dd th:text="${ws.selected().title()}"></dd></div>
@@ -92,7 +92,7 @@
 
         <!-- Reject Topic Form -->
         <dialog id="reject-dialog" class="tp-dialog" th:attr="data-reopen=${reason != null}">
-            <form method="post" th:action="@{/secretary/topics/{id}/reject(id=${ws.selected().id()})}">
+            <form method="post" th:action="@{/secretary/topic-reviews/{id}/reject(id=${ws.selected().id()})}">
                 <h2>Từ chối đề tài</h2>
                 <label for="reject-reason">Lý do từ chối <span class="tp-required">*</span></label>
                 <textarea id="reject-reason" name="reason" maxlength="4000" required th:text="${reason}"></textarea>

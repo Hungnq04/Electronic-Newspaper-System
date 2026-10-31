@@ -57,7 +57,7 @@ public enum ErrorCode {
     TOPIC_DEPARTMENT_INVALID(1601, "Ban của bạn chưa có Trưởng ban đang hoạt động nên chưa thể gửi đề tài. Vui lòng liên hệ Quản trị viên.", HttpStatus.BAD_REQUEST),
     TOPIC_ACCESS_DENIED(1602, "Bạn không có quyền xem danh sách đề tài.", HttpStatus.FORBIDDEN),
     // FL-01 Iter2: duyệt Topic, sửa và gửi lại, thông báo
-    TOPIC_NOT_FOUND(1603, "Không tìm thấy đề tài.", HttpStatus.NOT_FOUND),
+    // (TOPIC_NOT_FOUND dùng chung với FL-02, khai báo ở nhóm TV4 bên dưới; mã 1603 bỏ trống)
     TOPIC_ALREADY_PROCESSED(1604, "Đề tài đã được xử lý.", HttpStatus.CONFLICT),
     TOPIC_REVIEW_FORBIDDEN(1605, "Bạn không có quyền duyệt đề tài này.", HttpStatus.FORBIDDEN),
     TOPIC_VIEW_FORBIDDEN(1606, "Bạn không có quyền xem đề tài này.", HttpStatus.FORBIDDEN),
@@ -79,7 +79,15 @@ public enum ErrorCode {
     MEDIA_TYPE_NOT_SUPPORTED(1501, "Chỉ hỗ trợ ảnh JPG, PNG, WebP, GIF và video MP4, WebM, MOV.", HttpStatus.BAD_REQUEST),
     MEDIA_TOO_LARGE(1502, "Tệp quá lớn: ảnh tối đa 10MB, video tối đa 100MB.", HttpStatus.PAYLOAD_TOO_LARGE),
     MEDIA_STORAGE_NOT_CONFIGURED(1503, "Hệ thống chưa cấu hình Cloudinary nên chưa thể tải tệp lên.", HttpStatus.SERVICE_UNAVAILABLE),
-    MEDIA_UPLOAD_FAILED(1504, "Tải tệp lên Cloudinary không thành công. Vui lòng thử lại.", HttpStatus.BAD_GATEWAY);
+    MEDIA_UPLOAD_FAILED(1504, "Tải tệp lên Cloudinary không thành công. Vui lòng thử lại.", HttpStatus.BAD_GATEWAY),
+
+    // TV4 - Topic tòa soạn của Thư ký (FL-02)
+    EDITORIAL_TOPIC_ACCESS_DENIED(1800, "Chỉ Thư ký tòa soạn được quản lý Topic cấp tòa soạn.", HttpStatus.FORBIDDEN),
+    TOPIC_NOT_FOUND(1801, "Không tìm thấy Topic.", HttpStatus.NOT_FOUND),
+    TOPIC_NOT_ACTIVE(1802, "Chỉ giao được Topic đang ở trạng thái ACTIVE.", HttpStatus.CONFLICT),
+    TOPIC_HEAD_INVALID(1803, "Người được chọn không phải Trưởng phòng đang hoạt động.", HttpStatus.BAD_REQUEST),
+    TOPIC_HEAD_UNCHANGED(1804, "Topic đang do chính Trưởng phòng này phụ trách.", HttpStatus.CONFLICT),
+    ASSIGNMENT_DEADLINE_PAST(1805, "Deadline phải ở tương lai.", HttpStatus.BAD_REQUEST);
 
     private final int code;
     private final String message;

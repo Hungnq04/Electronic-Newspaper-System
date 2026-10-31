@@ -20,9 +20,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 // FL-01 Iter2: Final Topic Review Workspace của Thư ký (+ modal Final Topic Approval Confirmation, Reject Topic Form).
 // /secretary/** chỉ cho EDITORIAL_SECRETARY (SecurityConfig); service kiểm tra lại role và trạng thái.
 @Controller
-@RequestMapping("/secretary/topics")
+@RequestMapping("/secretary/topic-reviews")
 public class SecretaryTopicController {
-    private static final String PATH = "/secretary/topics";
+    private static final String PATH = "/secretary/topic-reviews";
     private final TopicReviewService topicReviewService;
 
     public SecretaryTopicController(TopicReviewService topicReviewService) {

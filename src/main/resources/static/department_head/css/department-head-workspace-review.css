@@ -1,54 +1,304 @@
-/* Màn thẩm định bài viết của Trưởng phòng (workspacereview.html) */
-@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}}
-::-webkit-scrollbar{display:none;}
+/*
+  Màn thẩm định bài viết của Trưởng ban (department_head/workspacereview.html).
 
-/* Màu cho phần so sánh phiên bản: chữ bị xóa / chữ thêm mới */
-.diff-del{background:#ffdad6;color:#93000a;text-decoration:line-through;border-radius:2px;padding:0 1px}
-.diff-ins{background:#d1fae5;color:#065f46;border-radius:2px;padding:0 1px}
+  Khung chung (thẻ rp-card, thanh trên cùng, chấm tròn avatar...) lấy từ /reporter/css/reporter-tasks.css.
+  File này chỉ chứa phần riêng của màn thẩm định. Mọi class đều bắt đầu bằng ws- (viết tắt của "workspace")
+  để không đụng tới các màn khác.
 
-/* Hiệu ứng nháy viền khi nhảy tới góp ý / chữ được tô */
-.flash{animation:flash 1.2s ease-out}
-@keyframes flash{0%{box-shadow:0 0 0 4px #eec14b}100%{box-shadow:0 0 0 0 transparent}}
+  Phông chữ và màu nút giữ giống màn cũ:
+    - chữ trong bài viết (tít, sapo, thân bài) dùng phông Newsreader (phông có chân, kiểu báo in)
+    - nhãn, nút, góp ý dùng phông Inter
+    - nút "Yêu cầu sửa" màu vàng, nút "Duyệt" màu đỏ đô
+*/
 
-/* ---------- Thân bài theo đúng bố cục phóng viên sắp xếp ---------- */
-/* Khoảng cách giữa các khối (đoạn, ảnh, bảng) */
-.ws-body > * + * { margin-top: 1.25rem; }
+/* ===== Màu và phông dùng riêng cho màn này (biến CSS: khai báo 1 lần, dùng lại bằng var(--tên)) ===== */
+.ws-page {
+    --ws-maroon: #8b1e2d;        /* đỏ đô: nút Duyệt, avatar */
+    --ws-maroon-dark: #6b0119;   /* đỏ đô đậm: viền bài viết, chữ nhấn */
+    --ws-yellow: #ffdf98;        /* vàng: nút Yêu cầu sửa, nhãn trạng thái, chữ được góp ý */
+    --ws-yellow-dark: #eec14b;   /* vàng đậm: khi rê chuột lên nút vàng */
+    --ws-on-yellow: #251a00;     /* chữ nâu đậm đặt trên nền vàng */
+    --ws-surface-low: #f2f3fb;   /* nền xám rất nhạt */
+    --ws-surface: #ecedf5;       /* nền xám nhạt (nút xám) */
+    --ws-surface-high: #e6e8ef;  /* nền xám đậm hơn một chút, đường kẻ */
+    --ws-secondary: #585f6b;     /* chữ phụ, màu xám */
+    --ws-variant: #574142;       /* chữ phụ ánh nâu */
+    --ws-serif: "Newsreader", Georgia, serif;
+}
+/* Ô nhập nhiều dòng dùng cùng phông với trang (trình duyệt mặc định dùng phông khác) */
+.ws-page textarea { font: inherit; }
 
+/* ===== Vùng nội dung chính ===== */
+.ws-main { width: 100%; max-width: 1520px; margin: 0 auto; padding: 16px clamp(16px, 2.3vw, 32px) 24px; display: flex; flex-direction: column; gap: 16px; }
+.ws-mono { font-size: 12px; letter-spacing: .04em; color: var(--ws-secondary); }
+.ws-icon-maroon { color: var(--ws-maroon-dark); }
+.ws-icon-muted { color: var(--ws-secondary); }
+
+/* ===== 1. Đường dẫn "Quay lại danh sách / Bài chờ duyệt / Bài #..." ===== */
+.ws-crumb { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; color: var(--ws-secondary); }
+.ws-page .ws-crumb-back { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 4px; background: var(--ws-surface); color: var(--rp-ink); }
+.ws-page .ws-crumb-back:hover { background: var(--ws-surface-high); }
+.ws-crumb strong { color: var(--ws-maroon-dark); font-weight: 600; }
+
+/* ===== 2. Thanh trạng thái (giữ thiết kế màn cũ) ===== */
+.ws-status-bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px 16px; padding: 10px 18px; border-radius: 12px; background: var(--ws-surface-low); box-shadow: 0 1px 2px rgba(20, 30, 60, .06); }
+.ws-status-info { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; font-size: 12px; font-weight: 500; color: var(--ws-variant); }
+.ws-status-info strong { color: var(--rp-ink); font-weight: 600; }
+.ws-status-info .ws-topic { color: var(--ws-maroon-dark); }
+.ws-sep { color: #c8c9d2; }
+/* Nhãn vàng: trạng thái bài, "Bản nộp lại (v1.1)" */
+.ws-chip-yellow, .ws-tag-yellow { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 4px; background: var(--ws-yellow); color: var(--ws-on-yellow); font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.ws-chip-yellow .rp-icon { width: 14px; height: 14px; }
+/* Ô "So với" + nút "So sánh phiên bản" */
+.ws-compare-tools { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ws-secondary); }
+.ws-compare-tools select { height: 34px; padding: 0 10px; border: 0; border-radius: 8px; background: #fff; color: var(--rp-ink); font-size: 12px; font-weight: 500; box-shadow: 0 1px 2px rgba(20, 30, 60, .08); }
+
+/* ===== Các kiểu nút của màn này (màu giống màn cũ) ===== */
+.ws-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; padding: 8px 16px; border: 0; border-radius: 8px; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: background .15s ease; }
+.ws-btn[disabled] { opacity: .4; cursor: not-allowed; }
+.ws-btn--white { background: #fff; color: var(--rp-ink); box-shadow: 0 1px 2px rgba(20, 30, 60, .08); }
+.ws-btn--white:hover { background: #d9e0ef; }
+.ws-page .ws-btn--grey { background: var(--ws-surface); color: var(--rp-ink); }
+.ws-page .ws-btn--grey:hover { background: var(--ws-surface-high); }
+.ws-btn--yellow { background: var(--ws-yellow); color: var(--ws-on-yellow); font-weight: 700; }
+.ws-btn--yellow:hover { background: var(--ws-yellow-dark); }
+.ws-btn--maroon { background: var(--ws-maroon); color: #fff; font-weight: 700; }
+.ws-btn--maroon:hover { background: var(--ws-maroon-dark); }
+.ws-btn--green { background: #d1fae5; color: #059669; font-weight: 700; }
+.ws-btn--small { min-height: 28px; padding: 4px 10px; font-size: 11px; }
+.ws-btn--small .rp-icon { width: 14px; height: 14px; }
+.ws-btn--large { padding: 10px 24px; font-size: 14px; box-shadow: 0 4px 10px rgba(107, 1, 25, .25); }
+.ws-btn--large .rp-icon { width: 20px; height: 20px; }
+
+/* ===== Bố cục 2 cột: bài viết bên trái, góp ý bên phải ===== */
+.ws-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
+.ws-main-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+/* Cột phải bám theo khi cuộn. top = 74px để nằm dưới thanh trên cùng (cao 58px, cũng bám đỉnh) */
+.ws-side { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 74px; }
+
+/* ===== 3. Bài viết đang duyệt (phông Newsreader như màn cũ) ===== */
+/* position: relative để khung góp ý (position: absolute) định vị theo khung bài viết */
+.ws-article { position: relative; padding: 32px 40px 36px; border: 1px solid var(--rp-line); border-left: 6px solid var(--ws-maroon-dark); border-radius: 10px; background: #fff; }
+.ws-article-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.ws-hint { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: var(--ws-secondary); }
+.ws-hint .rp-icon { width: 14px; height: 14px; }
+.ws-title { margin: 14px 0 8px; font-family: var(--ws-serif); font-size: 40px; line-height: 48px; font-weight: 500; letter-spacing: -.015em; color: var(--rp-ink); }
+.ws-subtitle { margin: 0; font-family: var(--ws-serif); font-size: 20px; line-height: 28px; font-weight: 600; color: var(--ws-variant); }
+
+/* Người viết + số từ / số ảnh */
+.ws-byline { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; }
+.ws-author { display: flex; align-items: center; gap: 12px; }
+.ws-author strong { font-size: 14px; }
+.ws-author small { font-size: 11px; color: var(--ws-secondary); }
+.ws-author-avatar { width: 40px; height: 40px; display: grid; place-items: center; flex: none; border-radius: 50%; background: var(--ws-maroon); color: #fff; font-family: var(--ws-serif); font-size: 18px; font-weight: 700; }
+.ws-supporting { display: block; font-size: 11px; color: var(--ws-secondary); }
+.ws-supporting b { color: var(--ws-variant); font-weight: 500; }
+.ws-article-stats { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; background: var(--ws-surface-low); font-size: 13px; letter-spacing: .04em; }
+.ws-article-stats .rp-icon { color: var(--ws-secondary); }
+.ws-dot-sep { padding: 0 4px; color: #c8c9d2; }
+.ws-divider { height: 1px; margin: 28px 0; border: 0; background: var(--ws-surface-high); }
+
+/* Sapo: hộp xám, chữ nghiêng, nhãn "SAPO" nằm vắt trên viền hộp */
+.ws-sapo { position: relative; padding: 18px 18px 14px; border-radius: 8px; background: var(--ws-surface-low); }
+.ws-sapo-label { position: absolute; top: 0; left: 12px; transform: translateY(-50%); padding: 0 8px; background: #fff; font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ws-secondary); }
+.ws-sapo-text { margin: 0; font-family: var(--ws-serif); font-size: 21px; line-height: 34px; font-weight: 500; font-style: italic; white-space: pre-line; color: var(--rp-ink); }
+
+/* Ảnh đại diện (cover) ngay dưới sapo */
+.ws-cover { margin: 24px 0 0; }
+.ws-cover img { display: block; width: 100%; max-height: 520px; object-fit: cover; border-radius: 10px; }
+.ws-cover figcaption { margin-top: 8px; font-size: 13px; line-height: 18px; color: var(--ws-secondary); }
+.ws-cover-badge { display: inline-block; margin-right: 8px; padding: 1px 8px; border-radius: 4px; background: var(--ws-yellow); color: var(--ws-on-yellow); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+
+/* Thân bài: giữ đúng bố cục phóng viên sắp xếp */
+.ws-body { margin-top: 24px; font-family: var(--ws-serif); font-size: 18px; line-height: 2; color: var(--rp-ink); }
+.ws-body > * + * { margin-top: 1.25rem; }          /* khoảng cách giữa các khối (đoạn, ảnh, bảng) */
+.ws-text { white-space: pre-line; }               /* giữ xuống dòng trong đoạn như phóng viên gõ */
 /* Tít phụ trong bài (h2 / h3 / h4 trong trình soạn thảo) */
-.ws-h1, .ws-h2 { font-family: "Newsreader", Georgia, serif; font-size: 26px; line-height: 34px; font-weight: 600; }
-.ws-h3 { font-family: "Newsreader", Georgia, serif; font-size: 22px; line-height: 30px; font-weight: 600; }
+.ws-h1, .ws-h2 { font-size: 26px; line-height: 34px; font-weight: 600; }
+.ws-h3 { font-size: 22px; line-height: 30px; font-weight: 600; }
 .ws-h4, .ws-h5, .ws-h6 { font-size: 19px; line-height: 28px; font-weight: 600; }
-
 /* Trích dẫn, đoạn mã, gạch đầu dòng */
-.ws-blockquote { border-left: 3px solid #8b1e2d; padding-left: 1rem; font-style: italic; color: #574142; }
-.ws-pre { font-family: Consolas, monospace; font-size: 14px; line-height: 22px; background: #f2f3fb; padding: .75rem 1rem; border-radius: 6px; }
+.ws-blockquote { border-left: 3px solid var(--ws-maroon); padding-left: 1rem; font-style: italic; color: var(--ws-variant); }
+.ws-pre { font-family: Consolas, monospace; font-size: 14px; line-height: 22px; background: var(--ws-surface-low); padding: .75rem 1rem; border-radius: 6px; }
 .ws-li { position: relative; padding-left: 1.4rem; }
-.ws-li::before { content: "•"; position: absolute; left: .3rem; color: #8b1e2d; }
+.ws-li::before { content: "•"; position: absolute; left: .3rem; color: var(--ws-maroon); }
 .ws-body > .ws-li + .ws-li { margin-top: .4rem; }
-
-/* Định dạng chữ bên trong đoạn (Tailwind đã xóa kiểu mặc định) */
-.ws-text a { color: #6b0119; text-decoration: underline; }
+/* Chữ in đậm, nghiêng, gạch chân, link bên trong đoạn */
+.ws-page .ws-text a { color: var(--ws-maroon-dark); text-decoration: underline; }
 .ws-text strong, .ws-text b { font-weight: 700; }
 .ws-text em, .ws-text i { font-style: italic; }
 .ws-text u { text-decoration: underline; }
-
 /* Ảnh / video chèn giữa bài */
 .ws-figure { margin: 1.5rem 0; }
-.ws-figure img, .ws-figure video { display: block; width: 100%; max-height: 560px; object-fit: contain; background: #ecedf5; border-radius: 8px; }
-.ws-figure figcaption { margin-top: .4rem; font-family: "Inter", sans-serif; font-size: 13px; line-height: 18px; font-style: italic; color: #585f6b; text-align: center; }
-
-/* Ảnh đại diện (cover) ngay dưới sapo */
-.ws-cover { margin: 1.5rem 0 0; }
-.ws-cover img { display: block; width: 100%; max-height: 520px; object-fit: cover; border-radius: 10px; }
-.ws-cover figcaption { margin-top: .5rem; font-family: "Inter", sans-serif; font-size: 13px; line-height: 18px; color: #585f6b; }
-.ws-cover-badge { display: inline-block; margin-right: 8px; padding: 1px 8px; border-radius: 4px; background: #ffdf98; color: #251a00; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
-
+.ws-figure img, .ws-figure video { display: block; width: 100%; max-height: 560px; object-fit: contain; background: var(--ws-surface); border-radius: 8px; }
+.ws-figure figcaption { margin-top: .4rem; font-family: Inter, sans-serif; font-size: 13px; line-height: 18px; font-style: italic; color: var(--ws-secondary); text-align: center; }
 /* Bảng trong bài */
 .ws-table { overflow-x: auto; }
-.ws-table table { border-collapse: collapse; width: 100%; font-family: "Inter", sans-serif; font-size: 14px; line-height: 20px; }
+.ws-table table { border-collapse: collapse; width: 100%; font-family: Inter, sans-serif; font-size: 14px; line-height: 20px; }
 .ws-table th, .ws-table td { border: 1px solid #e1e2e9; padding: 6px 10px; text-align: left; vertical-align: top; }
-.ws-table th { background: #f2f3fb; font-weight: 600; }
+.ws-table th { background: var(--ws-surface-low); font-weight: 600; }
 
-/* Nhãn trên thẻ tư liệu đính kèm */
-.ws-source-tag { align-self: flex-start; padding: 0 6px; border-radius: 4px; background: #e1e2e9; color: #585f6b; font-family: "Inter", sans-serif; font-size: 10px; line-height: 16px; font-weight: 600; }
+/* Chữ đã được góp ý: JS bọc trong thẻ <mark class="ws-mark"> để tô vàng */
+.ws-mark { padding: 0 2px; border-radius: 3px; background: var(--ws-yellow); color: var(--ws-on-yellow); font-weight: 600; cursor: pointer; }
+/* Hiệu ứng nháy viền vàng khi nhảy tới chữ được góp ý / thẻ góp ý (JS thêm class ws-flash) */
+.ws-flash { animation: ws-flash 1.2s ease-out; }
+@keyframes ws-flash {
+    0% { box-shadow: 0 0 0 4px #eec14b; }
+    100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* ===== Khung góp ý hiện ra khi bôi đen chữ ===== */
+.ws-popover { position: absolute; z-index: 30; width: min(28rem, calc(100% - 2rem)); padding: 16px; border-radius: 12px; background: #fff; box-shadow: 0 12px 32px rgba(20, 30, 60, .18); outline: 1px solid var(--ws-surface-high);
+    scroll-margin-top: 80px;      /* khi JS cuộn tới khung: chừa chỗ cho thanh trên cùng... */
+    scroll-margin-bottom: 90px;   /* ...và cho thanh nút ở đáy */
+}
+.ws-popover-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.ws-popover-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; }
+.ws-popover-icon { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 4px; background: var(--ws-maroon); color: #fff; }
+.ws-popover-icon .rp-icon { width: 14px; height: 14px; }
+.ws-anchor-pill { padding: 2px 8px; border-radius: 20px; background: #d9e0ef; color: #404753; font-size: 10px; font-weight: 600; }
+.ws-icon-button { width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 6px; background: transparent; color: var(--ws-secondary); }
+.ws-icon-button:hover { background: var(--ws-surface); color: var(--rp-ink); }
+/* Đoạn chữ vừa bôi đen, dài quá thì chỉ hiện 2 dòng */
+.ws-popover-quote { margin: 0 0 8px; font-size: 13px; font-style: italic; color: var(--ws-secondary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ws-quick { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin: 8px 0; font-size: 11px; color: var(--ws-secondary); }
+.ws-chip { padding: 4px 8px; border: 0; border-radius: 4px; background: var(--ws-surface); color: var(--rp-ink); font-size: 11px; }
+.ws-chip:hover { background: var(--ws-maroon-dark); color: #fff; }
+.ws-actions-right { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* Ô nhập nhiều dòng (góp ý, nhận xét) */
+.ws-textarea { width: 100%; padding: 9px 10px; border: 0; border-radius: 8px; outline: 0; background: var(--ws-surface-low); color: var(--rp-ink); font-size: 13px; line-height: 18px; resize: none; }
+.ws-textarea:focus { box-shadow: 0 0 0 1px var(--ws-maroon-dark); }
+
+/* ===== Màn so sánh phiên bản ===== */
+.ws-compare { padding: 24px 32px; border: 1px solid var(--rp-line); border-radius: 10px; background: #fff; }
+.ws-compare-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+.ws-compare-head h2 { margin: 0; font-family: var(--ws-serif); font-size: 24px; line-height: 32px; font-weight: 600; }
+.ws-compare-head p { margin: 4px 0 0; font-size: 13px; color: var(--ws-secondary); }
+.ws-compare-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 12px; }
+.ws-compare-legend label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.ws-change-note { margin-bottom: 16px; padding: 10px 16px; border-radius: 8px; background: #fff2d6; font-size: 13px; }
+/* Hàng tiêu đề 3 cột: (trống) | bản trước | bản đang duyệt */
+.ws-compare-columns { display: grid; grid-template-columns: 96px 1fr 1fr; gap: 16px; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--ws-surface-high); font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ws-secondary); }
+.ws-compare-current { color: var(--ws-maroon-dark); }
+/* Mỗi dòng so sánh do JS dựng ra */
+.ws-compare-row { display: grid; grid-template-columns: 96px 1fr 1fr; gap: 4px 16px; padding: 10px 0; border-bottom: 1px solid var(--ws-surface-high); }
+.ws-compare-row:last-child { border-bottom: 0; }
+.ws-compare-key { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+.ws-compare-text { font-family: var(--ws-serif); font-size: 16px; line-height: 26px; white-space: pre-line; }
+.ws-compare-text.is-same { color: var(--ws-secondary); }
+.ws-compare-missing { font-style: italic; color: var(--ws-secondary); }
+.ws-compare-mobile-label { display: none; font-family: Inter, sans-serif; font-size: 10px; font-weight: 600; color: var(--ws-secondary); }
+.ws-compare-mobile-label.is-current { color: var(--ws-maroon-dark); }
+/* Nhãn trạng thái của từng dòng */
+.ws-compare-tag { font-size: 10px; font-weight: 500; color: var(--ws-secondary); }
+.ws-compare-tag--added { font-weight: 700; color: #059669; }
+.ws-compare-tag--removed { font-weight: 700; color: #ba1a1a; }
+.ws-compare-tag--changed { font-weight: 700; color: #be9520; }
+.ws-compare-lock { display: flex; align-items: center; gap: 6px; margin: 20px 0 0; font-size: 12px; color: var(--ws-secondary); }
+/* Chữ bị xóa (đỏ, gạch ngang) / chữ thêm mới (xanh) */
+.diff-del { background: #ffdad6; color: #93000a; text-decoration: line-through; border-radius: 2px; padding: 0 1px; }
+.diff-ins { background: #d1fae5; color: #065f46; border-radius: 2px; padding: 0 1px; }
+
+/* ===== Tư liệu đính kèm ===== */
+.ws-sources { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; padding: 14px; }
+.ws-page .ws-source { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 8px; border-radius: 8px; background: var(--ws-surface-low); color: var(--rp-ink); }
+.ws-page .ws-source:hover { background: var(--ws-surface); }
+.ws-source-thumb { height: 80px; display: grid; place-items: center; overflow: hidden; border-radius: 6px; background: var(--ws-surface-high); color: var(--ws-maroon-dark); }
+.ws-source-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.ws-source-thumb .rp-icon { width: 30px; height: 30px; }
+.ws-source strong, .ws-source small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ws-source strong { font-size: 12px; font-weight: 600; }
+.ws-source small { font-size: 11px; color: var(--ws-secondary); }
+.ws-source-tag { align-self: flex-start; padding: 0 6px; border-radius: 4px; background: #e1e2e9; color: var(--ws-secondary); font-size: 10px; line-height: 16px; font-weight: 600; }
 .ws-source-tag.is-in-body { background: #d1fae5; color: #065f46; }
+.ws-empty-note { margin: 0; padding: 14px 16px; font-size: 13px; font-style: italic; color: var(--ws-secondary); }
+
+/* ===== 4. Cột góp ý bên phải ===== */
+/* Hai nút tab "Vòng này / Vòng trước" */
+.ws-tabs { display: flex; gap: 2px; margin: 12px 14px 0; padding: 3px; border: 1px solid var(--rp-line); border-radius: 8px; background: #f7f8fc; }
+.ws-tab { flex: 1; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--rp-muted); font-size: 12px; font-weight: 600; text-align: center; }
+.ws-tab.is-active { background: #fff; color: var(--ws-maroon); box-shadow: 0 1px 2px rgba(20, 30, 60, .08); }
+/* Nội dung của mỗi tab */
+.ws-tab-panel { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 14px; }
+.ws-note { margin: 0; font-size: 12.5px; line-height: 18px; color: var(--ws-secondary); }
+
+/* Một thẻ góp ý: viền trái đỏ đô (vòng này) hoặc vàng (vòng trước) */
+.ws-comment { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border: 1px solid var(--rp-line); border-left: 3px solid var(--ws-maroon-dark); border-radius: 0 8px 8px 0; background: #fff; }
+.ws-comment--prev { border-left-color: var(--ws-yellow-dark); }
+.ws-comment.is-resolved { opacity: .7; }              /* góp ý vòng trước đã sửa thì làm mờ đi */
+.ws-comment-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; }
+.ws-comment-top .ws-mono { font-size: 11px; }
+.ws-quote { margin: 0; font-size: 13px; font-style: italic; color: var(--ws-secondary); }
+.ws-comment-text { margin: 0; font-size: 13px; line-height: 18px; white-space: pre-wrap; }
+.ws-comment-author { font-size: 11px; color: var(--ws-secondary); }
+.ws-reply { padding: 6px 8px; border-radius: 6px; background: var(--ws-surface-low); font-size: 12.5px; line-height: 18px; }
+.ws-comment-foot { display: flex; justify-content: space-between; align-items: center; padding-top: 2px; }
+/* Nút dạng chữ: "Xem vị trí →", "Xóa" */
+.ws-link { padding: 0; border: 0; background: none; color: var(--ws-maroon-dark); font-size: 11px; font-weight: 700; }
+.ws-link:hover { text-decoration: underline; }
+.ws-link--muted { color: var(--ws-secondary); font-weight: 500; }
+.ws-link--muted:hover { color: #ba1a1a; }
+/* Nhãn "Đã sửa" (xanh) / "Chưa sửa" (đỏ) ở góp ý vòng trước */
+.ws-badge { padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+.ws-badge--done { background: #d1fae5; color: #059669; }
+.ws-badge--open { background: #ffdad6; color: #93000a; }
+.ws-resolve-buttons { display: flex; gap: 6px; padding-top: 4px; }
+/* Form góp ý chung */
+.ws-general-form { display: flex; flex-direction: column; gap: 6px; padding-top: 4px; }
+.ws-general-form label { font-size: 12px; font-weight: 600; }
+.ws-general-form .ws-btn { align-self: flex-end; }
+/* Thẻ "Thông tin bài": ghi chú của Lead in nghiêng, không in đậm */
+.rp-article-meta .ws-change-summary { font-weight: 400; font-style: italic; }
+
+/* ===== 5. Thanh nút ở đáy (giữ thiết kế màn cũ) =====
+   position: sticky + bottom: 0 = luôn dính ở đáy màn hình khi cuộn, nhưng chỉ rộng bằng cột nội dung
+   nên không đè lên sidebar bên trái. */
+.ws-action-bar { position: sticky; bottom: 0; z-index: 20; background: rgba(255, 255, 255, .95); backdrop-filter: blur(16px); box-shadow: 0 -4px 24px rgba(0, 0, 0, .08); }
+.ws-action-inner { max-width: 1520px; margin: 0 auto; padding: 12px clamp(16px, 2.3vw, 32px); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+.ws-action-state { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 600; }
+.ws-action-state b { color: var(--ws-maroon-dark); }
+.ws-status-dot { width: 12px; height: 12px; flex: none; border-radius: 50%; }
+.ws-status-dot.is-live { background: var(--ws-maroon-dark); animation: ws-pulse 2s ease-in-out infinite; }   /* đang duyệt: nhấp nháy */
+.ws-status-dot.is-done { background: #059669; }                                                            /* chỉ xem */
+@keyframes ws-pulse { 50% { opacity: .4; } }
+.ws-action-buttons { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 10px; }
+/* Số góp ý trên nút "Yêu cầu sửa": hình tròn nâu, chữ vàng */
+.ws-count-circle { width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; background: var(--ws-on-yellow); color: var(--ws-yellow); font-size: 10px; font-weight: 700; }
+
+/* ===== 6. Hộp thoại Duyệt / Yêu cầu sửa ===== */
+/* Lớp nền tối phủ cả màn hình, hộp thoại nằm giữa */
+.ws-modal-backdrop { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(46, 48, 54, .5); }
+.ws-modal { width: 100%; max-width: 32rem; padding: 24px; border-radius: 12px; background: #fff; box-shadow: 0 20px 40px rgba(20, 30, 60, .2); }
+.ws-modal--small { max-width: 28rem; }
+.ws-modal h3 { margin: 0 0 10px; font-family: var(--ws-serif); font-size: 20px; line-height: 28px; font-weight: 600; }
+.ws-modal label { display: block; margin: 12px 0 4px; font-size: 12px; font-weight: 600; }
+.ws-modal h3 + label { margin-top: 0; }
+.ws-modal p { margin: 0; font-size: 13px; color: var(--ws-variant); }
+.ws-modal .ws-modal-subtitle { margin-top: 14px; font-size: 12px; font-weight: 600; color: var(--rp-ink); }
+.ws-required { color: #ba1a1a; }
+.ws-modal-list { max-height: 10rem; overflow: auto; margin: 6px 0 0; padding-left: 20px; font-size: 13px; line-height: 20px; color: var(--ws-variant); }
+.ws-modal-list .is-empty { list-style: none; margin-left: -20px; color: var(--ws-secondary); }
+.ws-warning { display: flex; gap: 8px; margin-top: 14px; padding: 9px 12px; border-radius: 8px; background: #ffdad6; color: #93000a; font-size: 13px; }
+.ws-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+
+/* ===== Thông báo nhỏ (toast) ở giữa, phía trên thanh nút đáy ===== */
+.ws-toast { position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%); z-index: 70; padding: 10px 16px; border-radius: 8px; background: #2e3036; color: #eff0f8; font-size: 12px; font-weight: 600; box-shadow: 0 8px 20px rgba(20, 30, 60, .2); }
+.ws-toast.is-error { background: #ba1a1a; color: #fff; }
+
+/* ===== Màn hình nhỏ ===== */
+/* Dưới 1100px: cột góp ý xuống dưới bài viết, không bám khi cuộn nữa */
+@media (max-width: 1100px) {
+    .ws-layout { grid-template-columns: 1fr; }
+    .ws-side { position: static; }
+}
+/* Dưới 768px (điện thoại): chữ nhỏ lại, bảng so sánh xếp thành 1 cột */
+@media (max-width: 768px) {
+    .ws-article { padding: 20px; }
+    .ws-title { font-size: 30px; line-height: 38px; }
+    .ws-compare { padding: 20px; }
+    .ws-compare-columns { display: none; }
+    .ws-compare-row { grid-template-columns: 1fr; }
+    .ws-compare-key { flex-direction: row; gap: 8px; }
+    .ws-compare-mobile-label { display: block; }
+}

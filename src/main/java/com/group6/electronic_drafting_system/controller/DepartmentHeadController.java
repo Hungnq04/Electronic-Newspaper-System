@@ -23,6 +23,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @Controller
 @RequestMapping("/department-head")
 public class DepartmentHeadController {
+    private static final String NEWSREADER_FONT = "https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap";
     private final DepartmentHeadService departmentHeadService;
     private final DepartmentHeadReviewService reviewService;
 
@@ -37,17 +38,27 @@ public class DepartmentHeadController {
         model.addAttribute("pageTitle", "Duyệt bản thảo – Trưởng ban");
         model.addAttribute("contentView", "department_head/dashboard");
         model.addAttribute("contentFragment", "departmentHeadContent");
-        model.addAttribute("pageCss", List.of("/department_head/css/department-head-dashboard.css"));
+        // Dùng chung giao diện của màn /reporter/tasks; file dashboard.css chỉ giữ vài chi tiết riêng
+        model.addAttribute("pageCss", List.of("/reporter/css/reporter-tasks.css", "/department_head/css/department-head-dashboard.css"));
         model.addAttribute("pageJs", List.of("/department_head/js/department-head-dashboard.js"));
         return "layout/app";
     }
 
     // ---------- Màn thẩm định bài viết (workspace) ----------
 
+    // Màn thẩm định nằm trong layout chung (sidebar + nội dung), giống màn dashboard
     @GetMapping("/articles/{articleId}/review")
     public String reviewWorkspace(@PathVariable Integer articleId, Authentication authentication, Model model) {
         model.addAttribute("workspace", reviewService.openWorkspace(currentEmail(authentication), articleId));
-        return "department_head/workspacereview";
+        model.addAttribute("pageTitle", "Thẩm định bản thảo – Trưởng ban");
+        model.addAttribute("contentView", "department_head/workspacereview");
+        model.addAttribute("contentFragment", "reviewWorkspaceContent");
+        // Phông Newsreader có chữ nghiêng (cho sapo) + giao diện chung của /reporter/tasks + CSS riêng của màn thẩm định
+        model.addAttribute("pageCss", List.of(NEWSREADER_FONT, "/reporter/css/reporter-tasks.css", "/department_head/css/department-head-workspace-review.css"));
+        model.addAttribute("pageJs", List.of("/department_head/js/department-head-workspace-review.js"));
+        // Đang thẩm định một bài thì sidebar vẫn sáng mục "Duyệt bản thảo"
+        model.addAttribute("activePath", "/department-head/dashboard");
+        return "layout/app";
     }
 
     @PostMapping("/articles/{articleId}/comments")

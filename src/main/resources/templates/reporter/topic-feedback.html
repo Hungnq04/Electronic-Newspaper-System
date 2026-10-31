@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- FL-01 Iter2: Topic Feedback Viewer – góp ý của Trưởng ban, kết quả duyệt / lý do từ chối -->
+<th:block th:fragment="topicFeedbackContent">
+    <svg th:replace="~{reporter/topic-proposal-list :: tpSprite}"></svg>
+
+    <div class="tp-page">
+        <header th:replace="~{reporter/topic-proposal-list :: tpTopbar(${list})}"></header>
+
+        <main class="tp-main">
+            <div class="tp-heading-row">
+                <div class="tp-heading">
+                    <nav class="tp-breadcrumb" aria-label="Breadcrumb">
+                        <a th:href="@{/reporter/topics}">ĐỀ TÀI</a><svg class="tp-icon tp-icon--tiny"><use href="#tp-icon-chevron-right"></use></svg>
+                        <strong th:text="${view.topic().code()}">TP-2026-0001</strong>
+                    </nav>
+                    <h1>Góp ý &amp; kết quả duyệt</h1>
+                </div>
+                <div class="tp-heading-actions">
+                    <a class="tp-button tp-button--outline" th:href="@{/reporter/topics}">
+                        <svg class="tp-icon"><use href="#tp-icon-arrow-left"></use></svg> Danh sách đề tài
+                    </a>
+                    <!-- Chỉ hiện khi Trưởng ban đang yêu cầu sửa (server vẫn kiểm tra lại khi mở form) -->
+                    <a class="tp-button tp-button--primary" th:if="${view.canEdit()}" th:href="@{/reporter/topics/{id}/edit(id=${view.topic().id()})}">
+                        <svg class="tp-icon"><use href="#tp-icon-edit"></use></svg> Sửa đề tài
+                    </a>
+                </div>
+            </div>
+
+            <section class="tp-card">
+                <div class="tp-card-head">
+                    <h2>Thông tin đề tài</h2>
+                    <div class="tp-card-meta">
+                        <span class="tp-badge" th:classappend="|tp-badge--${view.topic().statusKey()}|"><i class="tp-dot"></i><span th:text="${view.topic().statusLabel()}">Chờ Trưởng ban duyệt</span></span>
+                        <span class="tp-badge tp-badge--revision" th:if="${view.topic().awaitingRevision()}"><i class="tp-dot"></i>Cần sửa</span>
+                    </div>
+                </div>
+                <div class="tp-card-body">
+                    <div class="tp-card-meta">
+                        <span class="tp-code" th:text="${view.topic().code()}">TP-2026-0001</span>
+                        <span class="tp-chip" th:text="${view.topic().departmentName() ?: '—'}">Ban Kinh tế</span>
+                        <span class="tp-date"><svg class="tp-icon"><use href="#tp-icon-clock"></use></svg>
+                            <span th:text="${#temporals.format(view.topic().createdAt(), 'dd/MM/yyyy HH:mm')}">14/10/2026 09:30</span></span>
+                    </div>
+                    <h2 class="tp-detail-title" th:text="${view.topic().title()}">Tiêu đề đề tài</h2>
+                    <p class="tp-detail-summary" th:text="${view.topic().summary()}">Tóm tắt</p>
+                </div>
+            </section>
+
+            <section class="tp-card">
+                <div class="tp-card-head">
+                    <h2>Lịch sử góp ý và duyệt <span class="tp-count-pill"><b th:text="${#lists.size(view.history())}">0</b> mục</span></h2>
+                </div>
+                <div class="tp-empty" th:if="${view.history().isEmpty()}">
+                    <svg class="tp-icon"><use href="#tp-icon-inbox"></use></svg>
+                    <strong>Chưa có góp ý</strong>
+                </div>
+                <div class="tp-card-body" th:unless="${view.history().isEmpty()}">
+                    <ol class="tp-timeline">
+                        <li th:each="h : ${view.history()}" th:classappend="|tone-${h.tone()}|">
+                            <div class="tp-timeline-head">
+                                <strong th:text="${h.label()}">Trưởng ban yêu cầu sửa</strong>
+                                <small th:text="${h.authorName()} + ' · ' + ${#temporals.format(h.createdAt(), 'dd/MM/yyyy HH:mm')}">Trần Hùng · 14/10/2026</small>
+                            </div>
+                            <p th:if="${h.content()}" th:text="${h.content()}">Nội dung góp ý</p>
+                        </li>
+                    </ol>
+                </div>
+            </section>
+        </main>
+    </div>
+</th:block>
+</body>
+</html>

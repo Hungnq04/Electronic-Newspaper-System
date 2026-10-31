@@ -54,8 +54,20 @@ public enum ErrorCode {
     TOPIC_SOURCE_NOT_FOUND(1402, "Không tìm thấy ảnh / video trong tư liệu của đề tài.", HttpStatus.NOT_FOUND),
 
     TOPIC_CREATE_FORBIDDEN(1600, "Chỉ phóng viên đang hoạt động mới được đề xuất đề tài.", HttpStatus.FORBIDDEN),
-    TOPIC_DEPARTMENT_INVALID(1601, "Ban phụ trách không hợp lệ hoặc chưa có Trưởng ban. Vui lòng chọn lại.", HttpStatus.BAD_REQUEST),
+    TOPIC_DEPARTMENT_INVALID(1601, "Ban của bạn chưa có Trưởng ban đang hoạt động nên chưa thể gửi đề tài. Vui lòng liên hệ Quản trị viên.", HttpStatus.BAD_REQUEST),
     TOPIC_ACCESS_DENIED(1602, "Bạn không có quyền xem danh sách đề tài.", HttpStatus.FORBIDDEN),
+    // FL-01 Iter2: duyệt Topic, sửa và gửi lại, thông báo
+    TOPIC_NOT_FOUND(1603, "Không tìm thấy đề tài.", HttpStatus.NOT_FOUND),
+    TOPIC_ALREADY_PROCESSED(1604, "Đề tài đã được xử lý.", HttpStatus.CONFLICT),
+    TOPIC_REVIEW_FORBIDDEN(1605, "Bạn không có quyền duyệt đề tài này.", HttpStatus.FORBIDDEN),
+    TOPIC_VIEW_FORBIDDEN(1606, "Bạn không có quyền xem đề tài này.", HttpStatus.FORBIDDEN),
+    TOPIC_EDIT_FORBIDDEN(1607, "Chỉ người đề xuất được sửa đề tài, và chỉ khi Trưởng ban đang yêu cầu chỉnh sửa.", HttpStatus.FORBIDDEN),
+    TOPIC_FEEDBACK_REQUIRED(1608, "Vui lòng nhập nội dung góp ý cho phóng viên.", HttpStatus.BAD_REQUEST),
+    TOPIC_REJECT_REASON_REQUIRED(1609, "Vui lòng nhập lý do từ chối đề tài.", HttpStatus.BAD_REQUEST),
+    TOPIC_FEEDBACK_TOO_LONG(1610, "Nội dung góp ý / lý do tối đa 4000 ký tự.", HttpStatus.BAD_REQUEST),
+    TOPIC_TEAM_UNAVAILABLE(1611, "Không thể duyệt: phóng viên đề xuất hoặc Trưởng ban đã duyệt đề tài không còn hoạt động.", HttpStatus.CONFLICT),
+    TOPIC_REPORTER_NO_DEPARTMENT(1612, "Tài khoản của bạn chưa được gán ban nên chưa thể đề xuất đề tài. Vui lòng liên hệ Quản trị viên.", HttpStatus.BAD_REQUEST),
+    NOTIFICATION_NOT_FOUND(1613, "Không tìm thấy thông báo.", HttpStatus.NOT_FOUND),
 
     ACCOUNT_APPROVAL_FORBIDDEN(1700, "Chỉ Quản trị viên đang hoạt động mới được duyệt tài khoản.", HttpStatus.FORBIDDEN),
     ACCOUNT_NOT_FOUND(1701, "Không tìm thấy tài khoản.", HttpStatus.NOT_FOUND),

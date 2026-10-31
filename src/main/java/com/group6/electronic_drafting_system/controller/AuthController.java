@@ -41,7 +41,7 @@ public class AuthController {
                 return "redirect:/register/verify?email="
                         + java.net.URLEncoder.encode(account.getEmail(), java.nio.charset.StandardCharsets.UTF_8);
             }
-            authService.persistSecurityContext(request);
+            authService.persistSecurityContext(request); // Lưu thông tin đăng nhập vào SecurityContext để Spring Security nhận diện người dùng
             return "redirect:/dashboard";
         } catch (ApplicationException ex) {
             if (ex.getErrorCode() == ErrorCode.AUTH_ACCOUNT_AWAITING_APPROVAL) return "redirect:/login?awaiting";

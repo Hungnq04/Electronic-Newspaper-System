@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- FL-01 Iter2: Final Topic Review Workspace của Thư ký + Final Topic Approval Confirmation + Reject Topic Form -->
+<th:block th:fragment="content">
+<svg th:replace="~{reporter/topic-proposal-list :: tpSprite}"></svg>
+
+<div class="tp-page">
+    <main class="tp-main">
+        <div class="tp-flash tp-flash--ok" role="status" th:if="${message}" th:text="${message}"></div>
+        <div class="tp-flash tp-flash--error" role="alert" th:if="${error}" th:text="${error}"></div>
+
+        <div class="tp-heading-row">
+            <div class="tp-heading">
+                <nav class="tp-breadcrumb" aria-label="Breadcrumb">
+                    <span>ĐỀ TÀI</span><svg class="tp-icon tp-icon--tiny"><use href="#tp-icon-chevron-right"></use></svg><strong>Duyệt cuối</strong>
+                </nav>
+                <h1>Duyệt đề tài cuối</h1>
+                <p>Phạm vi: <b th:text="${ws.scopeLabel()}">Tất cả các ban</b></p>
+            </div>
+        </div>
+
+        <th:block th:replace="~{fragment/topic-review :: stats(${ws})}"></th:block>
+
+        <!-- Lọc theo ban (server) + tìm nhanh trong hàng chờ (trên trang) -->
+        <section class="tp-filter-panel" aria-label="Bộ lọc đề tài">
+            <form method="get" th:action="@{/secretary/topics}">
+                <label class="tp-select-field">BAN:
+                    <select name="department" onchange="this.form.submit()">
+                        <option value="">Tất cả các ban</option>
+                        <option th:each="d : ${ws.departments()}" th:value="${d.id()}" th:text="${d.name()}"
+                                th:selected="${d.id() == ws.departmentFilter()}"></option>
+                    </select>
+                </label>
+                <noscript><button type="submit" class="tp-button tp-button--outline tp-button--sm">Lọc</button></noscript>
+            </form>
+            <label class="tp-search">
+                <svg class="tp-icon"><use href="#tp-icon-search"></use></svg>
+                <input type="search" placeholder="Tìm theo tiêu đề, phóng viên, mã…" aria-label="Tìm đề tài" data-tp-search>
+            </label>
+        </section>
+
+        <div class="tp-workspace">
+            <th:block th:replace="~{fragment/topic-review :: queue(${ws}, '/secretary/topics', ${ws.departmentFilter()})}"></th:block>
+
+            <div class="tp-workspace-detail">
+                <section class="tp-card">
+                    <div class="tp-card-head"><h2>Chi tiết đề tài</h2></div>
+                    <div class="tp-empty" th:if="${ws.selected() == null}">
+                        <svg class="tp-icon"><use href="#tp-icon-file"></use></svg>
+                        <strong>Chọn một đề tài trong hàng chờ để xem chi tiết</strong>
+                    </div>
+                    <div class="tp-card-body" th:if="${ws.selected() != null}">
+                        <th:block th:replace="~{fragment/topic-review :: detail(${ws})}"></th:block>
+
+                        <div class="tp-detail-actions" th:if="${ws.canDecide()}">
+                            <button type="button" class="tp-button tp-button--primary" data-open="approve-dialog">
+                                <svg class="tp-icon"><use href="#tp-icon-check-circle"></use></svg> Duyệt đề tài
+                            </button>
+                            <button type="button" class="tp-button tp-button--danger" data-open="reject-dialog">
+                                <svg class="tp-icon"><use href="#tp-icon-x-circle"></use></svg> Từ chối
+                            </button>
+                        </div>
+                        <div class="tp-note" style="margin-top:18px" th:unless="${ws.canDecide()}">
+                            Đề tài không còn ở bước chờ Thư ký duyệt. Trang này chỉ để xem.
+                        </div>
+                    </div>
+                </section>
+
+                <th:block th:if="${ws.selected() != null}">
+                    <th:block th:replace="~{fragment/topic-review :: history(${ws})}"></th:block>
+                </th:block>
+            </div>
+        </div>
+    </main>
+
+    <th:block th:if="${ws.selected() != null and ws.canDecide()}">
+        <!-- Final Topic Approval Confirmation -->
+        <dialog id="approve-dialog" class="tp-dialog">
+            <form method="post" th:action="@{/secretary/topics/{id}/approve(id=${ws.selected().id()})}">
+                <h2>Duyệt đề tài lần cuối?</h2>
+                <dl class="tp-confirm-summary">
+                    <div><dt>Tiêu đề</dt><dd th:text="${ws.selected().title()}"></dd></div>
+                    <div><dt>Lead Reporter</dt><dd th:text="${ws.selected().reporterName()}"></dd></div>
+                </dl>
+                <div class="tp-modal-actions">
+                    <button type="button" class="tp-button tp-button--ghost" data-close>Hủy</button>
+                    <button type="submit" class="tp-button tp-button--primary">Xác nhận duyệt</button>
+                </div>
+            </form>
+        </dialog>
+
+        <!-- Reject Topic Form -->
+        <dialog id="reject-dialog" class="tp-dialog" th:attr="data-reopen=${reason != null}">
+            <form method="post" th:action="@{/secretary/topics/{id}/reject(id=${ws.selected().id()})}">
+                <h2>Từ chối đề tài</h2>
+                <label for="reject-reason">Lý do từ chối <span class="tp-required">*</span></label>
+                <textarea id="reject-reason" name="reason" maxlength="4000" required th:text="${reason}"></textarea>
+                <div class="tp-modal-actions">
+                    <button type="button" class="tp-button tp-button--ghost" data-close>Hủy</button>
+                    <button type="submit" class="tp-button tp-button--primary">Xác nhận từ chối</button>
+                </div>
+            </form>
+        </dialog>
+    </th:block>
+</div>
+
+<th:block th:replace="~{fragment/topic-review :: dialog-script}"></th:block>
+</th:block>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- FL-01 Iter2: các phần dùng chung cho màn duyệt đề tài của Trưởng ban và Thư ký (kiểu dáng tp- trong topic-proposal.css) -->
+
+<!-- Thẻ thống kê hàng chờ -->
+<th:block th:fragment="stats(ws)">
+    <section class="tp-stats tp-stats--3" aria-label="Thống kê hàng chờ">
+        <article class="tp-stat tp-stat--amber">
+            <div class="tp-stat-head"><span>ĐANG CHỜ DUYỆT</span><span class="tp-stat-icon"><svg class="tp-icon"><use href="#tp-icon-hourglass"></use></svg></span></div>
+            <strong class="tp-stat-value" th:text="${#lists.size(ws.queue())}">0</strong>
+            <div class="tp-stat-foot">Đề tài trong hàng chờ</div>
+        </article>
+        <article class="tp-stat tp-stat--blue">
+            <div class="tp-stat-head"><span>GỬI LẦN ĐẦU</span><span class="tp-stat-icon"><svg class="tp-icon"><use href="#tp-icon-file"></use></svg></span></div>
+            <strong class="tp-stat-value" th:text="${#lists.size(ws.queue().?[revisionRounds() == 0])}">0</strong>
+            <div class="tp-stat-foot">Chưa từng bị yêu cầu sửa</div>
+        </article>
+        <article class="tp-stat tp-stat--purple">
+            <div class="tp-stat-head"><span>ĐÃ SỬA, GỬI LẠI</span><span class="tp-stat-icon"><svg class="tp-icon"><use href="#tp-icon-edit"></use></svg></span></div>
+            <strong class="tp-stat-value" th:text="${#lists.size(ws.queue().?[revisionRounds() > 0])}">0</strong>
+            <div class="tp-stat-foot">Phóng viên đã sửa theo góp ý</div>
+        </article>
+    </section>
+</th:block>
+
+<!-- Hàng chờ. baseUrl: đường dẫn màn duyệt; department: bộ lọc ban đang chọn (giữ lại khi bấm đề tài) -->
+<th:block th:fragment="queue(ws, baseUrl, department)">
+    <section class="tp-card">
+        <div class="tp-card-head">
+            <h2>Hàng chờ <span class="tp-count-pill"><b th:text="${#lists.size(ws.queue())}">0</b> đề tài</span></h2>
+            <span class="tp-sort-note">Gửi sớm nhất trước</span>
+        </div>
+        <div class="tp-empty" th:if="${#lists.isEmpty(ws.queue())}">
+            <svg class="tp-icon"><use href="#tp-icon-inbox"></use></svg>
+            <strong>Không có đề tài nào đang chờ duyệt</strong>
+        </div>
+        <ul class="tp-queue" th:unless="${#lists.isEmpty(ws.queue())}">
+            <li th:each="t : ${ws.queue()}" th:attr="data-tp-search-text=${#strings.toLowerCase(t.title() + ' ' + t.reporterName() + ' ' + t.code())}">
+                <a th:href="${department == null} ? @{${baseUrl}(topic=${t.id()})} : @{${baseUrl}(topic=${t.id()}, department=${department})}"
+                   th:classappend="${ws.selected() != null and ws.selected().id() == t.id()} ? 'is-active'">
+                    <span class="tp-card-meta">
+                        <span class="tp-code" th:text="${t.code()}">TP-2026-0001</span>
+                        <span class="tp-chip" th:text="${t.departmentName()}">Ban Kinh tế</span>
+                    </span>
+                    <strong class="tp-queue-title" th:text="${t.title()}">Tiêu đề</strong>
+                    <span class="tp-muted" th:text="${t.reporterName()} + ' · ' + ${#temporals.format(t.createdAt(), 'dd/MM/yyyy HH:mm')}">Nguyễn Văn A · 14/10/2026</span>
+                    <span class="tp-badge tp-badge--revision" th:if="${t.revisionRounds() > 0}"
+                          th:text="'Đã sửa ' + ${t.revisionRounds()} + ' lần'">Đã sửa 1 lần</span>
+                </a>
+            </li>
+        </ul>
+        <div class="tp-empty" hidden data-tp-search-empty>
+            <svg class="tp-icon"><use href="#tp-icon-search"></use></svg>
+            <strong>Không tìm thấy đề tài phù hợp</strong>
+        </div>
+    </section>
+</th:block>
+
+<!-- Thông tin của đề tài đang chọn (nút quyết định do từng màn tự thêm) -->
+<th:block th:fragment="detail(ws)">
+    <div class="tp-card-meta">
+        <span class="tp-code" th:text="${ws.selected().code()}">TP-2026-0001</span>
+        <span class="tp-badge" th:classappend="|tp-badge--${ws.selected().statusKey()}|"><i class="tp-dot"></i><span th:text="${ws.selected().statusLabel()}">Chờ Trưởng ban duyệt</span></span>
+        <span class="tp-badge tp-badge--revision" th:if="${ws.selected().awaitingRevision()}"><i class="tp-dot"></i>Đang chờ phóng viên sửa</span>
+    </div>
+    <h2 class="tp-detail-title" th:text="${ws.selected().title()}">Tiêu đề</h2>
+    <p class="tp-detail-summary" th:text="${ws.selected().summary()}">Tóm tắt</p>
+    <dl class="tp-facts">
+        <div><dt>Ban</dt><dd th:text="${ws.selected().departmentName()}">Ban Kinh tế</dd></div>
+        <div><dt>Phóng viên đề xuất</dt><dd th:text="${ws.selected().reporterName()}">Nguyễn Văn A</dd></div>
+        <div><dt>Gửi lúc</dt><dd th:text="${#temporals.format(ws.selected().createdAt(), 'dd/MM/yyyy HH:mm')}">14/10/2026</dd></div>
+        <div><dt>Cập nhật</dt><dd th:text="${ws.selected().updatedAt()} ? ${#temporals.format(ws.selected().updatedAt(), 'dd/MM/yyyy HH:mm')} : '—'">—</dd></div>
+        <div><dt>Số vòng sửa</dt><dd th:text="${ws.selected().revisionRounds()}">0</dd></div>
+    </dl>
+</th:block>
+
+<!-- Lịch sử góp ý / duyệt -->
+<th:block th:fragment="history(ws)">
+    <section class="tp-card">
+        <div class="tp-card-head">
+            <h2>Lịch sử góp ý và duyệt <span class="tp-count-pill"><b th:text="${#lists.size(ws.history())}">0</b> mục</span></h2>
+        </div>
+        <div class="tp-empty" th:if="${#lists.isEmpty(ws.history())}">
+            <svg class="tp-icon"><use href="#tp-icon-inbox"></use></svg>
+            <strong>Chưa có góp ý hoặc kết quả duyệt</strong>
+        </div>
+        <div class="tp-card-body" th:unless="${#lists.isEmpty(ws.history())}">
+            <ol class="tp-timeline">
+                <li th:each="h : ${ws.history()}" th:classappend="|tone-${h.tone()}|">
+                    <div class="tp-timeline-head">
+                        <strong th:text="${h.label()}">Trưởng ban yêu cầu sửa</strong>
+                        <small th:text="${h.authorName()} + ' · ' + ${#temporals.format(h.createdAt(), 'dd/MM/yyyy HH:mm')}">Trần Hùng · 14/10/2026</small>
+                    </div>
+                    <p th:if="${h.content()}" th:text="${h.content()}">Nội dung góp ý</p>
+                </li>
+            </ol>
+        </div>
+    </section>
+</th:block>
+
+<!-- Mở / đóng dialog + tìm nhanh trong hàng chờ -->
+<th:block th:fragment="dialog-script">
+    <script>
+        (() => {
+            // Nút data-open="id-dialog" mở dialog, nút data-close bên trong dialog thì đóng
+            document.querySelectorAll('[data-open]').forEach(btn =>
+                btn.addEventListener('click', () => document.getElementById(btn.dataset.open).showModal()));
+            document.querySelectorAll('dialog [data-close]').forEach(btn =>
+                btn.addEventListener('click', () => btn.closest('dialog').close()));
+            // Có lỗi (ví dụ thiếu góp ý) thì mở lại dialog đang nhập dở
+            const reopen = document.querySelector('dialog[data-reopen="true"]');
+            if (reopen) reopen.showModal();
+
+            // Tìm nhanh: ẩn các đề tài trong hàng chờ không khớp từ khóa (chỉ lọc trên trang)
+            const search = document.querySelector('[data-tp-search]');
+            if (search) {
+                const rows = document.querySelectorAll('[data-tp-search-text]');
+                const empty = document.querySelector('[data-tp-search-empty]');
+                search.addEventListener('input', () => {
+                    const q = search.value.trim().toLowerCase();
+                    let shown = 0;
+                    rows.forEach(row => {
+                        const match = !q || row.dataset.tpSearchText.includes(q);
+                        row.hidden = !match;
+                        if (match) shown++;
+                    });
+                    if (empty) empty.hidden = !(q && rows.length && shown === 0);
+                });
+            }
+        })();
+    </script>
+</th:block>
+</body>
+</html>

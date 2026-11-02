@@ -1,4 +1,4 @@
-package com.group6.electronic_drafting_system.dto.topic;
+package com.group6.electronic_drafting_system.dto.Topic;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;

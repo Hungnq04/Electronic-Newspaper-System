@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  Phần GÓP Ý cho phóng viên trong trình soạn thảo. articles/editor.html gắn các mẩu dưới đây vào bằng th:replace.
+  Tách thành file riêng để editor.html / editor.js (trình soạn thảo, tự động lưu nháp) gần như không phải sửa.
+
+  Quy tắc hiển thị (đã lọc sẵn ở backend, ArticleServiceImpl.versionHistory):
+    - Phóng viên chỉ thấy góp ý khi bài BỊ TRẢ VỀ (có lượt duyệt "Yêu cầu chỉnh sửa").
+    - Góp ý của Trưởng ban và Thư ký tòa soạn đều hiện, ghi rõ tên người và cấp (nhãn vàng = Trưởng ban, xanh = Thư ký).
+
+  CSS: /reporter/css/article-feedback.css (class fb-, viết tắt của "feedback")
+  JS:  /reporter/js/article-feedback.js
+-->
+
+<!-- ===== 1. Dải báo "Bài bị trả về", nằm ngay dưới thanh trên cùng (chỉ khi bài đang Cần chỉnh sửa) ===== -->
+<div th:fragment="returnedBanner(article)" class="fb-returned"
+     th:if="${article.returnedVersion() != null}"
+     th:with="v=${article.returnedVersion()}, returner=${article.returnedVersion().returningReview()}">
+    <div class="fb-returned-msg">
+        <i data-lucide="corner-up-left"></i>
+        <div>
+            <strong>Bài bị trả về để chỉnh sửa</strong>
+            <!-- Ai trả bài: tên + cấp (Trưởng ban / Thư ký tòa soạn) -->
+            <th:block th:if="${returner != null}">
+                <b th:text="${returner.reviewerName()}">Nguyễn Thu Hà</b>
+                <span class="fb-role" th:classappend="|fb-role--${returner.roleClass()}|" th:text="${returner.stageLabel()}">Trưởng ban</span>
+                trả bản <b th:text="|v${v.label()}|">v1.0</b><th:block th:if="${returner.reviewedAt() != null}"> lúc
+                <span th:text="${#temporals.format(returner.reviewedAt(), 'HH:mm dd/MM/yyyy')}">09:30 11/10/2026</span></th:block>
+                · <span th:text="|${v.comments().size()} góp ý trên bài|">3 góp ý trên bài</span>.
+            </th:block>
+            Sửa xong, hãy ghi rõ đã sửa gì ở ô "Ghi chú cho bản nộp" rồi nộp lại.
+        </div>
+    </div>
+    <!-- data-open: editor.js mở popup "Chi tiết phiên bản" có sẵn của phiên bản bị trả về -->
+    <button type="button" class="btn outline" th:attr="data-open='versionDetail-' + ${v.id()}">
+        <i data-lucide="eye"></i><span th:text="|Xem bản bị trả về (v${v.label()})|">Xem bản bị trả về (v1.0)</span>
+    </button>
+</div>
+
+
+<!-- ===== 2. Thẻ "Góp ý cần sửa" ở đầu cột phải (chỉ khi bài đang Cần chỉnh sửa) ===== -->
+<section th:fragment="feedbackCard(article)" class="card fb-card"
+         th:if="${article.returnedVersion() != null}" th:with="v=${article.returnedVersion()}">
+    <div class="card-head">
+        <h3><i data-lucide="message-square-warning"></i>Góp ý cần sửa</h3>
+        <span class="badge" th:text="${v.comments().size()}">0</span>
+    </div>
+
+    <!-- Nhận xét chung của từng cấp duyệt trên phiên bản bị trả về, theo thứ tự thời gian -->
+    <div class="fb-review" th:each="r : ${v.reviews()}" th:if="${r.feedback() != null}"
+         th:classappend="|fb-review--${r.roleClass()}|">
+        <div class="fb-who">
+            <span class="label">Nhận xét chung</span>
+            <span class="fb-decision" th:text="${r.decisionLabel()}">Yêu cầu chỉnh sửa</span>
+        </div>
+        <div class="fb-who">
+            <b th:text="${r.reviewerName()}">Nguyễn Thu Hà</b>
+            <span class="fb-role" th:classappend="|fb-role--${r.roleClass()}|" th:text="${r.stageLabel()}">Trưởng ban</span>
+        </div>
+        <p class="fb-text" th:text="${r.feedback()}">Bài cần ghi rõ nguồn số liệu.</p>
+    </div>
+
+    <p class="hint left" th:if="${v.comments().isEmpty()}">Không có góp ý trên chữ, hãy xem nhận xét chung ở trên.</p>
+
+    <!-- Từng góp ý trên chữ. data-field + data-quote: JS dùng để tìm đoạn chữ được góp ý trong bài đang sửa -->
+    <div class="fb-comment" th:each="c : ${v.comments()}" th:classappend="|fb-comment--${c.roleClass()}|"
+         th:attr="data-comment-id=${c.id()},data-field=${c.anchorField()},data-quote=${c.quotedText()}">
+        <div class="fb-comment-top">
+            <span class="fb-anchor" th:text="${c.anchorLabel()}">Đoạn 2</span>
+            <span class="fb-status" th:classappend="${c.isOpen()} ? 'open' : 'done'" th:text="${c.isOpen()} ? 'Cần xử lý' : 'Đã xử lý'">Cần xử lý</span>
+        </div>
+        <blockquote class="fb-quote" th:if="${c.quotedText() != null}" th:text="|“${c.quotedText()}”|">“trích dẫn”</blockquote>
+        <p class="fb-text" th:text="${c.content()}">Nội dung góp ý</p>
+        <!-- Ai góp ý: tên + cấp + thời gian -->
+        <div class="fb-who small">
+            <b th:text="${c.authorName()}">Nguyễn Thu Hà</b>
+            <span class="fb-role" th:classappend="|fb-role--${c.roleClass()}|" th:text="${c.stageLabel()}">Trưởng ban</span>
+            <span th:text="${#temporals.format(c.createdAt(), 'HH:mm dd/MM')}">08:42 11/10</span>
+        </div>
+        <div class="fb-reply" th:each="reply : ${c.replies()}"><b th:text="|${reply.authorName()}:|">Lead:</b> <span th:text="${reply.content()}">trả lời</span></div>
+        <div class="fb-actions">
+            <button type="button" class="fb-link" data-fb-find th:if="${c.quotedText() != null}">Tìm trong bài →</button>
+            <!-- data-open: editor.js mở popup phiên bản cũ; article-feedback.js cuộn tới chữ được tô vàng -->
+            <button type="button" class="fb-link fb-link--muted" data-fb-show-old th:if="${c.hasAnchor()}"
+                    th:attr="data-open='versionDetail-' + ${v.id()}" th:text="|Xem vị trí ở bản v${v.label()}|">Xem vị trí ở bản v1.0</button>
+        </div>
+        <p class="fb-not-found" data-fb-not-found hidden>Không tìm thấy đoạn này trong bản đang sửa, có thể bạn đã sửa hoặc xóa nó. Bấm "Xem vị trí ở bản cũ" để xem chỗ được góp ý.</p>
+    </div>
+</section>
+
+
+<!-- ===== 3. Nội dung một phiên bản trong popup "Chi tiết phiên bản" =====
+     Chia đoạn GIỐNG HỆT màn Trưởng ban (data-field / data-paragraph) để JS tô vàng đúng chỗ góp ý.
+     Phần tử có data-field chỉ chứa chữ của bài, không thêm thẻ khác vào vì JS đếm vị trí từng ký tự trong đó. -->
+<article th:fragment="versionBody(v, category)" class="preview fb-version" th:with="view=${v.view()}">
+    <div class="pv-cat" th:text="${category}"></div>
+    <h1 data-field="TITLE" data-paragraph="1" th:text="${view.title}"></h1>
+    <p class="pv-sub" th:if="${view.subtitle != null and !#strings.isEmpty(view.subtitle)}"
+       data-field="SUBTITLE" data-paragraph="1" th:text="${view.subtitle}"></p>
+    <p class="pv-sapo" data-field="SAPO" data-paragraph="1" th:text="${view.sapo}"></p>
+    <div class="prose fb-body">
+        <th:block th:each="b : ${view.blocks}" th:switch="${b.kind.name()}">
+            <div th:case="'TEXT'" class="fb-block" th:classappend="|fb-${b.tag}|" data-field="CONTENT"
+                 th:attr="data-paragraph=${b.paragraph}" th:utext="${b.html}"></div>
+            <figure th:case="'IMAGE'">
+                <img th:src="${b.url}" th:alt="${b.caption}" alt="" loading="lazy">
+                <figcaption th:if="${b.caption != null}" th:text="${b.caption}"></figcaption>
+            </figure>
+            <figure th:case="'VIDEO'">
+                <video th:src="${b.url}" controls preload="metadata" playsinline></video>
+                <figcaption th:if="${b.caption != null}" th:text="${b.caption}"></figcaption>
+            </figure>
+            <div th:case="'TABLE'" class="fb-table" th:utext="${b.html}"></div>
+        </th:block>
+    </div>
+</article>
+</body>
+</html>

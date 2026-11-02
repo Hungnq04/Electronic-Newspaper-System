@@ -15,6 +15,7 @@ import com.group6.electronic_drafting_system.entity.Assignment;
 import com.group6.electronic_drafting_system.entity.Comment;
 import com.group6.electronic_drafting_system.entity.Source;
 import com.group6.electronic_drafting_system.entity.TopicSource;
+import com.group6.electronic_drafting_system.entity.enums.ArticleReviewDecision;
 import com.group6.electronic_drafting_system.entity.enums.ArticleStatus;
 import com.group6.electronic_drafting_system.entity.enums.AssignmentRole;
 import com.group6.electronic_drafting_system.entity.enums.AssignmentStatus;
@@ -23,6 +24,7 @@ import com.group6.electronic_drafting_system.entity.enums.TopicStatus;
 import com.group6.electronic_drafting_system.exception.ApplicationException;
 import com.group6.electronic_drafting_system.exception.ErrorCode;
 import com.group6.electronic_drafting_system.mapper.Article.ArticleMapper;
+import com.group6.electronic_drafting_system.mapper.DepartmentHead.ReviewWorkspaceMapper;
 import com.group6.electronic_drafting_system.mapper.Reporter.ReporterTaskMapper;
 import com.group6.electronic_drafting_system.repository.AccountRepository;
 import com.group6.electronic_drafting_system.repository.ArticleRepository;
@@ -84,11 +86,14 @@ public class ArticleServiceImpl implements ArticleService {
     private final SourceRepository sourceRepository;
     private final MediaStorageService mediaStorage;
     private final TopicSourceRepository topicSources;
+    // Dùng chung cách chia nội dung thành từng đoạn với màn Trưởng ban (vị trí góp ý tính theo cách chia này)
+    private final ReviewWorkspaceMapper versionViewMapper;
 
     public ArticleServiceImpl(ArticleRepository articles, ArticleVersionRepository versions, ArticleSourceRepository articleSources,
                               ArticleReviewRepository reviews, CommentRepository comments, AssignmentRepository assignments,
                               AccountRepository accounts, ArticleMapper articleMapper,
-                              SourceRepository sourceRepository, MediaStorageService mediaStorage, TopicSourceRepository topicSources) {
+                              SourceRepository sourceRepository, MediaStorageService mediaStorage, TopicSourceRepository topicSources,
+                              ReviewWorkspaceMapper versionViewMapper) {
         this.articles = articles;
         this.versions = versions;
         this.articleSources = articleSources;
@@ -100,6 +105,7 @@ public class ArticleServiceImpl implements ArticleService {
         this.sourceRepository = sourceRepository;
         this.mediaStorage = mediaStorage;
         this.topicSources = topicSources;
+        this.versionViewMapper = versionViewMapper;
     }
 
     @Override
@@ -151,10 +157,16 @@ public class ArticleServiceImpl implements ArticleService {
         Integer topicId = article.getTopic().getId();
         // Bị gỡ khỏi vai trò viết chính thì chỉ còn xem được bài cũ
         Assignment lead = leadAssignment(topicId, me.getId()).orElse(null);
+        List<ArticleEditorDTO.Version> history = versionHistory(article);
+        // Bài đang bị trả về: phiên bản bị trả về là phiên bản mới nhất (danh sách xếp mới nhất trước)
+        ArticleEditorDTO.Version returnedVersion =
+                article.getStatus() == ArticleStatus.REVISION_REQUIRED && !history.isEmpty() ? history.get(0) : null;
         return articleMapper.toEditorDTO(article, lead != null && EDITABLE.contains(article.getStatus()), lead,
                 reviewerName(topicId),
-                reviews.findFirstByVersion_Article_IdOrderByIdDesc(articleId).map(articleMapper::toReviewItem).orElse(null),
-                versionHistory(article),
+                // Chỉ lấy phản hồi đã có quyết định: lượt đang duyệt dở thì phóng viên chưa được thấy
+                reviews.findFirstByVersion_Article_IdAndDecisionIsNotNullOrderByIdDesc(articleId).map(articleMapper::toReviewItem).orElse(null),
+                history,
+                returnedVersion,
                 articleSources.findByArticleOrdered(articleId).stream().map(articleMapper::toSourceItem).toList(),
                 topicMedia(topicId));
     }
@@ -165,26 +177,50 @@ public class ArticleServiceImpl implements ArticleService {
                 .map(articleMapper::toTopicMedia).filter(Objects::nonNull).toList();
     }
 
-    // Lịch sử phiên bản: mỗi bản kèm nhận xét của từng cấp duyệt và các góp ý (comment) gắn trên bản đó
+    // Lịch sử phiên bản: mỗi bản kèm nhận xét của từng cấp duyệt và các góp ý (comment) gắn trên bản đó.
+    //
+    // Quy tắc phóng viên được xem gì (kiểm tra ở backend, không chỉ ẩn trên giao diện):
+    //   1. Lượt duyệt chưa có quyết định (decision = NULL) là lượt Trưởng ban / Thư ký đang duyệt dở: KHÔNG trả về.
+    //   2. Góp ý (comment) chỉ trả về khi phiên bản đó ĐÃ BỊ TRẢ VỀ (có lượt duyệt "Yêu cầu chỉnh sửa").
+    //      Lúc đó trả cả góp ý của Trưởng ban lẫn Thư ký trên phiên bản đó, mỗi góp ý ghi rõ người góp ý và cấp.
     private List<ArticleEditorDTO.Version> versionHistory(Article article) {
         List<ArticleVersion> all = versions.findByArticle_IdOrderByVersionNumberDesc(article.getId());
         if (all.isEmpty()) return List.of();
-        Map<Integer, List<ArticleReview>> reviewsByVersion = reviews.findByVersionIn(all).stream()
+
+        // Quy tắc 1: chỉ giữ lượt duyệt đã có quyết định, xếp theo thứ tự thời gian (Trưởng ban trước, Thư ký sau)
+        List<ArticleReview> decidedReviews = reviews.findByVersionIn(all).stream()
+                .filter(r -> r.getDecision() != null)
                 .sorted(Comparator.comparing(ArticleReview::getId))
+                .toList();
+        Map<Integer, List<ArticleReview>> reviewsByVersion = decidedReviews.stream()
                 .collect(Collectors.groupingBy(r -> r.getVersion().getId()));
-        List<Comment> allComments = comments.findByReviewVersionArticleOrderByCreatedAtAscIdAsc(article);
-        Map<Integer, List<Comment>> repliesByParent = allComments.stream().filter(c -> c.getParent() != null)
+
+        // Quy tắc 2: các phiên bản đã bị trả về (có lượt duyệt REQUEST_REVISION)
+        Set<Integer> returnedVersionIds = decidedReviews.stream()
+                .filter(r -> r.getDecision() == ArticleReviewDecision.REQUEST_REVISION)
+                .map(r -> r.getVersion().getId())
+                .collect(Collectors.toSet());
+
+        // Chỉ giữ góp ý thuộc lượt duyệt đã có quyết định, trên phiên bản đã bị trả về
+        List<Comment> visibleComments = comments.findByReviewVersionArticleOrderByCreatedAtAscIdAsc(article).stream()
+                .filter(c -> c.getReview().getDecision() != null)
+                .filter(c -> returnedVersionIds.contains(c.getReview().getVersion().getId()))
+                .toList();
+        Map<Integer, List<Comment>> repliesByParent = visibleComments.stream().filter(c -> c.getParent() != null)
                 .collect(Collectors.groupingBy(c -> c.getParent().getId()));
-        Map<Integer, List<ArticleEditorDTO.VersionComment>> commentsByVersion = allComments.stream()
+        Map<Integer, List<ArticleEditorDTO.VersionComment>> commentsByVersion = visibleComments.stream()
                 .filter(c -> c.getParent() == null)
                 .collect(Collectors.groupingBy(c -> c.getReview().getVersion().getId(), Collectors.mapping(
                         c -> articleMapper.toVersionComment(c, repliesByParent.getOrDefault(c.getId(), List.of()).stream()
                                 .map(r -> articleMapper.toVersionComment(r, List.of())).toList()),
                         Collectors.toList())));
+
         return all.stream()
                 .map(v -> articleMapper.toVersionItem(v,
                         reviewsByVersion.getOrDefault(v.getId(), List.of()).stream().map(articleMapper::toVersionReview).toList(),
-                        commentsByVersion.getOrDefault(v.getId(), List.of())))
+                        commentsByVersion.getOrDefault(v.getId(), List.of()),
+                        // Chia đoạn bằng đúng mapper của màn Trưởng ban để vị trí góp ý khớp tuyệt đối
+                        versionViewMapper.toVersionView(v)))
                 .toList();
     }
 

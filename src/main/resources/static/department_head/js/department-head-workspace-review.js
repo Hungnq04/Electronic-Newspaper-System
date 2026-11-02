@@ -117,7 +117,8 @@ function anchorElement(field, paragraph) {
 // Tô vàng chữ của từng góp ý đã lưu: bọc chữ đó trong thẻ <mark class="ws-mark">
 // (chỉ thẻ góp ý có data-field mới gắn vị trí; góp ý chung thì không có)
 document.querySelectorAll('.comment-card[data-field]').forEach(function (card) {
-  const el = anchorElement(card.dataset.field, card.dataset.paragraph);
+  // Tít / tít phụ / sapo chỉ có 1 đoạn: góp ý cũ có thể không lưu số đoạn (NULL) thì coi là đoạn 1
+  const el = anchorElement(card.dataset.field, card.dataset.paragraph || '1');
   if (!el) return;
   const range = rangeFromOffsets(el, Number(card.dataset.start), Number(card.dataset.end));
   if (!range) return;

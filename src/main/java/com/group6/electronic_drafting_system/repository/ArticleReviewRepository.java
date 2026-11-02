@@ -28,8 +28,9 @@ public interface ArticleReviewRepository extends JpaRepository<ArticleReview, In
     @EntityGraph(attributePaths = {"reviewer", "version"})
     List<ArticleReview> findByVersionArticleAndDecisionIsNotNullOrderByReviewedAtAscIdAsc(Article article);
 
+    // Lượt duyệt gần nhất ĐÃ có quyết định của một bài (bỏ qua lượt đang duyệt dở, phóng viên chưa được thấy)
     @EntityGraph(attributePaths = "reviewer")
-    Optional<ArticleReview> findFirstByVersion_Article_IdOrderByIdDesc(Integer articleId);
+    Optional<ArticleReview> findFirstByVersion_Article_IdAndDecisionIsNotNullOrderByIdDesc(Integer articleId);
 
     @Query("select count(r) from ArticleReview r where r.reviewStage = :stage and r.decision = :decision "
             + "and r.reviewedAt >= :from and r.reviewer.id = :reviewerId")

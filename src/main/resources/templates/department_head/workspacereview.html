@@ -13,8 +13,38 @@
     - department-head-workspace-review.css: phần riêng của màn này (class ws-, viết tắt của "workspace")
   JS: department-head-workspace-review.js tìm phần tử theo id (vd. id="btn-approve") nên KHÔNG đổi tên các id.
   Ẩn / hiện: dùng thuộc tính hidden của HTML. Phần tử có hidden thì bị ẩn; JS đặt el.hidden = false để hiện ra.
+
+  ĐƯỜNG ĐI CỦA DỮ LIỆU (đọc từ trên xuống):
+    GET /department-head/articles/{id}/review
+     -> DepartmentHeadController.reviewWorkspace()
+     -> DepartmentHeadReviewServiceImpl.openWorkspace()  (kiểm tra quyền, mở lượt duyệt, gom dữ liệu)
+     -> trả về ReviewWorkspaceDTO -> model.addAttribute("workspace", ...)
+     -> layout/app.html chèn fragment "reviewWorkspaceContent" của file này vào giữa trang
+     -> file này đọc ${w.xxx}. Field nào nghĩa là gì: xem dto/DepartmentHead/ReviewWorkspaceDTO.java
+
+  CÁC HỘP DỮ LIỆU (DTO) DÙNG TRONG FILE:
+    w                      = ReviewWorkspaceDTO   (cả trang)
+    w.current / w.previous = VersionViewDTO       (bản đang duyệt / bản liền trước)
+    b (trong th:each)      = ContentBlockDTO      (một khối thân bài: đoạn chữ, ảnh, video, bảng)
+    s (trong th:each)      = SourceItemDTO        (một tư liệu)
+    c, r (trong th:each)   = ReviewCommentDTO     (một góp ý / một câu trả lời)
+
+  CÁC NÚT -> METHOD XỬ LÝ (tất cả là form POST, xử lý xong redirect lại trang này kèm toast):
+    Bôi đen chữ + "Thêm góp ý"   -> form ẩn #comment-form      -> DepartmentHeadController.addComment()      -> service.addComment()
+    "Thêm góp ý chung"           -> form .ws-general-form      -> DepartmentHeadController.addComment()      -> service.addComment()
+    "Xóa" trên thẻ góp ý         -> form .../comments/{c}/delete  -> deleteComment()   -> service.deleteComment()
+    "Đã sửa" / "Chưa sửa"        -> form .../comments/{c}/resolve -> resolveComment()  -> service.setPreviousCommentResolved()
+    "Xác nhận duyệt"             -> form trong #modal-approve  -> approve()          -> service.approve()
+    "Gửi trả bài"                -> form trong #modal-revise   -> requestRevision()  -> service.requestRevision()
+    Các nút KHÔNG gửi gì lên server (chỉ JS chạy trên trình duyệt): "So sánh phiên bản", đổi tab, "Xem vị trí →",
+    mở / đóng hộp thoại, gợi ý nhanh.
 -->
-<!-- openPrev = số góp ý vòng trước Lead CHƯA sửa (dùng trong hộp thoại Duyệt / Yêu cầu sửa) -->
+<!-- th:fragment="reviewWorkspaceContent": đặt tên cho khối này để layout/app.html chèn vào
+     (controller: model.addAttribute("contentFragment", "reviewWorkspaceContent")).
+     th:with tạo biến dùng trong khối:
+       w        = ${workspace}, viết tắt cho gọn
+       openPrev = số góp ý vòng trước Lead CHƯA sửa (dùng trong hộp thoại Duyệt / Yêu cầu sửa).
+                  Cú pháp .?[!resolved] = lọc danh sách, giữ phần tử có resolved = false; #lists.size đếm số phần tử. -->
 <th:block th:fragment="reviewWorkspaceContent"
           th:with="w=${workspace}, openPrev=${#lists.size(workspace.previousComments.?[!resolved])}">
 
@@ -54,7 +84,10 @@
                 <strong th:text="|Bài #${w.code}|">Bài #BT-1</strong>
             </nav>
 
-            <!-- ===== 2. Thanh trạng thái: trạng thái, mã, topic, chuyên mục, phiên bản + nút so sánh phiên bản ===== -->
+            <!-- ===== 2. Thanh trạng thái: trạng thái, mã, topic, chuyên mục, phiên bản + nút so sánh phiên bản =====
+                 Dữ liệu: w.statusText, w.code, w.topicTitle, w.category (service điền ở BƯỚC 5 của openWorkspace),
+                 w.current.label (VersionViewDTO). -->
+
             <div class="ws-status-bar">
                 <div class="ws-status-info">
                     <span class="ws-chip-yellow"><svg class="rp-icon"><use href="#ws-icon-review"></use></svg><span th:text="${w.statusText}">Chờ Trưởng phòng duyệt</span></span>
@@ -67,6 +100,9 @@
                     <span>Phiên bản: <strong th:text="|v${w.current.label}|">v1.0</strong></span>
                 </div>
                 <!-- So sánh chỉ có khi bài đã có từ 2 phiên bản trở lên -->
+                <!-- Ô chọn "So với": lặp mọi version (w.versions) trừ bản đang duyệt; mặc định chọn bản liền trước.
+                     Nút "So sánh phiên bản" (id="btn-compare") KHÔNG gửi lên server: JS ẩn bài viết, hiện #compare-card
+                     và dựng bảng so sánh từ khối ẩn #version-data (phần 3 bên dưới). -->
                 <div class="ws-compare-tools" th:if="${w.previous != null}">
                     <label for="compare-base">So với</label>
                     <select id="compare-base">
@@ -88,7 +124,16 @@
 
                     <!-- Bản đang duyệt (phiên bản mới nhất).
                          data-field / data-paragraph = vị trí lưu vào comment.anchor_field / anchor_paragraph khi góp ý.
-                         Phần tử có data-field chỉ chứa chữ của bài, KHÔNG thêm thẻ con khác vào, vì JS đếm vị trí từng ký tự trong đó. -->
+                         Phần tử có data-field chỉ chứa chữ của bài, KHÔNG thêm thẻ con khác vào, vì JS đếm vị trí từng ký tự trong đó.
+                         Dữ liệu: w.current (VersionViewDTO) = version mới nhất, service lấy ở BƯỚC 2 của openWorkspace.
+
+                         CÁCH GÓP Ý GẮN VỊ TRÍ HOẠT ĐỘNG:
+                           1. Bôi đen chữ trong một phần tử có data-field (tít, tít phụ, sapo, đoạn thân bài)
+                           2. JS đọc data-field + data-paragraph của phần tử đó, đếm vị trí ký tự bắt đầu / kết thúc
+                           3. JS hiện khung #comment-popover ngay dưới chỗ bôi đen
+                           4. Gõ góp ý, bấm "Thêm góp ý" -> JS điền vào form ẩn #comment-form (cuối file) rồi gửi
+                           5. Server: DepartmentHeadController.addComment() -> service.addComment() kiểm tra vị trí và lưu -->
+
                     <article id="article-card" class="ws-article">
                         <div class="ws-article-meta">
                             <span class="ws-tag-yellow"
@@ -101,7 +146,8 @@
                         <p class="ws-subtitle" th:if="${w.current.subtitle != null and !#strings.isEmpty(w.current.subtitle)}"
                            data-field="SUBTITLE" data-paragraph="1" data-anchor="Tít phụ" th:text="${w.current.subtitle}">Tít phụ</p>
 
-                        <!-- Người viết (Lead, Supporting) + số từ, số ảnh -->
+                        <!-- Người viết (Lead, Supporting) + số từ, số ảnh
+                             Dữ liệu: w.leadName, w.leadInitials, w.supportingNames, w.wordCount, w.imageCount (service BƯỚC 4-5). -->
                         <div class="ws-byline">
                             <div class="ws-author">
                                 <span class="ws-author-avatar" th:text="${w.leadInitials}">MQ</span>
@@ -132,7 +178,10 @@
                         </figure>
 
                         <!-- Thân bài theo đúng thứ tự phóng viên sắp xếp (ContentBlockDTO: đoạn chữ, ảnh, video, bảng).
-                             Chỉ khối chữ có data-field / data-paragraph nên chỉ bôi đen chữ mới góp ý được; ảnh, video, bảng thì không. -->
+                             Chỉ khối chữ có data-field / data-paragraph nên chỉ bôi đen chữ mới góp ý được; ảnh, video, bảng thì không.
+                             th:each lặp từng khối b trong w.current.blocks (do ReviewWorkspaceMapper.blocks() cắt sẵn).
+                             th:switch / th:case giống switch trong Java: tùy b.kind là TEXT / IMAGE / VIDEO / TABLE mà in ra thẻ khác nhau.
+                             th:utext in nguyên HTML (giữ in đậm, nghiêng); an toàn vì mapper đã lọc bỏ thẻ nguy hiểm. -->
                         <div id="article-body" class="ws-body">
                             <th:block th:each="b : ${w.current.blocks}" th:switch="${b.kind.name()}">
                                 <div th:case="'TEXT'" class="ws-text" th:classappend="|ws-${b.tag}|"
@@ -150,7 +199,10 @@
                         </div>
 
                         <!-- Khung góp ý: hiện ra khi bôi đen chữ trong bài (chỉ có khi mình đang được duyệt bài này).
-                             JS đặt khung ngay dưới chỗ bôi đen. -->
+                             JS đặt khung ngay dưới chỗ bôi đen.
+                             th:if="${w.reviewable}": không được thao tác (chỉ xem) thì khung này KHÔNG được in ra HTML luôn.
+                             Khung này không phải form: nút "Thêm góp ý" (id="popover-save") do JS xử lý, JS chép dữ liệu
+                             sang form ẩn #comment-form rồi mới gửi lên server. -->
                         <div th:if="${w.reviewable}" id="comment-popover" class="ws-popover" hidden>
                             <div class="ws-popover-head">
                                 <div class="ws-popover-title">
@@ -204,7 +256,10 @@
                     </article>
 
                     <!-- Dữ liệu chữ của từng phiên bản cho phần so sánh (luôn ẩn).
-                         Mỗi <span data-key> là một "ô" để so: Tít, Tít phụ, Sapo, Đoạn 1, Đoạn 2... -->
+                         Mỗi <span data-key> là một "ô" để so: Tít, Tít phụ, Sapo, Đoạn 1, Đoạn 2...
+                         Dữ liệu: w.versions (mọi VersionViewDTO), v.paragraphs (chữ từng đoạn).
+                         it.count = số thứ tự vòng lặp, đếm từ 1 (biến "it" do th:each tạo).
+                         Người dùng không thấy khối này; JS (readVersion / renderCompare) đọc nó để so sánh, không cần hỏi lại server. -->
                     <div id="version-data" hidden>
                         <div th:each="v : ${w.versions}" th:attr="data-label=${v.label},data-time=${v.createdAtText}">
                             <span data-key="Tít" th:text="${v.title}"></span>
@@ -214,7 +269,10 @@
                         </div>
                     </div>
 
-                    <!-- Tư liệu đính kèm bài (article_source). Ảnh / video đã chèn trong bài được đánh dấu "Có trong bài" -->
+                    <!-- Tư liệu đính kèm bài (article_source). Ảnh / video đã chèn trong bài được đánh dấu "Có trong bài"
+                         Dữ liệu: w.sources (danh sách SourceItemDTO), service lấy ở BƯỚC 4 của openWorkspace
+                         (ArticleRepository.findSources + ReviewWorkspaceMapper.toSource). -->
+
                     <section class="rp-card">
                         <div class="rp-card-head">
                             <h2><svg class="rp-icon ws-icon-maroon"><use href="#ws-icon-media"></use></svg>Tư liệu đính kèm
@@ -251,7 +309,8 @@
                                     th:text="|Vòng trước · v${w.previous.label} (${#lists.size(w.previousComments)})|">Vòng trước</button>
                         </div>
 
-                        <!-- Tab "Vòng này": góp ý trên phiên bản đang duyệt -->
+                        <!-- Tab "Vòng này": góp ý trên phiên bản đang duyệt
+                             Dữ liệu: w.comments (danh sách ReviewCommentDTO), service tạo bằng rootComments(current). -->
                         <div id="tab-now" class="ws-tab-panel">
                             <p class="ws-note">Góp ý trên <b th:text="|v${w.current.label}|">v1.0</b>. Lead chỉ thấy sau khi bạn bấm <b>Yêu cầu sửa</b> hoặc <b>Duyệt</b>.</p>
                             <p class="ws-note" th:if="${#lists.isEmpty(w.comments)}"><i>Chưa có góp ý nào.</i></p>
@@ -270,7 +329,10 @@
                                 <div class="ws-comment-foot">
                                     <button th:if="${c.anchorField != null}" data-goto class="ws-link" type="button">Xem vị trí →</button>
                                     <span th:unless="${c.anchorField != null}"></span>
-                                    <!-- data-confirm: JS hỏi lại "Xóa góp ý này?" trước khi gửi form -->
+                                    <!-- data-confirm: JS hỏi lại "Xóa góp ý này?" trước khi gửi form
+                                         Gửi: POST /department-head/articles/{a}/comments/{c}/delete
+                                         -> DepartmentHeadController.deleteComment() -> service.deleteComment() -->
+
                                     <form th:if="${w.reviewable}" method="post" data-confirm="Xóa góp ý này?"
                                           th:action="@{/department-head/articles/{a}/comments/{c}/delete(a=${w.articleId},c=${c.id})}">
                                         <button class="ws-link ws-link--muted" type="submit">Xóa</button>
@@ -278,7 +340,11 @@
                                 </div>
                             </div>
 
-                            <!-- Góp ý chung cho cả bài (không gắn vị trí trong bài) -->
+                            <!-- Góp ý chung cho cả bài (không gắn vị trí trong bài)
+                                 Gửi: POST /department-head/articles/{a}/comments với 1 ô name="content"
+                                 -> DepartmentHeadController.addComment() (Spring đổ vào CommentRequestDTO.content, anchorField để trống)
+                                 -> service.addComment() lưu góp ý không có vị trí. -->
+
                             <form th:if="${w.reviewable}" class="ws-general-form" method="post"
                                   th:action="@{/department-head/articles/{a}/comments(a=${w.articleId})}">
                                 <label for="general-comment">Góp ý chung</label>
@@ -288,7 +354,11 @@
                         </div>
 
                         <!-- Tab "Vòng trước": góp ý trên phiên bản liền trước. Trưởng ban xác nhận Lead đã sửa hay chưa
-                             (comment.status: RESOLVED = đã sửa, OPEN = chưa sửa). Ẩn sẵn, bấm tab thì JS hiện ra. -->
+                             (comment.status: RESOLVED = đã sửa, OPEN = chưa sửa). Ẩn sẵn, bấm tab thì JS hiện ra.
+                             Dữ liệu: w.previousComments (service tạo bằng rootComments(previous)).
+                             Nút "Đã sửa" / "Chưa sửa": POST .../comments/{c}/resolve?resolved=true|false
+                             -> DepartmentHeadController.resolveComment() -> service.setPreviousCommentResolved() -->
+
                         <div th:if="${w.previous != null}" id="tab-prev" class="ws-tab-panel" hidden>
                             <p class="ws-note">Góp ý vòng trước trên <b th:text="|v${w.previous.label}|">v1.0</b>. Kiểm tra bản mới rồi đánh dấu đã sửa hay chưa.</p>
                             <p class="ws-note" th:if="${#lists.isEmpty(w.previousComments)}"><i>Vòng trước không có góp ý.</i></p>
@@ -337,6 +407,9 @@
                     <span th:if="${w.reviewable}">Đang duyệt bài <b th:text="|#${w.code}|">#BT-1</b> · <span th:text="|v${w.current.label}|">v1.0</span></span>
                     <span th:unless="${w.reviewable}" th:text="|${w.statusText} · chỉ xem, không thao tác được|">Chỉ xem</span>
                 </div>
+                <!-- 3 nút chỉ có khi được thao tác (w.reviewable = true).
+                     "Để sau" là link thường, quay về dashboard (lượt duyệt vẫn mở, lần sau vào tiếp).
+                     "Yêu cầu sửa" / "Duyệt" là type="button": KHÔNG gửi gì, chỉ để JS mở hộp thoại tương ứng ở phần 6. -->
                 <div class="ws-action-buttons" th:if="${w.reviewable}">
                     <a class="ws-btn ws-btn--grey" th:href="@{/department-head/dashboard}"><svg class="rp-icon ws-icon-muted"><use href="#ws-icon-clock"></use></svg>Để sau</a>
                     <button id="btn-revise" class="ws-btn ws-btn--yellow" type="button">
@@ -351,7 +424,11 @@
 
         <!-- ===== 6. Hộp thoại (ẩn sẵn, bấm nút ở thanh đáy thì JS hiện ra) ===== -->
 
-        <!-- Hộp thoại "Yêu cầu sửa": nhận xét chung là bắt buộc (BR-12) -->
+        <!-- Hộp thoại "Yêu cầu sửa": nhận xét chung là bắt buộc (BR-12)
+             Mở bằng nút id="btn-revise". Gửi: POST /department-head/articles/{a}/request-revision với ô name="feedback"
+             -> DepartmentHeadController.requestRevision() -> service.requestRevision():
+                bài DEPARTMENT_REVIEW -> REVISION_REQUIRED (trả về Lead), lượt duyệt chốt REQUEST_REVISION.
+             required trên textarea + JS tắt nút khi chưa gõ chỉ là tiện lợi; service vẫn kiểm tra lại "có nhận xét chưa". -->
         <div th:if="${w.reviewable}" id="modal-revise" class="ws-modal-backdrop" hidden>
             <form class="ws-modal" method="post" th:action="@{/department-head/articles/{a}/request-revision(a=${w.articleId})}">
                 <h3>Yêu cầu sửa bài</h3>
@@ -371,7 +448,11 @@
             </form>
         </div>
 
-        <!-- Hộp thoại "Duyệt": duyệt cấp phòng, bài chuyển sang Thư ký tòa soạn (chưa phải Final Approve) -->
+        <!-- Hộp thoại "Duyệt": duyệt cấp phòng, bài chuyển sang Thư ký tòa soạn (chưa phải Final Approve)
+             Mở bằng nút id="btn-approve". Gửi: POST /department-head/articles/{a}/approve với ô name="feedback" (không bắt buộc)
+             -> DepartmentHeadController.approve() -> service.approve():
+                bài DEPARTMENT_REVIEW -> DEPARTMENT_APPROVED, lượt duyệt chốt APPROVED. -->
+
         <div th:if="${w.reviewable}" id="modal-approve" class="ws-modal-backdrop" hidden>
             <form class="ws-modal ws-modal--small" method="post" th:action="@{/department-head/articles/{a}/approve(a=${w.articleId})}">
                 <h3>Duyệt bài cấp phòng?</h3>
@@ -390,7 +471,11 @@
             </form>
         </div>
 
-        <!-- Form ẩn để gửi góp ý gắn vị trí: JS điền vị trí vừa bôi đen + nội dung rồi gửi đi -->
+        <!-- Form ẩn để gửi góp ý gắn vị trí: JS điền vị trí vừa bôi đen + nội dung rồi gửi đi
+             Tên 5 ô (name=...) TRÙNG tên 5 field của CommentRequestDTO, nên Spring tự đổ đúng vào:
+               anchorField -> setAnchorField, anchorParagraph -> setAnchorParagraph, ..., content -> setContent
+             Gửi: POST /department-head/articles/{a}/comments -> DepartmentHeadController.addComment() -> service.addComment() -->
+
         <form th:if="${w.reviewable}" id="comment-form" method="post" th:action="@{/department-head/articles/{a}/comments(a=${w.articleId})}" hidden>
             <input type="hidden" name="anchorField">
             <input type="hidden" name="anchorParagraph">
@@ -399,7 +484,9 @@
             <input type="hidden" name="content">
         </form>
 
-        <!-- Thông báo nhỏ sau mỗi thao tác (flash "toast" / "toastError" từ controller), JS tự ẩn sau vài giây -->
+        <!-- Thông báo nhỏ sau mỗi thao tác (flash "toast" / "toastError" từ controller), JS tự ẩn sau vài giây
+             toast / toastError do DepartmentHeadController.runAndReturn() gửi kèm khi redirect (flash.addFlashAttribute).
+             ${toast ?: toastError}: có toast thì lấy toast, không thì lấy toastError. JS (showToast) đọc data-message để hiện. -->
         <div id="toast" class="ws-toast" hidden
              th:attr="data-message=${toast ?: toastError},data-error=${toastError != null}"></div>
     </section>

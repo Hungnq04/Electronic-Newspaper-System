@@ -166,8 +166,9 @@ public class ArticleController {
         model.addAttribute("pageTitle", (article.isNew() ? "Viết bài mới" : article.title()) + " – Phóng viên");
         model.addAttribute("contentView", "articles/editor");
         model.addAttribute("contentFragment", "articleEditorContent");
-        model.addAttribute("pageCss", List.of(FONTS, "/reporter/css/reporter-tasks.css", "/css/editor.css"));
-        model.addAttribute("pageJs", List.of(LUCIDE, "/js/editor.js"));
+        // article-feedback: phần góp ý của Trưởng ban / Thư ký khi bài bị trả về (file riêng, nạp sau editor)
+        model.addAttribute("pageCss", List.of(FONTS, "/reporter/css/reporter-tasks.css", "/css/editor.css", "/reporter/css/article-feedback.css"));
+        model.addAttribute("pageJs", List.of(LUCIDE, "/js/editor.js", "/reporter/js/article-feedback.js"));
         model.addAttribute("activePath", activePath);
         return "layout/app";
     }

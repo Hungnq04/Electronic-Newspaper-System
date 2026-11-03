@@ -9,7 +9,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
-// Thanh trên cùng (fragment/department-head-header) của các màn Thư ký cần tên + chữ viết tắt của người đăng nhập.
+// Thanh trên cùng (fragment/secretary-topbar) của các màn Thư ký cần tên + chữ viết tắt của người đăng nhập.
 // Chỉ áp dụng cho các controller liệt kê ở assignableTypes, không ảnh hưởng màn của role khác.
 @ControllerAdvice(assignableTypes = {FinalReviewController.class, EditorialTopicController.class})
 public class SecretaryHeaderAdvice {

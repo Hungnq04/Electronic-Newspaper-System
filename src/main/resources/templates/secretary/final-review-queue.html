@@ -2,10 +2,8 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <body>
 <th:block th:fragment="content">
-<!-- Thanh trên cùng dùng chung với màn Trưởng phòng; tên người đăng nhập do SecretaryHeaderAdvice đưa vào -->
-<header class="sec-topbar">
-    <div th:replace="~{fragment/department-head-header :: header('dashboard', ${headerName}, ${headerRole}, ${headerInitials})}"></div>
-</header>
+<!-- Thanh trên cùng cùng kiểu với màn Trưởng phòng (fragment/secretary-topbar); tên người đăng nhập do SecretaryHeaderAdvice đưa vào -->
+<header th:replace="~{fragment/secretary-topbar :: topbar(${headerName}, ${headerRole}, ${headerInitials})}"></header>
 <main class="page">
     <div class="page-head">
         <div>

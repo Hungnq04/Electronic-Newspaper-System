@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="content">
+<header class="sec-topbar">
+    <div th:replace="~{fragment/department-head-header :: header('dashboard', ${headerName}, ${headerRole}, ${headerInitials})}"></div>
+</header>
+<main class="page">
+    <div class="page-head">
+        <div>
+            <nav class="breadcrumb" aria-label="Breadcrumb"><span>TOPIC TÒA SOẠN</span> › <strong>Tạo &amp; Giao Topic</strong></nav>
+            <h1>Topic tòa soạn</h1>
+            <p>Tạo Topic cấp tòa soạn và giao cho Trưởng phòng điều phối.</p>
+        </div>
+        <a class="btn" th:href="@{/secretary/topics/new}">+ Tạo Editorial Topic</a>
+    </div>
+
+    <div class="alert alert-success" th:if="${message}" th:text="${message}"></div>
+    <div class="alert alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <!-- Thống kê: đếm ngay trên 2 danh sách unassigned / assigned, không thêm truy vấn -->
+    <section class="stats">
+        <article class="stat stat-amber">
+            <div class="stat-head"><span>Topic chưa giao</span>
+                <span class="stat-icon"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M4 13h4l2 3h4l2-3h4"/></svg></span></div>
+            <div class="stat-value"><strong th:text="${#lists.size(unassigned)}">0</strong><span>topic</span></div>
+            <div class="stat-note">Chưa có Trưởng phòng phụ trách</div>
+        </article>
+        <article class="stat stat-green">
+            <div class="stat-head"><span>Đã giao</span>
+                <span class="stat-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16.5 9"/></svg></span></div>
+            <div class="stat-value"><strong th:text="${#lists.size(assigned)}">0</strong><span>topic</span></div>
+            <div class="stat-note">Đang có Trưởng phòng phụ trách</div>
+        </article>
+        <article class="stat">
+            <div class="stat-head"><span>Chưa có Lead</span>
+                <span class="stat-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span></div>
+            <div class="stat-value"><strong th:text="${#lists.size(assigned.?[leadName == null])}">0</strong><span>topic</span></div>
+            <div class="stat-note">Trưởng phòng chưa phân công phóng viên</div>
+        </article>
+        <article class="stat stat-slate">
+            <div class="stat-head"><span>Ưu tiên cao / Khẩn</span>
+                <span class="stat-icon"><svg viewBox="0 0 24 24"><path d="M12 22c5 0 8-3.7 8-8.1 0-3-1.8-5.6-4.7-8.1.2 2.8-1 4-2.1 4.7C13.4 6.8 11.9 3.9 8 2c.8 4.8-4 7.6-4 12a8 8 0 0 0 8 8Z"/></svg></span></div>
+            <div class="stat-value"><strong th:text="${#lists.size(unassigned.?[priority == 'URGENT' or priority == 'HIGH'])
+                    + #lists.size(assigned.?[priority == 'URGENT' or priority == 'HIGH'])}">0</strong><span>topic</span></div>
+            <div class="stat-note">Tính cả Topic chưa giao và đã giao</div>
+        </article>
+    </section>
+
+    <!-- Topic ACTIVE chưa có Trưởng phòng phụ trách (PRD 7.2, EC-09) -->
+    <section class="card">
+        <div class="card-head">
+            <h2>Topic chưa giao <span class="count-pill" th:text="${#lists.size(unassigned)} + ' bản ghi'"></span></h2>
+            <span class="hint">Bấm tên Topic để giao Trưởng phòng</span>
+        </div>
+        <div class="empty" th:if="${#lists.isEmpty(unassigned)}">Không có Topic nào đang chờ giao.</div>
+        <div class="table-wrap" th:unless="${#lists.isEmpty(unassigned)}">
+            <table class="data">
+                <thead>
+                <tr><th>Topic</th><th>Ưu tiên</th><th>Dự kiến</th><th>Người tạo</th><th></th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="t : ${unassigned}">
+                    <td class="title-cell">
+                        <a th:href="@{/secretary/topics/{id}/assign(id=${t.id})}" th:text="${t.title}"></a>
+                        <span class="sub" th:text="${t.category}"></span>
+                    </td>
+                    <td th:insert="~{secretary/editorial-topic-list :: priority-badge(${t})}"></td>
+                    <td th:text="${t.expectedDate} ? ${#temporals.format(t.expectedDate, 'dd/MM/yyyy')} : '—'"></td>
+                    <td>
+                        <span th:text="${t.creatorName}"></span>
+                        <span class="sub" th:text="${#temporals.format(t.createdAt, 'dd/MM/yyyy HH:mm')}"></span>
+                    </td>
+                    <td><a class="btn btn-sm" th:href="@{/secretary/topics/{id}/assign(id=${t.id})}">Giao Trưởng phòng</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Topic ACTIVE đã có Trưởng phòng phụ trách -->
+    <section class="card" style="margin-top:18px">
+        <div class="card-head">
+            <h2>Đã giao <span class="count-pill" th:text="${#lists.size(assigned)} + ' bản ghi'"></span></h2>
+        </div>
+        <div class="empty" th:if="${#lists.isEmpty(assigned)}">Chưa có Topic nào được giao.</div>
+        <div class="table-wrap" th:unless="${#lists.isEmpty(assigned)}">
+            <table class="data">
+                <thead>
+                <tr><th>Topic</th><th>Ưu tiên</th><th>Trưởng phòng</th><th>Lead Reporter</th><th>Bài viết</th><th></th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="t : ${assigned}">
+                    <td class="title-cell">
+                        <strong th:text="${t.title}"></strong>
+                        <span class="sub">
+                            <span th:text="${t.category}"></span> ·
+                            <span th:text="${t.editorial} ? 'Tòa soạn giao' : 'Reporter đề xuất'"></span>
+                        </span>
+                    </td>
+                    <td th:insert="~{secretary/editorial-topic-list :: priority-badge(${t})}"></td>
+                    <td>
+                        <span th:text="${t.departmentHeadName}"></span>
+                        <span class="sub" th:text="${t.departmentName}"></span>
+                    </td>
+                    <td>
+                        <span th:if="${t.leadName}" th:text="${t.leadName}"></span>
+                        <span class="badge badge-warning" th:unless="${t.leadName}">Chưa phân công</span>
+                        <span class="sub" th:if="${t.supportingCount > 0}" th:text="'+ ' + ${t.supportingCount} + ' Supporting'"></span>
+                    </td>
+                    <td th:text="${t.articleCount}"></td>
+                    <td><a class="btn btn-ghost btn-sm" th:href="@{/secretary/topics/{id}/assign(id=${t.id})}">Giao lại</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+
+<!-- Mẫu nhãn mức ưu tiên, chỉ dùng qua th:insert -->
+<th:block th:if="${false}">
+    <th:block th:fragment="priority-badge(t)">
+        <span class="badge"
+              th:classappend="${t.priority == 'URGENT'} ? 'badge-danger' : (${t.priority == 'HIGH'} ? 'badge-warning' : '')"
+              th:text="${t.priorityLabel}"></span>
+    </th:block>
+</th:block>
+</th:block>
+</body>
+</html>

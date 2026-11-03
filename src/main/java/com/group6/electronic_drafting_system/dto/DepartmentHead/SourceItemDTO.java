@@ -13,4 +13,6 @@ public class SourceItemDTO {
     private boolean image;
     private String caption;
     private boolean featured;
+    // true = link của tư liệu này xuất hiện trong thân bài (ảnh / video đã được chèn vào nội dung)
+    private boolean inBody;
 }

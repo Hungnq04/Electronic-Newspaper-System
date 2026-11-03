@@ -69,15 +69,23 @@ public enum ErrorCode {
     MEDIA_STORAGE_NOT_CONFIGURED(1503, "Hệ thống chưa cấu hình Cloudinary nên chưa thể tải tệp lên.", HttpStatus.SERVICE_UNAVAILABLE),
     MEDIA_UPLOAD_FAILED(1504, "Tải tệp lên Cloudinary không thành công. Vui lòng thử lại.", HttpStatus.BAD_GATEWAY),
 
-    // FL-07 Xuất bản (Vanh)
-    PUBLICATION_ACCESS_DENIED(1800, "Chỉ Thư ký tòa soạn đang hoạt động mới được xuất bản bài viết.", HttpStatus.FORBIDDEN),
-    PUBLICATION_NOT_APPROVED(1801, "Bài viết không còn ở trạng thái chờ xuất bản (có thể đã được đăng hoặc hẹn giờ).", HttpStatus.CONFLICT),
-    PUBLICATION_FINAL_APPROVAL_MISSING(1802, "Phiên bản mới nhất chưa được Thư ký tòa soạn duyệt cuối nên chưa thể xuất bản.", HttpStatus.CONFLICT),
-    PUBLICATION_SCHEDULE_TIME_REQUIRED(1803, "Vui lòng chọn ngày giờ đăng hợp lệ.", HttpStatus.BAD_REQUEST),
-    PUBLICATION_SCHEDULE_TIME_TOO_SOON(1804, "Thời điểm đăng phải sau thời điểm hiện tại ít nhất 5 phút.", HttpStatus.BAD_REQUEST),
-    PUBLICATION_REASON_REQUIRED(1805, "Vui lòng nhập lý do trả bài về Lead Reporter.", HttpStatus.BAD_REQUEST),
-    PUBLICATION_NOT_SCHEDULED(1806, "Bài viết không còn ở trạng thái hẹn giờ đăng (có thể đã được đăng hoặc đã hủy lịch).", HttpStatus.CONFLICT),
-    PUBLICATION_SCHEDULE_ALREADY_DUE(1807, "Đã đến giờ đăng nên không thể hủy lịch nữa. Bài sẽ được hệ thống tự đăng.", HttpStatus.CONFLICT);
+    // TV4 - Topic tòa soạn của Thư ký (FL-02)
+    EDITORIAL_TOPIC_ACCESS_DENIED(1800, "Chỉ Thư ký tòa soạn được quản lý Topic cấp tòa soạn.", HttpStatus.FORBIDDEN),
+    TOPIC_NOT_FOUND(1801, "Không tìm thấy Topic.", HttpStatus.NOT_FOUND),
+    TOPIC_NOT_ACTIVE(1802, "Chỉ giao được Topic đang ở trạng thái ACTIVE.", HttpStatus.CONFLICT),
+    TOPIC_HEAD_INVALID(1803, "Người được chọn không phải Trưởng phòng đang hoạt động.", HttpStatus.BAD_REQUEST),
+    TOPIC_HEAD_UNCHANGED(1804, "Topic đang do chính Trưởng phòng này phụ trách.", HttpStatus.CONFLICT),
+    ASSIGNMENT_DEADLINE_PAST(1805, "Deadline phải ở tương lai.", HttpStatus.BAD_REQUEST),
+
+    // FL-07 Xuất bản (Vanh) - dùng dải 19xx để không trùng mã 18xx của FL-02
+    PUBLICATION_ACCESS_DENIED(1900, "Chỉ Thư ký tòa soạn đang hoạt động mới được xuất bản bài viết.", HttpStatus.FORBIDDEN),
+    PUBLICATION_NOT_APPROVED(1901, "Bài viết không còn ở trạng thái chờ xuất bản (có thể đã được đăng hoặc hẹn giờ).", HttpStatus.CONFLICT),
+    PUBLICATION_FINAL_APPROVAL_MISSING(1902, "Phiên bản mới nhất chưa được Thư ký tòa soạn duyệt cuối nên chưa thể xuất bản.", HttpStatus.CONFLICT),
+    PUBLICATION_SCHEDULE_TIME_REQUIRED(1903, "Vui lòng chọn ngày giờ đăng hợp lệ.", HttpStatus.BAD_REQUEST),
+    PUBLICATION_SCHEDULE_TIME_TOO_SOON(1904, "Thời điểm đăng phải sau thời điểm hiện tại ít nhất 5 phút.", HttpStatus.BAD_REQUEST),
+    PUBLICATION_REASON_REQUIRED(1905, "Vui lòng nhập lý do trả bài về Lead Reporter.", HttpStatus.BAD_REQUEST),
+    PUBLICATION_NOT_SCHEDULED(1906, "Bài viết không còn ở trạng thái hẹn giờ đăng (có thể đã được đăng hoặc đã hủy lịch).", HttpStatus.CONFLICT),
+    PUBLICATION_SCHEDULE_ALREADY_DUE(1907, "Đã đến giờ đăng nên không thể hủy lịch nữa. Bài sẽ được hệ thống tự đăng.", HttpStatus.CONFLICT);
 
     private final int code;
     private final String message;

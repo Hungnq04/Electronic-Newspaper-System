@@ -23,6 +23,7 @@ public class SidebarService {
             // TODO: bổ sung menu khi làm màn hình cho các quyền còn lại
             case EDITORIAL_SECRETARY -> List.of(
                     new SidebarGroup("BIÊN TẬP TÒA SOẠN", List.of(
+                            new SidebarItem("Topic tòa soạn", "/secretary/topics", "shapes", null),
                             new SidebarItem("Duyệt cuối", "/secretary/final-reviews", "clipboard-check", null),
                             // FL-07 (Vanh): bài đã duyệt cuối, chờ xuất bản
                             new SidebarItem("Chờ xuất bản", "/secretary/publications", "file-text", null),

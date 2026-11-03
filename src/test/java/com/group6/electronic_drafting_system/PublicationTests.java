@@ -49,13 +49,21 @@ class PublicationTests {
     @Autowired PublicArticleRepository publicArticles;
     @Autowired EntityManager em;
 
-    // Chạy trước mỗi test, trong cùng transaction của test (nên cũng tự hoàn tác):
-    // nếu A4 đã bị bấm Đăng ngay / Hẹn giờ thử trên giao diện thì đưa về APPROVED để test không phụ thuộc dữ liệu demo
+    // Chạy trước mỗi test, trong cùng transaction của test (nên cũng tự hoàn tác, DB thật không đổi):
+    // đưa A3, A4 về đúng dữ liệu mẫu, phòng khi đã bấm thử Đăng ngay / Hẹn giờ / Trả bài / Hủy lịch trên giao diện.
+    // A4 = APPROVED, chưa có publication. A3 = SCHEDULED lúc 08:00 28/11/2026 (version 4, do bao.pham đặt lịch).
     @BeforeEach
-    void resetA4ToApproved() {
-        em.createNativeQuery("DELETE FROM publication WHERE article_id = " + A4).executeUpdate();
-        em.createNativeQuery("UPDATE article SET status = 'APPROVED' WHERE article_id = " + A4 + " AND status IN ('PUBLISHED', 'SCHEDULED')")
-                .executeUpdate();
+    void resetDemoData() {
+        // Bỏ các lượt "trả bài / hủy lịch" sinh ra khi bấm thử
+        em.createNativeQuery("DELETE FROM article_review WHERE review_kind <> 'REVIEW' AND version_id IN "
+                + "(SELECT version_id FROM article_version WHERE article_id IN (" + A3 + ", " + A4 + "))").executeUpdate();
+        em.createNativeQuery("DELETE FROM publication WHERE article_id IN (" + A3 + ", " + A4 + ")").executeUpdate();
+        em.createNativeQuery("UPDATE article SET status = 'APPROVED', completed_at = COALESCE(completed_at, '2026-10-06T16:40:00+07:00') "
+                + "WHERE article_id = " + A4).executeUpdate();
+        em.createNativeQuery("UPDATE article SET status = 'SCHEDULED', completed_at = COALESCE(completed_at, '2026-10-05T10:00:00+07:00') "
+                + "WHERE article_id = " + A3).executeUpdate();
+        em.createNativeQuery("INSERT INTO publication (article_id, version_id, published_by, publication_type, scheduled_at, published_at, status) "
+                + "VALUES (" + A3 + ", 4, 2, 'SCHEDULED', '2026-11-28T08:00:00+07:00', NULL, 'SCHEDULED')").executeUpdate();
         em.clear();
     }
 

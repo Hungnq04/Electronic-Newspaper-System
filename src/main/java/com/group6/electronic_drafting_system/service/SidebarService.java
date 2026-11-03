@@ -25,7 +25,9 @@ public class SidebarService {
                     new SidebarGroup("BIÊN TẬP TÒA SOẠN", List.of(
                             new SidebarItem("Duyệt cuối", "/secretary/final-reviews", "clipboard-check", null),
                             // FL-07 (Vanh): bài đã duyệt cuối, chờ xuất bản
-                            new SidebarItem("Chờ xuất bản", "/secretary/publications", "file-text", null))));
+                            new SidebarItem("Chờ xuất bản", "/secretary/publications", "file-text", null),
+                            // FL-07 Iter3 (Vanh): bài đã hẹn giờ đăng (icon null = icon đồng hồ mặc định)
+                            new SidebarItem("Đã hẹn giờ", "/secretary/scheduled-publications", null, null))));
             case ADMIN -> List.of();
         };
     }

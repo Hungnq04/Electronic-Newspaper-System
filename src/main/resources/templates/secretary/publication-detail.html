@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <body>
-<!-- FL-07 Màn #62 Publication Detail + pop-up #64 Publish Now, #65 Schedule Form, #66 Schedule Confirmation -->
+<!-- FL-07 Màn #62 Publication Detail + pop-up #64 Publish Now, #65 Schedule Form, #66 Schedule Confirmation,
+     #63 Return to Lead Form (Iter3) -->
 <th:block th:fragment="content">
 <main class="page">
     <a class="back-link" th:href="@{/secretary/publications}">← Danh sách chờ xuất bản</a>
@@ -44,6 +45,7 @@
                         <div class="actions">
                             <button type="button" class="btn btn-block" data-open="publish-dialog">Đăng ngay</button>
                             <button type="button" class="btn btn-ghost btn-block" data-open="schedule-dialog">Hẹn giờ đăng</button>
+                            <button type="button" class="btn btn-danger btn-block" data-open="return-dialog">Trả về Lead</button>
                         </div>
                     </th:block>
                     <th:block th:unless="${pub.canPublish}">
@@ -58,6 +60,8 @@
                             </th:block>
                             <dt>Thư ký thực hiện</dt><dd th:text="${pub.publishedBy} ?: '—'"></dd>
                         </dl>
+                        <a class="btn btn-ghost btn-block" th:if="${pub.status == 'SCHEDULED'}"
+                           th:href="@{/secretary/scheduled-publications/{id}(id=${pub.articleId})}">Xem lịch đăng / Hủy lịch</a>
                         <a class="btn btn-ghost btn-block" th:if="${pub.status == 'PUBLISHED'}"
                            th:href="@{/news/{id}(id=${pub.articleId})}" target="_blank">Xem trên trang công khai</a>
                     </th:block>
@@ -129,6 +133,23 @@
         </div>
     </form>
 </dialog>
+
+<!-- #63 Return to Lead Form (Iter3): lý do bắt buộc, bài về REVISION_REQUIRED -->
+<dialog id="return-dialog">
+    <form method="post" th:action="@{/secretary/publications/{id}/return(id=${pub.articleId})}">
+        <h2>Trả bài về Lead Reporter?</h2>
+        <p>
+            Bài "<strong th:text="${pub.title}"></strong>" sẽ không được đăng và trở về Lead Reporter để chỉnh sửa.
+            Sau khi sửa và nộp lại, bài phải qua Trưởng phòng rồi Thư ký duyệt lại từ đầu.
+        </p>
+        <label for="return-reason">Lý do trả bài (bắt buộc)</label>
+        <textarea id="return-reason" name="reason" maxlength="4000" required th:text="${returnReason}"></textarea>
+        <div class="dialog-actions">
+            <button type="button" class="btn btn-ghost" data-close>Hủy</button>
+            <button type="submit" class="btn btn-danger">Trả bài về Lead Reporter</button>
+        </div>
+    </form>
+</dialog>
 </th:block>
 
 <script th:inline="javascript">
@@ -138,6 +159,10 @@
             btn.addEventListener('click', () => document.getElementById(btn.dataset.open).showModal()));
         document.querySelectorAll('dialog [data-close]').forEach(btn =>
             btn.addEventListener('click', () => btn.closest('dialog').close()));
+
+        // Server báo lỗi trả bài (vd lý do trống): mở lại pop-up #63 với lý do đã gõ
+        const returnDialog = document.getElementById('return-dialog');
+        if (returnDialog && /*[[${returnReason != null}]]*/ false) returnDialog.showModal();
 
         const input = document.getElementById('schedule-at');
         if (!input) return;   // bài không còn chờ xuất bản: không có pop-up

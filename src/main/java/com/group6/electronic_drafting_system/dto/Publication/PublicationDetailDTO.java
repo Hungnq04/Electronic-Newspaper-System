@@ -36,8 +36,12 @@ public class PublicationDetailDTO {
     OffsetDateTime publishedAt;
     String publishedBy;
 
-    // true khi bài đang APPROVED: hiện nút Đăng ngay / Hẹn giờ
+    // true khi bài đang APPROVED: hiện nút Đăng ngay / Hẹn giờ / Trả về Lead
     boolean canPublish;
+    // Iter3: true khi bài đang SCHEDULED và chưa đến giờ đăng: hiện nút Hủy lịch & trả về Lead
+    boolean canCancel;
+    // Iter3: true khi bài SCHEDULED đã đến giờ nhưng job chưa kịp đăng
+    boolean due;
     // Giá trị nhỏ nhất cho ô chọn giờ (định dạng yyyy-MM-ddTHH:mm, giờ Việt Nam)
     String minScheduleAt;
 }

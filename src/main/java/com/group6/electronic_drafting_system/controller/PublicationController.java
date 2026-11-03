@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 // FL-07 Iter2: Approved Article List + Publication Detail (kèm pop-up Đăng ngay / Hẹn giờ) của Thư ký tòa soạn.
+// Iter3: thêm pop-up Trả bài về Lead trên Publication Detail.
 // SecurityConfig đã chỉ cho Thư ký vào /secretary/**; service kiểm tra quyền thêm một lần nữa.
 @Controller
 @RequestMapping("/secretary/publications")
@@ -84,6 +85,24 @@ public class PublicationController {
         } catch (Exception ex) {
             log.error("Schedule failed for article {}", articleId, ex);
             return backToDetail(articleId, ErrorCode.UNCATEGORIZED_EXCEPTION, scheduledAt, redirect);
+        }
+    }
+
+    // Iter3 - Pop-up #63 Return to Lead Form -> bấm "Trả bài về Lead Reporter"
+    @PostMapping("/{articleId}/return")
+    public String returnToLead(@PathVariable Integer articleId, @RequestParam(required = false) String reason,
+                               Principal principal, RedirectAttributes redirect) {
+        try {
+            publicationService.returnToLead(articleId, principal.getName(), reason);
+            redirect.addFlashAttribute("message", "Đã trả bài về Lead Reporter. Bài chuyển sang trạng thái cần chỉnh sửa.");
+            return LIST;
+        } catch (ApplicationException ex) {
+            // Giữ lại lý do đã gõ để mở lại pop-up, người dùng không phải gõ lại
+            redirect.addFlashAttribute("returnReason", reason == null ? "" : reason);
+            return backToDetail(articleId, ex.getErrorCode(), null, redirect);
+        } catch (Exception ex) {
+            log.error("Return to lead failed for article {}", articleId, ex);
+            return backToDetail(articleId, ErrorCode.UNCATEGORIZED_EXCEPTION, null, redirect);
         }
     }
 

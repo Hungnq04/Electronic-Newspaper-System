@@ -31,3 +31,7 @@ dialog input[type="datetime-local"]:focus {
     outline-offset: 1px;
 }
 #schedule-confirm-text { white-space: nowrap; }
+
+/* Iter3: ghi chú nhỏ trong thẻ Lịch đăng */
+.decision-card .pub-note { margin: 14px 0 12px; color: var(--text-muted); font-size: 14px; }
+.decision-card .pub-note:last-child { margin-bottom: 0; }

@@ -2,6 +2,7 @@ package com.group6.electronic_drafting_system.service.impl;
 
 import com.group6.electronic_drafting_system.dto.Publication.ApprovedArticleItemDTO;
 import com.group6.electronic_drafting_system.dto.Publication.PublicationDetailDTO;
+import com.group6.electronic_drafting_system.dto.Publication.ScheduledArticleItemDTO;
 import com.group6.electronic_drafting_system.entity.Account;
 import com.group6.electronic_drafting_system.entity.Article;
 import com.group6.electronic_drafting_system.entity.ArticleReview;
@@ -13,6 +14,7 @@ import com.group6.electronic_drafting_system.entity.enums.ArticleReviewDecision;
 import com.group6.electronic_drafting_system.entity.enums.ArticleStatus;
 import com.group6.electronic_drafting_system.entity.enums.PublicationStatus;
 import com.group6.electronic_drafting_system.entity.enums.PublicationType;
+import com.group6.electronic_drafting_system.entity.enums.ReviewKind;
 import com.group6.electronic_drafting_system.entity.enums.ReviewStage;
 import com.group6.electronic_drafting_system.entity.enums.RoleName;
 import com.group6.electronic_drafting_system.exception.ApplicationException;
@@ -101,7 +103,46 @@ public class PublicationServiceImpl implements PublicationService {
         if (article.getStatus() != ArticleStatus.APPROVED && article.getStatus() != ArticleStatus.SCHEDULED
                 && article.getStatus() != ArticleStatus.PUBLISHED)
             throw new ApplicationException(ErrorCode.PUBLICATION_NOT_APPROVED);
+        return buildDetail(article);
+    }
 
+    @Override
+    @Transactional(readOnly = true)
+    public PublicationDetailDTO getScheduledDetail(Integer articleId, String secretaryEmail) {
+        requireSecretary(secretaryEmail);
+        Article article = articles.findWithTopicAndLeadById(articleId)
+                .orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_NOT_FOUND));
+        // Màn #68 chỉ dành cho bài đang hẹn giờ (đã đăng / đã hủy lịch thì không mở được nữa)
+        if (article.getStatus() != ArticleStatus.SCHEDULED)
+            throw new ApplicationException(ErrorCode.PUBLICATION_NOT_SCHEDULED);
+        return buildDetail(article);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ScheduledArticleItemDTO> getScheduledArticles(String secretaryEmail) {
+        requireSecretary(secretaryEmail);
+        OffsetDateTime now = now();
+        List<ScheduledArticleItemDTO> items = new ArrayList<>();
+        for (Publication p : publications.findWithArticleByArticleStatus(ArticleStatus.SCHEDULED)) {
+            items.add(ScheduledArticleItemDTO.builder()
+                    .articleId(p.getArticle().getId())
+                    .title(p.getVersion().getTitle())               // tít của đúng bản sẽ đăng
+                    .topicTitle(p.getArticle().getTopic().getTitle())
+                    .category(p.getArticle().getCategory())
+                    .leadName(p.getArticle().getLead().getFullName())
+                    .versionLabel(p.getVersion().getVersionLabel())
+                    .scheduledAt(p.getScheduledAt())
+                    .scheduledBy(p.getPublishedBy().getFullName())
+                    .due(!p.getScheduledAt().isAfter(now))
+                    .build());
+        }
+        return items;
+    }
+
+    // Dữ liệu chung cho màn #62 Publication Detail và #68 Scheduled Publication Detail
+    private PublicationDetailDTO buildDetail(Article article) {
+        Integer articleId = article.getId();
         ArticleVersion version = versions.findFirstByArticleOrderByVersionNumberDesc(article)
                 .orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_NOT_SUBMITTED));
         Publication publication = publications.findByArticle_Id(articleId).orElse(null);
@@ -112,6 +153,9 @@ public class PublicationServiceImpl implements PublicationService {
         ArticleReview finalApproval = findDecision(article, version, ReviewStage.SECRETARY);
         ArticleSource featured = articleSources.findByArticle(article).stream()
                 .filter(s -> Boolean.TRUE.equals(s.getFeatured())).findFirst().orElse(null);
+        boolean scheduled = article.getStatus() == ArticleStatus.SCHEDULED && publication != null;
+        // Đã đến giờ hẹn nhưng job (chạy mỗi phút) chưa kịp đăng
+        boolean due = scheduled && !publication.getScheduledAt().isAfter(now());
 
         return PublicationDetailDTO.builder()
                 .articleId(article.getId())
@@ -138,6 +182,8 @@ public class PublicationServiceImpl implements PublicationService {
                 .publishedAt(publication == null ? null : publication.getPublishedAt())
                 .publishedBy(publication == null ? null : publication.getPublishedBy().getFullName())
                 .canPublish(article.getStatus() == ArticleStatus.APPROVED)
+                .canCancel(scheduled && !due)
+                .due(due)
                 .minScheduleAt(now().plusMinutes(MIN_SCHEDULE_MINUTES + 1).truncatedTo(ChronoUnit.MINUTES).format(INPUT_FORMAT))
                 .build();
     }
@@ -225,6 +271,79 @@ public class PublicationServiceImpl implements PublicationService {
         article.setStatus(ArticleStatus.PUBLISHED);
         articles.save(article);
         return true;
+    }
+
+    // ------------------------------------------------------------------ Trả bài về Lead (Iter3)
+
+    @Override
+    @Transactional   // ghi 2 bảng (article_review + article): lỗi giữa chừng thì hủy cả hai
+    public void returnToLead(Integer articleId, String secretaryEmail, String reason) {
+        Account me = requireSecretary(secretaryEmail);
+        String feedback = requireReason(reason);              // BR-30: lý do bắt buộc
+        Article article = lockApprovedArticle(articleId);     // chỉ bài APPROVED (chưa đăng, chưa hẹn giờ)
+        ArticleVersion version = versions.findFirstByArticleOrderByVersionNumberDesc(article)
+                .orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_NOT_SUBMITTED));
+
+        // Ghi một lượt Thư ký "trả bài đã duyệt" trên phiên bản đã duyệt cuối
+        saveReturnReview(version, me, ReviewKind.RETURN_TO_LEAD, feedback);
+
+        // Đổi trạng thái: APPROVED -> REVISION_REQUIRED, bài quay về Lead
+        returnArticleToLead(article);
+    }
+
+    @Override
+    @Transactional   // ghi 3 bảng (article_review + publication + article): lỗi giữa chừng thì hủy tất cả
+    public void cancelAndReturn(Integer articleId, String secretaryEmail, String reason) {
+        Account me = requireSecretary(secretaryEmail);
+        String feedback = requireReason(reason);              // BR-30: lý do bắt buộc
+
+        // Khóa dòng bài: nếu job tự đăng chạy đúng lúc này thì một trong hai phải chờ bên kia xong
+        Article article = articles.findByIdForUpdate(articleId)
+                .orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_NOT_FOUND));
+        if (article.getStatus() != ArticleStatus.SCHEDULED)
+            throw new ApplicationException(ErrorCode.PUBLICATION_NOT_SCHEDULED);
+        Publication publication = publications.findByArticle_Id(articleId)
+                .orElseThrow(() -> new ApplicationException(ErrorCode.PUBLICATION_NOT_SCHEDULED));
+        // UC-31: chỉ hủy được TRƯỚC giờ đăng
+        if (!publication.getScheduledAt().isAfter(now()))
+            throw new ApplicationException(ErrorCode.PUBLICATION_SCHEDULE_ALREADY_DUE);
+
+        // Ghi một lượt Thư ký "hủy lịch đăng" trên đúng phiên bản đã được hẹn đăng
+        saveReturnReview(publication.getVersion(), me, ReviewKind.CANCEL_SCHEDULE, feedback);
+
+        // BR-31: hủy lịch = xóa dòng publication (cùng transaction, nếu không v_rule_violations báo R06)
+        article.setPublication(null);
+        publications.delete(publication);
+
+        // Đổi trạng thái: SCHEDULED -> REVISION_REQUIRED, bài quay về Lead
+        returnArticleToLead(article);
+    }
+
+    // Thêm một dòng article_review: cấp SECRETARY, kết quả REQUEST_REVISION, kèm lý do
+    // (ràng buộc ck_review_kind: RETURN_TO_LEAD / CANCEL_SCHEDULE luôn là SECRETARY + REQUEST_REVISION)
+    private void saveReturnReview(ArticleVersion version, Account secretary, ReviewKind kind, String feedback) {
+        ArticleReview review = new ArticleReview();
+        review.setVersion(version);
+        review.setReviewer(secretary);
+        review.setReviewStage(ReviewStage.SECRETARY);
+        review.setReviewKind(kind);
+        review.setDecision(ArticleReviewDecision.REQUEST_REVISION);
+        review.setFeedback(feedback);
+        review.setReviewedAt(now());                           // ck_review_decided: có quyết định thì có giờ
+        reviews.save(review);
+    }
+
+    // Bài về lại tay Lead: REVISION_REQUIRED và xóa completed_at (ràng buộc ck_article_completed)
+    private void returnArticleToLead(Article article) {
+        article.setStatus(ArticleStatus.REVISION_REQUIRED);
+        article.setCompletedAt(null);
+        articles.save(article);
+    }
+
+    // Lý do không được để trống (chỉ toàn dấu cách cũng tính là trống)
+    private static String requireReason(String reason) {
+        if (reason == null || reason.isBlank()) throw new ApplicationException(ErrorCode.PUBLICATION_REASON_REQUIRED);
+        return reason.strip();
     }
 
     // ------------------------------------------------------------------ Kiểm tra dùng chung

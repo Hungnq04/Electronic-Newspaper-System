@@ -74,7 +74,10 @@ public enum ErrorCode {
     PUBLICATION_NOT_APPROVED(1801, "Bài viết không còn ở trạng thái chờ xuất bản (có thể đã được đăng hoặc hẹn giờ).", HttpStatus.CONFLICT),
     PUBLICATION_FINAL_APPROVAL_MISSING(1802, "Phiên bản mới nhất chưa được Thư ký tòa soạn duyệt cuối nên chưa thể xuất bản.", HttpStatus.CONFLICT),
     PUBLICATION_SCHEDULE_TIME_REQUIRED(1803, "Vui lòng chọn ngày giờ đăng hợp lệ.", HttpStatus.BAD_REQUEST),
-    PUBLICATION_SCHEDULE_TIME_TOO_SOON(1804, "Thời điểm đăng phải sau thời điểm hiện tại ít nhất 5 phút.", HttpStatus.BAD_REQUEST);
+    PUBLICATION_SCHEDULE_TIME_TOO_SOON(1804, "Thời điểm đăng phải sau thời điểm hiện tại ít nhất 5 phút.", HttpStatus.BAD_REQUEST),
+    PUBLICATION_REASON_REQUIRED(1805, "Vui lòng nhập lý do trả bài về Lead Reporter.", HttpStatus.BAD_REQUEST),
+    PUBLICATION_NOT_SCHEDULED(1806, "Bài viết không còn ở trạng thái hẹn giờ đăng (có thể đã được đăng hoặc đã hủy lịch).", HttpStatus.CONFLICT),
+    PUBLICATION_SCHEDULE_ALREADY_DUE(1807, "Đã đến giờ đăng nên không thể hủy lịch nữa. Bài sẽ được hệ thống tự đăng.", HttpStatus.CONFLICT);
 
     private final int code;
     private final String message;

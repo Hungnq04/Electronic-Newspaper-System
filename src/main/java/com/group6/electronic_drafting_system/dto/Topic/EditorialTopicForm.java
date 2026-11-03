@@ -1,4 +1,4 @@
-package com.group6.electronic_drafting_system.dto.topic;
+package com.group6.electronic_drafting_system.dto.Topic;
 
 import com.group6.electronic_drafting_system.entity.enums.Priority;
 import jakarta.validation.constraints.NotBlank;

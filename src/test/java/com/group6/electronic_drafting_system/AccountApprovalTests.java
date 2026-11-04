@@ -103,6 +103,8 @@ class AccountApprovalTests {
         assertError(() -> approvals.approve(account.getId(), RoleName.ADMIN, null, ADMIN), ErrorCode.ACCOUNT_ROLE_NOT_ALLOWED);
         // Trưởng ban phải có phòng ban
         assertError(() -> approvals.approve(account.getId(), RoleName.DEPARTMENT_HEAD, null, ADMIN), ErrorCode.ACCOUNT_DEPARTMENT_REQUIRED);
+        // Phóng viên cũng phải có phòng ban
+        assertError(() -> approvals.approve(account.getId(), RoleName.REPORTER, null, ADMIN), ErrorCode.ACCOUNT_DEPARTMENT_REQUIRED);
         // Tài khoản đang hoạt động thì không đi qua luồng duyệt
         Integer activeId = accounts.findByEmailIgnoreCase("linh.ngo@cmscore.example").orElseThrow().getId();
         assertError(() -> approvals.approve(activeId, RoleName.EDITORIAL_SECRETARY, null, ADMIN), ErrorCode.ACCOUNT_NOT_AWAITING_APPROVAL);

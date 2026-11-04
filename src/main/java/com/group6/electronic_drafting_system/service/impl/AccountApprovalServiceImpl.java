@@ -52,7 +52,9 @@ public class AccountApprovalServiceImpl implements AccountApprovalService {
         requireAdmin(adminEmail);
         Account account = awaitingAccount(accountId);
         if (roleName == null || !GRANTABLE_ROLES.contains(roleName)) throw new ApplicationException(ErrorCode.ACCOUNT_ROLE_NOT_ALLOWED);
-        if (roleName == RoleName.DEPARTMENT_HEAD && departmentId == null) throw new ApplicationException(ErrorCode.ACCOUNT_DEPARTMENT_REQUIRED);
+        // Phóng viên và Trưởng ban đều thuộc một phòng ban (Phóng viên cần phòng ban để đề xuất Topic cho đúng Trưởng ban)
+        boolean needsDepartment = roleName == RoleName.DEPARTMENT_HEAD || roleName == RoleName.REPORTER;
+        if (needsDepartment && departmentId == null) throw new ApplicationException(ErrorCode.ACCOUNT_DEPARTMENT_REQUIRED);
         Department department = departmentId == null ? null : departments.findById(departmentId)
                 .orElseThrow(() -> new ApplicationException(ErrorCode.ACCOUNT_DEPARTMENT_REQUIRED));
         Role role = roles.findByRoleName(roleName).orElseThrow(() -> new ApplicationException(ErrorCode.ACCOUNT_ROLE_NOT_ALLOWED));

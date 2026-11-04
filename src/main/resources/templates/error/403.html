@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<!-- FL-01 Iter3: người dùng vào trang không thuộc vai trò của mình (Spring Boot tự dùng file này cho lỗi 403) -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Không có quyền truy cập | CMS Core</title>
+    <link rel="stylesheet" th:href="@{/css/login-popup.css}">
+</head>
+<body class="lp-body">
+<div class="lp-overlay">
+    <main class="lp-dialog">
+        <header class="lp-head">
+            <span class="lp-mark lp-mark--sm" aria-hidden="true">T</span>
+            <div><h1>403 – Không có quyền</h1><p>Bạn không có quyền truy cập trang này.</p></div>
+        </header>
+        <!-- /dashboard tự chuyển tới trang chủ đúng vai trò (DashboardController) -->
+        <a class="lp-submit lp-submit--link" href="/dashboard">Về trang chủ</a>
+    </main>
+</div>
+</body>
+</html>

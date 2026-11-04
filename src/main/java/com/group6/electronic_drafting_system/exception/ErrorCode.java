@@ -18,7 +18,11 @@ public enum ErrorCode {
     AUTH_ACCOUNT_ALREADY_VERIFIED(1108, "Tài khoản đã được xác minh. Vui lòng đăng nhập.", HttpStatus.CONFLICT),
     AUTH_OTP_EXPIRED(1109, "Mã xác minh đã hết hạn. Vui lòng yêu cầu gửi lại mã.", HttpStatus.BAD_REQUEST),
     AUTH_OTP_TOO_MANY_ATTEMPTS(1110, "Bạn đã nhập sai quá 5 lần. Vui lòng yêu cầu gửi lại mã mới.", HttpStatus.TOO_MANY_REQUESTS),    AUTH_GOOGLE_LOGIN_FAILED(1111, "Đăng nhập bằng Google không thành công. Vui lòng thử lại.", HttpStatus.UNAUTHORIZED),
-    AUTH_ACCOUNT_AWAITING_APPROVAL(1112, "Tài khoản đã xác minh email và đang chờ Quản trị viên duyệt, phân quyền. Bạn sẽ nhận email khi được duyệt.", HttpStatus.FORBIDDEN),
+    AUTH_ACCOUNT_AWAITING_APPROVAL(1112, "Tài khoản đang chờ quản trị viên duyệt và cấp quyền.", HttpStatus.FORBIDDEN),
+    // FL-01 Iter3: OTP gửi lại quá sớm, đặt lại mật khẩu khi chưa qua OTP, email sai định dạng
+    AUTH_OTP_RESEND_TOO_SOON(1113, "Vui lòng chờ 60 giây rồi mới gửi lại mã.", HttpStatus.TOO_MANY_REQUESTS),
+    AUTH_RESET_NOT_ALLOWED(1114, "Vui lòng xác minh mã OTP trước khi đặt lại mật khẩu.", HttpStatus.FORBIDDEN),
+    AUTH_EMAIL_INVALID(1115, "Email không hợp lệ.", HttpStatus.BAD_REQUEST),
     AUTH_ACCOUNT_ALREADY_EXISTS(2000, "Email này đã được đăng ký.", HttpStatus.CONFLICT),
     AUTH_UNEXPECTED_ERROR(9999, "Đã xảy ra lỗi. Vui lòng thử lại sau.", HttpStatus.INTERNAL_SERVER_ERROR),
 
@@ -73,7 +77,7 @@ public enum ErrorCode {
     ACCOUNT_NOT_FOUND(1701, "Không tìm thấy tài khoản.", HttpStatus.NOT_FOUND),
     ACCOUNT_NOT_AWAITING_APPROVAL(1702, "Tài khoản không ở trạng thái chờ duyệt.", HttpStatus.CONFLICT),
     ACCOUNT_ROLE_NOT_ALLOWED(1703, "Chỉ được cấp vai trò Phóng viên, Trưởng ban hoặc Thư ký tòa soạn.", HttpStatus.BAD_REQUEST),
-    ACCOUNT_DEPARTMENT_REQUIRED(1704, "Trưởng ban phải được gán một phòng ban.", HttpStatus.BAD_REQUEST),
+    ACCOUNT_DEPARTMENT_REQUIRED(1704, "Phóng viên và Trưởng ban phải được gán một phòng ban.", HttpStatus.BAD_REQUEST),
 
     MEDIA_FILE_REQUIRED(1500, "Vui lòng chọn ảnh hoặc video để tải lên.", HttpStatus.BAD_REQUEST),
     MEDIA_TYPE_NOT_SUPPORTED(1501, "Chỉ hỗ trợ ảnh JPG, PNG, WebP, GIF và video MP4, WebM, MOV.", HttpStatus.BAD_REQUEST),

@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<!-- Pop-up Login (FL-01): dùng chung cho mọi vai trò. Chỉ là giao diện; xử lý đăng nhập vẫn ở AuthController (POST /login). -->
+<!--
+  FL-01 Iter3: trang /login chứa 6 pop-up (chỉ hiện một cái mỗi lần):
+  login, register, otp, awaiting, forgot, reset.
+  Biến "popup" do AuthController gửi sang quyết định mở pop-up nào. Mọi form đều submit về server (POST).
+-->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Đăng nhập | CMS Core</title>
     <link rel="stylesheet" th:href="@{/css/login-popup.css}">
 </head>
-<body class="lp-body">
+<body class="lp-body" th:attr="data-popup=${popup}">
 <!-- Nền phía sau pop-up -->
 <div class="lp-backdrop" aria-hidden="true">
     <div class="lp-backdrop-brand">
@@ -17,57 +21,154 @@
 </div>
 
 <div class="lp-overlay">
-    <main class="lp-dialog" role="dialog" aria-modal="true" aria-labelledby="lp-title" aria-describedby="lp-desc">
-        <header class="lp-head">
-            <span class="lp-mark lp-mark--sm" aria-hidden="true">T</span>
-            <div>
-                <h1 id="lp-title">Đăng nhập</h1>
-                <p id="lp-desc">Hệ thống Tòa soạn Điện tử</p>
-            </div>
-        </header>
+    <main class="lp-dialog" role="dialog" aria-modal="true">
 
-        <p class="lp-alert lp-alert--error" role="alert" th:if="${error}" th:text="${error}">Email hoặc mật khẩu không đúng.</p>
-        <p class="lp-alert lp-alert--ok" role="status" th:if="${message}" th:text="${message}">Bạn đã đăng xuất.</p>
+        <!-- Thông báo chung (lỗi đỏ / thành công xanh), hiện phía trên pop-up đang mở -->
+        <p class="lp-alert lp-alert--error" role="alert" th:if="${error}" th:text="${error}" data-lp-alert>Lỗi</p>
+        <p class="lp-alert lp-alert--ok" role="status" th:if="${message}" th:text="${message}" data-lp-alert>Thông báo</p>
 
-        <form class="lp-form" method="post" th:action="@{/login}" data-lp-form>
-            <label for="email">Email</label>
-            <input id="email" name="email" type="email" required autocomplete="username" autofocus placeholder="ten@cmscore.example">
+        <!-- ========== 1. Đăng nhập ========== -->
+        <section data-lp-popup="login" th:hidden="${popup != 'login'}">
+            <header class="lp-head">
+                <span class="lp-mark lp-mark--sm" aria-hidden="true">T</span>
+                <div><h1>Đăng nhập</h1><p>Hệ thống Tòa soạn Điện tử</p></div>
+            </header>
+            <form class="lp-form" method="post" th:action="@{/login}" data-lp-form>
+                <label for="login-email">Email</label>
+                <input id="login-email" name="email" type="email" required autocomplete="username"
+                       placeholder="ten@gmail.com" th:value="${email}">
 
-            <label for="password">Mật khẩu</label>
-            <div class="lp-password">
-                <input id="password" name="password" type="password" required autocomplete="current-password" placeholder="Nhập mật khẩu">
-                <button type="button" class="lp-toggle" data-lp-toggle aria-controls="password" aria-pressed="false">Hiện</button>
-            </div>
+                <label for="login-password">Mật khẩu</label>
+                <div class="lp-password">
+                    <input id="login-password" name="password" type="password" required autocomplete="current-password" placeholder="Nhập mật khẩu">
+                    <button type="button" class="lp-toggle" data-lp-toggle="login-password" aria-pressed="false">Hiện</button>
+                </div>
+                <p class="lp-forgot"><a href="/login?popup=forgot" data-lp-open="forgot">Quên mật khẩu?</a></p>
 
-            <button type="submit" class="lp-submit" data-lp-submit>Đăng nhập</button>
-        </form>
+                <button type="submit" class="lp-submit">Đăng nhập</button>
+            </form>
 
-        <div class="lp-divider"><span>hoặc</span></div>
-        <a class="lp-google" href="/oauth2/authorization/google">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.6 12.2c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.3-4.8 3.3-8Z"/><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.7c-1 .7-2.2 1-3.7 1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.8A11 11 0 0 0 12 23Z"/><path fill="#FBBC05" d="M5.8 14.1a6.6 6.6 0 0 1 0-4.2V7.1H2.1a11 11 0 0 0 0 9.8l3.7-2.8Z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2A11 11 0 0 0 2.1 7.1l3.7 2.8C6.7 7.3 9.1 5.4 12 5.4Z"/></svg>
-            Đăng nhập bằng Google
-        </a>
-        <p class="lp-links">Chưa có tài khoản? <a href="/register">Đăng ký</a></p>
+            <div class="lp-divider"><span>hoặc</span></div>
+            <a class="lp-google" href="/oauth2/authorization/google">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.6 12.2c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.3-4.8 3.3-8Z"/><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.7c-1 .7-2.2 1-3.7 1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.8A11 11 0 0 0 12 23Z"/><path fill="#FBBC05" d="M5.8 14.1a6.6 6.6 0 0 1 0-4.2V7.1H2.1a11 11 0 0 0 0 9.8l3.7-2.8Z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2A11 11 0 0 0 2.1 7.1l3.7 2.8C6.7 7.3 9.1 5.4 12 5.4Z"/></svg>
+                Đăng nhập bằng Google
+            </a>
+            <p class="lp-links">Chưa có tài khoản? <a href="/login?popup=register" data-lp-open="register">Đăng ký</a></p>
+        </section>
+
+        <!-- ========== 2. Đăng ký (không có ô chọn role: Admin cấp role khi duyệt) ========== -->
+        <section data-lp-popup="register" th:hidden="${popup != 'register'}">
+            <header class="lp-head">
+                <span class="lp-mark lp-mark--sm" aria-hidden="true">T</span>
+                <div><h1>Đăng ký</h1></div>
+            </header>
+            <form class="lp-form" method="post" th:action="@{/register}" data-lp-form>
+                <label for="reg-fullName">Họ tên</label>
+                <input id="reg-fullName" name="fullName" type="text" required maxlength="100" autocomplete="name"
+                       th:value="${fullName}" th:classappend="${fieldErrors['fullName'] != null} ? 'lp-invalid'">
+                <small class="lp-field-error" th:if="${fieldErrors['fullName'] != null}" th:text="${fieldErrors['fullName']}"></small>
+
+                <label for="reg-email">Email (Gmail)</label>
+                <input id="reg-email" name="email" type="email" required autocomplete="email" placeholder="ten@gmail.com"
+                       th:value="${email}" th:classappend="${fieldErrors['email'] != null} ? 'lp-invalid'">
+                <small class="lp-field-error" th:if="${fieldErrors['email'] != null}" th:text="${fieldErrors['email']}"></small>
+
+                <label for="reg-password">Mật khẩu</label>
+                <div class="lp-password">
+                    <input id="reg-password" name="password" type="password" required minlength="8" autocomplete="new-password"
+                           placeholder="Ít nhất 8 ký tự, có chữ và số" th:classappend="${fieldErrors['password'] != null} ? 'lp-invalid'">
+                    <button type="button" class="lp-toggle" data-lp-toggle="reg-password" aria-pressed="false">Hiện</button>
+                </div>
+                <small class="lp-field-error" th:if="${fieldErrors['password'] != null}" th:text="${fieldErrors['password']}"></small>
+
+                <label for="reg-confirm">Nhập lại mật khẩu</label>
+                <input id="reg-confirm" name="confirmPassword" type="password" required autocomplete="new-password"
+                       th:classappend="${fieldErrors['confirmPassword'] != null} ? 'lp-invalid'">
+                <small class="lp-field-error" th:if="${fieldErrors['confirmPassword'] != null}" th:text="${fieldErrors['confirmPassword']}"></small>
+
+                <button type="submit" class="lp-submit">Đăng ký</button>
+            </form>
+            <p class="lp-links">Đã có tài khoản? <a href="/login" data-lp-open="login">Đăng nhập</a></p>
+        </section>
+
+        <!-- ========== 3. Nhập OTP (dùng chung đăng ký + quên mật khẩu) ========== -->
+        <section data-lp-popup="otp" th:hidden="${popup != 'otp'}">
+            <header class="lp-head">
+                <span class="lp-mark lp-mark--sm" aria-hidden="true">T</span>
+                <div>
+                    <h1 th:text="${otpPurpose != null and otpPurpose.name() == 'RESET_PASSWORD'} ? 'Xác nhận đặt lại mật khẩu' : 'Xác minh email'">Xác minh email</h1>
+                    <p>Nhập mã 6 số đã gửi đến <strong th:text="${otpEmail}">email</strong>. Mã có hiệu lực 5 phút.</p>
+                </div>
+            </header>
+            <form class="lp-form" method="post" th:action="@{/otp/verify}" data-lp-form>
+                <div class="lp-otp" data-lp-otp>
+                    <input th:each="i : ${#numbers.sequence(1, 6)}" name="digit" type="text" inputmode="numeric"
+                           maxlength="1" pattern="[0-9]" required autocomplete="one-time-code"
+                           th:attr="aria-label=|Chữ số thứ ${i}|"
+                           th:classappend="${fieldErrors['code'] != null} ? 'lp-invalid'">
+                </div>
+                <small class="lp-field-error" th:if="${fieldErrors['code'] != null}" th:text="${fieldErrors['code']}"></small>
+                <button type="submit" class="lp-submit">Xác nhận</button>
+            </form>
+            <!-- Gửi lại mã: khóa 60 giây, có đếm ngược (resendWait = số giây còn phải chờ) -->
+            <form class="lp-resend" method="post" th:action="@{/otp/resend}">
+                <button type="submit" class="lp-link-button" data-lp-resend th:attr="data-wait=${resendWait}">Gửi lại mã</button>
+            </form>
+            <p class="lp-links"><a href="/login" data-lp-open="login">Quay lại đăng nhập</a></p>
+        </section>
+
+        <!-- ========== 4. Đăng ký thành công, chờ duyệt ========== -->
+        <section data-lp-popup="awaiting" th:hidden="${popup != 'awaiting'}">
+            <header class="lp-head">
+                <span class="lp-mark lp-mark--sm" aria-hidden="true">T</span>
+                <div><h1>Đăng ký thành công</h1></div>
+            </header>
+            <p class="lp-alert lp-alert--ok">Đăng ký thành công. Tài khoản đang chờ quản trị viên duyệt và cấp quyền.</p>
+            <a class="lp-submit lp-submit--link" href="/login" data-lp-open="login">Về đăng nhập</a>
+        </section>
+
+        <!-- ========== 5. Quên mật khẩu ========== -->
+        <section data-lp-popup="forgot" th:hidden="${popup != 'forgot'}">
+            <header class="lp-head">
+                <span class="lp-mark lp-mark--sm" aria-hidden="true">T</span>
+                <div><h1>Quên mật khẩu</h1><p>Nhập email đã đăng ký, hệ thống sẽ gửi mã xác nhận.</p></div>
+            </header>
+            <form class="lp-form" method="post" th:action="@{/forgot-password}" data-lp-form>
+                <label for="forgot-email">Email</label>
+                <input id="forgot-email" name="email" type="email" required autocomplete="email"
+                       th:value="${email}" th:classappend="${fieldErrors['email'] != null and popup == 'forgot'} ? 'lp-invalid'">
+                <small class="lp-field-error" th:if="${fieldErrors['email'] != null and popup == 'forgot'}" th:text="${fieldErrors['email']}"></small>
+                <button type="submit" class="lp-submit">Gửi mã</button>
+            </form>
+            <p class="lp-links"><a href="/login" data-lp-open="login">Quay lại đăng nhập</a></p>
+        </section>
+
+        <!-- ========== 6. Đặt lại mật khẩu (chỉ mở được sau khi nhập đúng OTP) ========== -->
+        <section data-lp-popup="reset" th:hidden="${popup != 'reset'}">
+            <header class="lp-head">
+                <span class="lp-mark lp-mark--sm" aria-hidden="true">T</span>
+                <div><h1>Đặt lại mật khẩu</h1><p>Mật khẩu mới ít nhất 8 ký tự, có cả chữ và số.</p></div>
+            </header>
+            <form class="lp-form" method="post" th:action="@{/reset-password}" data-lp-form>
+                <label for="reset-password">Mật khẩu mới</label>
+                <div class="lp-password">
+                    <input id="reset-password" name="password" type="password" required minlength="8" autocomplete="new-password"
+                           th:classappend="${fieldErrors['password'] != null} ? 'lp-invalid'">
+                    <button type="button" class="lp-toggle" data-lp-toggle="reset-password" aria-pressed="false">Hiện</button>
+                </div>
+                <small class="lp-field-error" th:if="${fieldErrors['password'] != null}" th:text="${fieldErrors['password']}"></small>
+
+                <label for="reset-confirm">Nhập lại mật khẩu mới</label>
+                <input id="reset-confirm" name="confirmPassword" type="password" required autocomplete="new-password"
+                       th:classappend="${fieldErrors['confirmPassword'] != null} ? 'lp-invalid'">
+                <small class="lp-field-error" th:if="${fieldErrors['confirmPassword'] != null}" th:text="${fieldErrors['confirmPassword']}"></small>
+
+                <button type="submit" class="lp-submit">Đặt lại mật khẩu</button>
+            </form>
+        </section>
     </main>
 </div>
 
-<script>
-    // Hiện / ẩn mật khẩu; khóa nút sau khi bấm để tránh gửi trùng
-    (function () {
-        var input = document.getElementById('password');
-        var toggle = document.querySelector('[data-lp-toggle]');
-        toggle.addEventListener('click', function () {
-            var show = input.type === 'password';
-            input.type = show ? 'text' : 'password';
-            toggle.textContent = show ? 'Ẩn' : 'Hiện';
-            toggle.setAttribute('aria-pressed', String(show));
-        });
-        document.querySelector('[data-lp-form]').addEventListener('submit', function () {
-            var submit = document.querySelector('[data-lp-submit]');
-            submit.disabled = true;
-            submit.textContent = 'Đang đăng nhập…';
-        });
-    })();
-</script>
+<script th:src="@{/js/auth-popup.js}"></script>
 </body>
 </html>

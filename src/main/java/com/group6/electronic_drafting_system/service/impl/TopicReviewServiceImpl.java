@@ -17,6 +17,7 @@ import com.group6.electronic_drafting_system.entity.enums.TopicReviewDecision;
 import com.group6.electronic_drafting_system.entity.enums.TopicStatus;
 import com.group6.electronic_drafting_system.exception.ApplicationException;
 import com.group6.electronic_drafting_system.exception.ErrorCode;
+import com.group6.electronic_drafting_system.mapper.Reporter.ReporterTaskMapper;
 import com.group6.electronic_drafting_system.mapper.Topic.TopicMapper;
 import com.group6.electronic_drafting_system.repository.AccountRepository;
 import com.group6.electronic_drafting_system.repository.AssignmentRepository;
@@ -78,7 +79,9 @@ public class TopicReviewServiceImpl implements TopicReviewService {
         }
         boolean canDecide = selected != null && isWaitingForHead(selected);
         return new TopicReviewWorkspaceDTO(head.getDepartment().getDepartmentName(), queue,
-                selected == null ? null : toItem(selected), historyOf(selected), canDecide, List.of(), null);
+                selected == null ? null : toItem(selected), historyOf(selected), canDecide, List.of(), null,
+                head.getFullName(), "Trưởng ban · " + head.getDepartment().getDepartmentName(),
+                ReporterTaskMapper.initials(head.getFullName()));
     }
 
     @Override
@@ -126,7 +129,7 @@ public class TopicReviewServiceImpl implements TopicReviewService {
     @Override
     @Transactional(readOnly = true)
     public TopicReviewWorkspaceDTO getSecretaryWorkspace(String email, Integer departmentFilter, Integer selectedTopicId) {
-        requireRole(email, RoleName.EDITORIAL_SECRETARY);
+        Account secretary = requireRole(email, RoleName.EDITORIAL_SECRETARY);
 
         // Hàng chờ: SECRETARY_REVIEW của mọi ban, có thể lọc theo ban
         List<TopicReviewItemDTO> queue = topics.findByStatusOrderByCreatedAtAscIdAsc(TopicStatus.SECRETARY_REVIEW).stream()
@@ -142,7 +145,8 @@ public class TopicReviewServiceImpl implements TopicReviewService {
         boolean canDecide = selected != null && selected.getStatus() == TopicStatus.SECRETARY_REVIEW;
         return new TopicReviewWorkspaceDTO("Tất cả các ban", queue, selected == null ? null : toItem(selected),
                 historyOf(selected), canDecide,
-                departments.findAll(Sort.by("departmentName")).stream().map(mapper::toOption).toList(), departmentFilter);
+                departments.findAll(Sort.by("departmentName")).stream().map(mapper::toOption).toList(), departmentFilter,
+                secretary.getFullName(), "Thư ký tòa soạn", ReporterTaskMapper.initials(secretary.getFullName()));
     }
 
     @Override

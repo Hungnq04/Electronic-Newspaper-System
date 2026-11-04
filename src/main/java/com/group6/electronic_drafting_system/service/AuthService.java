@@ -11,4 +11,6 @@ public interface AuthService {
     void verifyAndRegister(String email, String code);
     int getOtpRemainingSeconds(String email);
     void sendVerificationCodeForExistingAccount(String email);
+    // Đăng ký bằng Google: email chưa có thì tạo tài khoản chờ Admin duyệt (AWAITING_APPROVAL); Google đã xác minh email
+    void registerWithGoogle(String email, String fullName);
 }

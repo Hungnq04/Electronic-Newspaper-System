@@ -102,6 +102,7 @@ public class DepartmentHeadTopicServiceImpl implements DepartmentHeadTopicServic
         Topic topic = myTopic(topicId, me);
         OffsetDateTime now = OffsetDateTime.now().truncatedTo(ChronoUnit.SECONDS);
 
+        // Lấy danh sách assignment chưa REMOVED của đề tài, để hiển thị Trưởng phóng viên + Supporting
         List<Assignment> team = assignments.findByTopicAndStatusNot(topic, AssignmentStatus.REMOVED);
         Assignment lead = findLead(team);
         TopicReview secretaryReview = topicReviews.findByTopic_IdInAndReviewStage(List.of(topicId), ReviewStage.SECRETARY)
@@ -361,7 +362,7 @@ public class DepartmentHeadTopicServiceImpl implements DepartmentHeadTopicServic
     }
 
     private Account currentAccount(String email) {
-        if (email == null) throw new ApplicationException(ErrorCode.ACCOUNT_NOT_FOUND);
-        return accounts.findByEmailIgnoreCase(email.trim()).orElseThrow(() -> new ApplicationException(ErrorCode.ACCOUNT_NOT_FOUND));
+        if (email == null) throw new ApplicationException(ErrorCode.CURRENT_ACCOUNT_NOT_FOUND);
+        return accounts.findByEmailIgnoreCase(email.trim()).orElseThrow(() -> new ApplicationException(ErrorCode.CURRENT_ACCOUNT_NOT_FOUND));
     }
 }

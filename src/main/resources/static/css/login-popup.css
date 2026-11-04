@@ -1,0 +1,59 @@
+@import url("https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;600;700&display=swap");
+/* Pop-up Login (FL-01). Cùng tông đỏ đô với các màn phóng viên. Tiền tố lp- để không đụng auth.css của Register / OTP. */
+:root { --lp-brand:#8b1e2d; --lp-brand-dark:#6f1622; --lp-ink:#1f2430; --lp-muted:#646b7b; --lp-line:#d3d7e1;
+    --lp-red:#c42b3a; --lp-red-pale:#fff0f1; --lp-green:#1d7a46; --lp-green-pale:#eaf8ef;
+    --lp-serif:"Noto Serif","Times New Roman",serif; --lp-sans:Inter,"Segoe UI",Roboto,Arial,sans-serif; }
+*, *::before, *::after { box-sizing:border-box; }
+.lp-body { margin:0; min-height:100vh; font-family:var(--lp-sans); color:var(--lp-ink); background:#f2f3fa; }
+
+/* Nền phía sau */
+.lp-backdrop { position:fixed; inset:0; background:
+    linear-gradient(135deg, rgba(139,30,45,.10), rgba(139,30,45,0) 55%),
+    repeating-linear-gradient(0deg, transparent 0 46px, rgba(31,36,48,.035) 46px 47px),
+    #f2f3fa; }
+.lp-backdrop-brand { position:absolute; top:22px; left:24px; display:flex; align-items:center; gap:10px; }
+.lp-backdrop-copy { display:flex; flex-direction:column; line-height:1.2; }
+.lp-backdrop-copy strong { font-family:var(--lp-serif); font-size:18px; letter-spacing:-.2px; }
+.lp-backdrop-copy small { font-size:9.5px; font-weight:650; letter-spacing:.45px; color:var(--lp-muted); }
+.lp-mark { width:34px; height:34px; display:inline-grid; place-items:center; border-radius:2px; background:var(--lp-brand); color:#fff; font-family:var(--lp-serif); font-size:22px; font-weight:700; }
+.lp-mark--sm { flex:0 0 auto; width:40px; height:40px; border-radius:8px; }
+
+/* Lớp phủ + hộp pop-up */
+.lp-overlay { position:relative; z-index:1; min-height:100vh; display:grid; place-items:center; padding:72px 16px 32px; background:rgba(20,22,30,.38); }
+.lp-dialog { width:min(420px,100%); padding:28px 28px 22px; border-radius:14px; background:#fff; box-shadow:0 24px 60px rgba(0,0,0,.28); animation:lp-in .18s ease-out; }
+@keyframes lp-in { from { opacity:0; transform:translateY(8px) scale(.98); } }
+@media (prefers-reduced-motion: reduce) { .lp-dialog { animation:none; } }
+.lp-head { display:flex; gap:12px; align-items:flex-start; margin-bottom:18px; }
+.lp-head h1 { margin:0; font-family:var(--lp-serif); font-size:24px; font-weight:600; line-height:1.2; }
+.lp-head p { margin:4px 0 0; font-size:12.5px; line-height:1.45; color:var(--lp-muted); }
+
+.lp-alert { margin:0 0 14px; padding:10px 12px; border-radius:8px; font-size:13px; font-weight:600; }
+.lp-alert--error { color:var(--lp-red); background:var(--lp-red-pale); border:1px solid #f1a4ab; }
+.lp-alert--ok { color:var(--lp-green); background:var(--lp-green-pale); border:1px solid #9fd8b5; }
+
+.lp-form { display:flex; flex-direction:column; }
+.lp-form label { margin:10px 0 6px; font-size:13px; font-weight:700; }
+.lp-form input { width:100%; padding:11px 13px; border:1px solid var(--lp-line); border-radius:8px; font:inherit; font-size:14px; color:inherit; background:#fff; outline:0; transition:border-color .15s, box-shadow .15s; }
+.lp-form input:focus { border-color:var(--lp-brand); box-shadow:0 0 0 3px rgba(139,30,45,.12); }
+.lp-password { position:relative; }
+.lp-password input { padding-right:64px; }
+.lp-toggle { position:absolute; top:50%; right:6px; transform:translateY(-50%); padding:5px 9px; border:0; border-radius:6px; background:transparent; color:var(--lp-muted); font:inherit; font-size:12px; font-weight:700; cursor:pointer; }
+.lp-toggle:hover { color:var(--lp-brand); background:#fbeef0; }
+.lp-submit { margin-top:20px; min-height:44px; border:0; border-radius:8px; background:var(--lp-brand); color:#fff; font:inherit; font-size:14px; font-weight:700; cursor:pointer; transition:background .15s; }
+.lp-submit:hover { background:var(--lp-brand-dark); }
+.lp-submit:disabled { opacity:.7; cursor:progress; }
+.lp-toggle:focus-visible, .lp-submit:focus-visible, .lp-google:focus-visible, .lp-links a:focus-visible { outline:2px solid var(--lp-brand); outline-offset:2px; }
+
+.lp-divider { display:flex; align-items:center; gap:10px; margin:16px 0 12px; color:#9aa0ae; font-size:12px; }
+.lp-divider::before, .lp-divider::after { content:""; flex:1; height:1px; background:#e3e6ee; }
+.lp-google { display:flex; align-items:center; justify-content:center; gap:10px; min-height:42px; border:1px solid var(--lp-line); border-radius:8px; color:var(--lp-ink); text-decoration:none; font-size:13.5px; font-weight:600; }
+.lp-google:hover { background:#f7f8fb; }
+.lp-google svg { width:18px; height:18px; }
+.lp-links { margin:16px 0 0; text-align:center; font-size:13px; color:var(--lp-muted); }
+.lp-links a { color:var(--lp-brand); font-weight:700; text-decoration:none; }
+.lp-links a:hover { text-decoration:underline; }
+
+@media (max-width: 480px) {
+    .lp-dialog { padding:22px 18px 18px; }
+    .lp-backdrop-brand { left:16px; top:16px; }
+}

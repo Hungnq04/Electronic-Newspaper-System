@@ -16,8 +16,13 @@
     <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
     <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
     <title th:text="${pageTitle} ?: 'CMS Core'">CMS Core</title>
+    <!-- Phông giống màn workspace: Newsreader (tiêu đề) + Inter (chữ thường), cả hai hỗ trợ tiếng Việt -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Newsreader:opsz,wght@6..72,400..800&display=swap">
     <link rel="stylesheet" th:href="@{/css/sidebar.css}">
     <link rel="stylesheet" th:href="@{/css/layout.css}">
+    <link rel="stylesheet" th:href="@{/css/department-head-header.css}">
     <link rel="stylesheet" th:each="css : ${pageCss}" th:href="@{${css}}">
 </head>
 <body>

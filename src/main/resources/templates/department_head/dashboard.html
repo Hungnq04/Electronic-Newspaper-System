@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <body>
+<!-- Dữ liệu: ${dashboard} (DepartmentHeadDashboardDTO) do DepartmentHeadController truyền vào -->
 <th:block th:fragment="departmentHeadContent">
     <!-- SVG sprite nội bộ: không cần cài thư viện icon bên ngoài -->
     <svg class="dh-svg-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
@@ -15,37 +16,15 @@
         <symbol id="dh-icon-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
         <symbol id="dh-icon-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
         <symbol id="dh-icon-flame" viewBox="0 0 24 24"><path d="M12 22c5 0 8-3.7 8-8.1 0-3-1.8-5.6-4.7-8.1.2 2.8-1 4-2.1 4.7C13.4 6.8 11.9 3.9 8 2c.8 4.8-4 7.6-4 12a8 8 0 0 0 8 8Z"/><path d="M10 18c0-1.7 1.1-2.8 2.4-4 1.6 1.4 2.4 2.6 2.4 4a2.4 2.4 0 0 1-4.8 0Z"/></symbol>
-        <symbol id="dh-icon-tag" viewBox="0 0 24 24"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1"/></symbol>
-        <symbol id="dh-icon-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
-        <symbol id="dh-icon-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM20 8a3.5 3.5 0 0 1-2.5 3.3M17 15h1a3 3 0 0 1 3 3v3"/></symbol>
         <symbol id="dh-icon-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="m16.5 3.5 4 4L8 20l-5 1 1-5Z"/></symbol>
         <symbol id="dh-icon-book-open" viewBox="0 0 24 24"><path d="M12 7v14M3 5.5A2.5 2.5 0 0 1 5.5 3H12v18H5.5A2.5 2.5 0 0 0 3 23ZM21 5.5A2.5 2.5 0 0 0 18.5 3H12v18h6.5a2.5 2.5 0 0 1 2.5 2Z"/></symbol>
         <symbol id="dh-icon-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
-        <symbol id="dh-icon-arrow-up-right" viewBox="0 0 24 24"><path d="M7 17 17 7M7 7h10v10"/></symbol>
         <symbol id="dh-icon-sparkles" viewBox="0 0 24 24"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8Z"/><path d="m19 16 .9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9Z"/></symbol>
-        <symbol id="dh-icon-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z"/><path d="m9 12 2 2 4-4"/></symbol>
     </svg>
 
     <section class="dh-dashboard" aria-label="Màn hình thẩm định và phê duyệt bản thảo">
-        <!-- Thanh công cụ trên cùng thuộc vùng nội dung, không bao gồm sidebar trái. Nếu layout đã có topbar, có thể bỏ nguyên block này. -->
         <header class="dh-topbar">
-            <label class="dh-global-search">
-                <svg class="dh-icon"><use href="#dh-icon-search"></use></svg>
-                <input id="dh-global-search" type="search" placeholder="Tìm kiếm tin bài, tác giả phóng viên, từ khóa hoặc mã…" aria-label="Tìm kiếm toàn hệ thống">
-                <kbd>⌘ K</kbd>
-            </label>
-            <div class="dh-topbar-right">
-                <span class="dh-shift-pill"><span class="dh-live-dot"></span><span th:text="${dutyShift} ?: 'CA TRỰC: SÁNG (07:00 - 15:30)'">CA TRỰC: SÁNG (07:00 - 15:30)</span></span>
-                <button class="dh-icon-button dh-notification-button" type="button" aria-label="Thông báo" data-dh-action="notifications">
-                    <svg class="dh-icon"><use href="#dh-icon-bell"></use></svg><span class="dh-notification-dot"></span>
-                </button>
-                <button class="dh-icon-button" type="button" aria-label="Nhật ký hoạt động" data-dh-action="open-log"><svg class="dh-icon"><use href="#dh-icon-inbox"></use></svg></button>
-                <span class="dh-topbar-divider"></span>
-                <div class="dh-account">
-                    <div class="dh-account-copy"><strong th:text="${displayName} ?: 'Lê Hoàng Sơn'">Lê Hoàng Sơn</strong><small th:text="${departmentRole} ?: 'Trưởng ban Kinh tế - Xã hội'">Trưởng ban Kinh tế - Xã hội</small></div>
-                    <span class="dh-avatar dh-avatar--account" th:text="${userInitials} ?: 'LS'">LS</span>
-                </div>
-            </div>
+            <div th:replace="~{fragment/department-head-header :: header('dashboard', ${dashboard.displayName}, ${dashboard.departmentName != null ? 'Trưởng ban ' + dashboard.departmentName : 'Trưởng ban'}, ${dashboard.userInitials})}"></div>
         </header>
 
         <main class="dh-main">
@@ -53,112 +32,95 @@
                 <div class="dh-page-heading">
                     <nav class="dh-breadcrumb" aria-label="Breadcrumb">
                         <span>QUY TRÌNH CẤP 2</span><svg class="dh-icon dh-icon--tiny"><use href="#dh-icon-chevron-right"></use></svg>
-                        <span th:text="${departmentName} ?: 'Ban Kinh tế & Xã hội'">Ban Kinh tế &amp; Xã hội</span><svg class="dh-icon dh-icon--tiny"><use href="#dh-icon-chevron-right"></use></svg>
+                        <span th:text="${dashboard.departmentName} ?: 'Chưa gán phòng ban'">Ban Kinh tế &amp; Xã hội</span><svg class="dh-icon dh-icon--tiny"><use href="#dh-icon-chevron-right"></use></svg>
                         <strong>Thẩm định &amp; Phê duyệt nội dung</strong>
                     </nav>
-                    <h1>Danh sách duyệt bản thảo <span class="dh-title-dash">—</span> <span th:text="${departmentName} ?: 'Ban Kinh tế & Xã hội'">Ban Kinh tế &amp; Xã hội</span></h1>
-                    <p>Sàng lọc văn phong, kiểm tra cơ sở dữ liệu độc quyền và đối chiếu nguồn tin trước khi chuyển Ban Thư ký tòa soạn / Tổng biên tập phê duyệt xuất bản.</p>
+                    <h1>Danh sách duyệt bản thảo <span class="dh-title-dash">—</span> <span th:text="${dashboard.departmentName} ?: 'Chưa gán phòng ban'">Ban Kinh tế &amp; Xã hội</span></h1>
+                    <p th:if="${dashboard.departmentName != null}">Sàng lọc văn phong, kiểm tra dữ liệu và đối chiếu nguồn tin trước khi chuyển Ban Thư ký tòa soạn / Tổng biên tập phê duyệt xuất bản.</p>
+                    <p th:if="${dashboard.departmentName == null}">Tài khoản của bạn chưa được gán phòng ban nên chưa có bản thảo nào để duyệt. Vui lòng liên hệ quản trị viên.</p>
                 </div>
                 <div class="dh-heading-actions">
-                    <span class="dh-live-callout"><span class="dh-live-dot"></span><span>CA SÁNG<br><b>TRỰC TIẾP</b></span></span>
-                    <button class="dh-button dh-button--soft" type="button" data-dh-action="open-log"><svg class="dh-icon"><use href="#dh-icon-clock"></use></svg><span>Nhật ký duyệt<br>ca trực</span></button>
-                    <button class="dh-button dh-button--primary" type="button" data-dh-action="bulk-approve"><svg class="dh-icon"><use href="#dh-icon-check-circle"></use></svg><span>Phê duyệt<br>hàng loạt <b th:text="${bulkApprovalCount} ?: '(3)'">(3)</b></span></button>
+                    <button class="dh-button dh-button--soft" type="button" data-dh-action="open-log"><svg class="dh-icon"><use href="#dh-icon-clock"></use></svg><span>Nhật ký duyệt</span></button>
+                    <button class="dh-button dh-button--primary" type="button" data-dh-action="bulk-approve"><svg class="dh-icon"><use href="#dh-icon-check-circle"></use></svg><span>Phê duyệt hàng loạt</span></button>
                 </div>
             </div>
 
-            <section class="dh-stats-grid" aria-label="Thống kê duyệt bản thảo">
-                <article class="dh-stat-card dh-stat-card--rose" th:each="stat : ${stats}" th:classappend="${stat.tone != null ? ' dh-stat-card--' + stat.tone : ''}">
-                    <div class="dh-stat-head"><span th:text="${stat.label}">CHỜ XỬ LÝ NGÀY</span><span class="dh-stat-icon"><svg class="dh-icon"><use th:href="|#dh-icon-${stat.icon}|" href="#dh-icon-calendar"></use></svg></span></div>
+            <section class="dh-stats-grid" aria-label="Thống kê duyệt bản thảo" th:if="${!#lists.isEmpty(dashboard.stats)}">
+                <article class="dh-stat-card" th:each="stat : ${dashboard.stats}" th:classappend="${stat.tone != null ? 'dh-stat-card--' + stat.tone : ''}">
+                    <div class="dh-stat-head"><span th:text="${stat.label}">CHỜ DUYỆT BÀI VIẾT</span><span class="dh-stat-icon"><svg class="dh-icon"><use th:href="|#dh-icon-${stat.icon}|" href="#dh-icon-calendar"></use></svg></span></div>
                     <div class="dh-stat-value-row"><strong th:text="${stat.value}">12</strong><span th:text="${stat.unit}">bản thảo</span></div>
-                    <div class="dh-stat-foot"><span class="dh-stat-note" th:text="${stat.note}">Cần xử lý trong ca trực</span><span class="dh-stat-badge" th:if="${stat.badge != null}" th:text="${stat.badge}">3 HỎA TỐC</span></div>
-                </article>
-                <!-- Bốn thẻ mẫu để khi mở HTML tĩnh vẫn thấy được bố cục. Thymeleaf sẽ render thẻ này khi stats chưa được truyền từ Controller. -->
-                <article class="dh-stat-card dh-stat-card--rose dh-stat-fallback" th:if="${stats == null or #lists.isEmpty(stats)}">
-                    <div class="dh-stat-head"><span>CHỜ XỬ LÝ NGÀY</span><span class="dh-stat-icon"><svg class="dh-icon"><use href="#dh-icon-calendar"></use></svg></span></div><div class="dh-stat-value-row"><strong>12</strong><span>bản thảo</span></div><div class="dh-stat-foot"><span class="dh-stat-note">Cần xử lý trong ca trực</span><span class="dh-stat-badge">3 HỎA TỐC</span></div>
-                </article>
-                <article class="dh-stat-card dh-stat-card--blue dh-stat-fallback" th:if="${stats == null or #lists.isEmpty(stats)}">
-                    <div class="dh-stat-head"><span>ĐÃ DUYỆT / CHUYỂN BAN THƯ KÝ</span><span class="dh-stat-icon"><svg class="dh-icon"><use href="#dh-icon-check-circle"></use></svg></span></div><div class="dh-stat-value-row"><strong>18</strong><span>hôm nay</span></div><div class="dh-stat-foot"><span class="dh-stat-note">Tỷ lệ thông qua sơ bộ:</span><b class="dh-positive">82%</b></div>
-                </article>
-                <article class="dh-stat-card dh-stat-card--amber dh-stat-fallback" th:if="${stats == null or #lists.isEmpty(stats)}">
-                    <div class="dh-stat-head"><span>TRẢ VỀ SỬA SOẠN</span><span class="dh-stat-icon"><svg class="dh-icon"><use href="#dh-icon-edit"></use></svg></span></div><div class="dh-stat-value-row"><strong>04</strong><span>bài</span></div><div class="dh-stat-foot"><span class="dh-stat-note">2 bài bổ sung nguồn độc lập</span></div>
-                </article>
-                <article class="dh-stat-card dh-stat-card--slate dh-stat-fallback" th:if="${stats == null or #lists.isEmpty(stats)}">
-                    <div class="dh-stat-head"><span>TỐC ĐỘ PHẢN HỒI TB</span><span class="dh-stat-icon"><svg class="dh-icon"><use href="#dh-icon-clock"></use></svg></span></div><div class="dh-stat-value-row"><strong>28</strong><span>phút / bài</span></div><div class="dh-stat-foot"><span class="dh-stat-note"><b class="dh-positive">−6 phút</b> nhanh hơn hạn mức SLA</span></div>
+                    <div class="dh-stat-foot"><span class="dh-stat-note" th:text="${stat.note}">Đang chờ Trưởng ban thẩm định</span><span class="dh-stat-badge" th:if="${stat.badge != null}" th:text="${stat.badge}">3 HỎA TỐC</span></div>
                 </article>
             </section>
 
             <section class="dh-queue-toolbar" aria-label="Loại nội dung cần duyệt">
                 <div class="dh-tabs" role="tablist" aria-label="Danh sách chờ duyệt">
-                    <button class="dh-tab is-active" id="dh-tab-articles" type="button" role="tab" aria-selected="true" data-dh-tab="article"><svg class="dh-icon"><use href="#dh-icon-file-check"></use></svg><span>Duyệt bản thảo bài viết</span><b class="dh-count-bubble" th:text="${articleCount} ?: '12'">12</b></button>
-                    <button class="dh-tab" id="dh-tab-topics" type="button" role="tab" aria-selected="false" data-dh-tab="topic"><svg class="dh-icon"><use href="#dh-icon-book-open"></use></svg><span>Duyệt đề cương / Đề tài (Topic)</span><b class="dh-count-bubble dh-count-bubble--amber" th:text="${topicCount} ?: '7'">7</b></button>
+                    <button class="dh-tab is-active" id="dh-tab-articles" type="button" role="tab" aria-selected="true" data-dh-tab="article"><svg class="dh-icon"><use href="#dh-icon-file-check"></use></svg><span>Duyệt bản thảo bài viết</span><b class="dh-count-bubble" th:text="${dashboard.articleCount}">12</b></button>
+                    <button class="dh-tab" id="dh-tab-topics" type="button" role="tab" aria-selected="false" data-dh-tab="topic"><svg class="dh-icon"><use href="#dh-icon-book-open"></use></svg><span>Duyệt đề cương / Đề tài (Topic)</span><b class="dh-count-bubble dh-count-bubble--amber" th:text="${dashboard.topicCount}">7</b></button>
                 </div>
-                <div class="dh-queue-subrow"><span class="dh-staffing"><span class="dh-live-dot"></span><span><b th:text="${onDutyReporters} ?: '6'">6</b>/<span th:text="${totalReporters} ?: '8'">8</span> phóng viên trực ban ca sáng</span></span><button class="dh-button dh-button--primary dh-button--compact" type="button" data-dh-action="create-topic"><svg class="dh-icon"><use href="#dh-icon-sparkles"></use></svg>Đăng ký đề tài đột xuất</button></div>
+                <div class="dh-queue-subrow"><button class="dh-button dh-button--primary dh-button--compact" type="button" data-dh-action="create-topic"><svg class="dh-icon"><use href="#dh-icon-sparkles"></use></svg>Đăng ký đề tài đột xuất</button></div>
             </section>
 
             <section class="dh-filter-panel" aria-label="Bộ lọc bản thảo">
                 <div class="dh-filter-main-row">
-                    <label class="dh-filter-search"><svg class="dh-icon"><use href="#dh-icon-filter"></use></svg><input id="dh-draft-search" type="search" placeholder="Lọc tiêu đề bản thảo, trích đoạn, bút danh…" aria-label="Lọc bản thảo"></label>
+                    <label class="dh-filter-search"><svg class="dh-icon"><use href="#dh-icon-filter"></use></svg><input id="dh-draft-search" type="search" placeholder="Lọc tiêu đề bản thảo, trích đoạn, tác giả…" aria-label="Lọc bản thảo"></label>
                     <div class="dh-filter-chips" role="group" aria-label="Lọc nhanh">
-                        <button type="button" class="dh-filter-chip is-active" data-dh-priority="all">Tất cả <b th:text="${articleCount} ?: '12'">12</b></button>
-                        <button type="button" class="dh-filter-chip" data-dh-priority="urgent"><span class="dh-chip-dot dh-chip-dot--red"></span>Hỏa tốc <b th:text="${urgentCount} ?: '3'">3</b></button>
-                        <button type="button" class="dh-filter-chip" data-dh-tag="featured">Tiêu điểm trang bìa <b th:text="${featuredCount} ?: '2'">2</b></button>
-                        <button type="button" class="dh-filter-chip" data-dh-tag="exclusive">Độc quyền <b th:text="${exclusiveCount} ?: '4'">4</b></button>
+                        <button type="button" class="dh-filter-chip is-active" data-dh-priority="all">Tất cả <b th:text="${dashboard.articleCount}">12</b></button>
+                        <button type="button" class="dh-filter-chip" data-dh-priority="urgent"><span class="dh-chip-dot dh-chip-dot--red"></span>Hỏa tốc <b th:text="${dashboard.urgentCount}">3</b></button>
                     </div>
                 </div>
                 <div class="dh-filter-options-row">
-                    <label class="dh-select-field"><span>CHUYÊN MỤC:</span><select id="dh-category-filter"><option value="all">Toàn bộ phân ban</option><option value="economy">Kinh tế - Xã hội</option><option value="market">Thị trường</option><option value="policy">Chính sách</option><option value="technology">Công nghệ</option></select><svg class="dh-icon"><use href="#dh-icon-chevron-down"></use></svg></label>
-                    <label class="dh-select-field"><span>THỂ LOẠI:</span><select id="dh-type-filter"><option value="all">Mọi thể loại</option><option value="news">Tin tức</option><option value="analysis">Phân tích</option><option value="interview">Phỏng vấn</option><option value="topic">Đề cương / Đề tài</option></select><svg class="dh-icon"><use href="#dh-icon-chevron-down"></use></svg></label>
+                    <label class="dh-select-field"><span>CHUYÊN MỤC:</span>
+                        <select id="dh-category-filter">
+                            <option value="all">Toàn bộ chuyên mục</option>
+                            <option th:each="category : ${dashboard.categories}" th:value="${category}" th:text="${category}">Kinh tế</option>
+                        </select>
+                        <svg class="dh-icon"><use href="#dh-icon-chevron-down"></use></svg>
+                    </label>
                     <div class="dh-sort-control"><span>SẮP XẾP:</span><button class="is-active" type="button" data-dh-sort="deadline">Gần hạn chót</button><button type="button" data-dh-sort="newest">Mới nộp</button><button type="button" data-dh-sort="oldest">Đợi lâu</button></div>
                 </div>
             </section>
 
             <section class="dh-draft-list" id="dh-draft-list" aria-label="Bản thảo cần thẩm định">
-                <article class="dh-draft-card" th:each="entry : ${entries}"
-                         th:classappend="${entry.priorityClass != null ? ' ' + entry.priorityClass : ''}"
-                         th:attr="data-kind=${entry.kind},data-priority=${entry.priority},data-tags=${entry.tagsCsv},data-category=${entry.categorySlug},data-type=${entry.typeSlug},data-deadline-order=${entry.deadlineOrder},data-created-order=${entry.createdOrder},data-title=${entry.title}">
+                <article class="dh-draft-card" th:each="entry : ${dashboard.entries}"
+                         th:classappend="${entry.urgent} ? 'dh-draft-card--urgent'"
+                         th:attr="data-kind=${entry.kind},data-priority=${entry.urgent ? 'urgent' : 'normal'},data-category=${entry.category},data-deadline-order=${entry.deadlineOrder},data-created-order=${entry.createdOrder},data-title=${entry.title}">
                     <div class="dh-entry-meta-row">
                         <div class="dh-entry-tags">
-                            <span class="dh-tag dh-tag--urgent" th:if="${entry.urgent}"><svg class="dh-icon"><use href="#dh-icon-flame"></use></svg><span th:text="${entry.priorityLabel} ?: 'HỎA TỐC'">HỎA TỐC</span></span>
-                            <span class="dh-tag dh-tag--exclusive" th:if="${entry.exclusive}"><svg class="dh-icon"><use href="#dh-icon-shield"></use></svg>ĐỘC QUYỀN BAN KINH TẾ</span>
-                            <span class="dh-tag dh-tag--featured" th:if="${entry.featured}"><svg class="dh-icon"><use href="#dh-icon-tag"></use></svg>TIÊU ĐIỂM TRANG BÌA</span>
-                            <span class="dh-entry-code" th:text="|#${entry.code}|"><span>#BT-2024-8842</span></span>
-                            <span class="dh-entry-category" th:text="${entry.category} ?: 'CHUYÊN MỤC: VĨ MÔ & TÍN DỤNG'">CHUYÊN MỤC: VĨ MÔ &amp; TÍN DỤNG</span>
+                            <span class="dh-tag dh-tag--urgent" th:if="${entry.urgent}"><svg class="dh-icon"><use href="#dh-icon-flame"></use></svg>HỎA TỐC</span>
+                            <span class="dh-entry-code" th:text="|#${entry.code}|">#BT-8842</span>
+                            <span class="dh-entry-category" th:text="|CHUYÊN MỤC: ${entry.category}|">CHUYÊN MỤC: VĨ MÔ &amp; TÍN DỤNG</span>
                         </div>
                         <button class="dh-more-button" type="button" aria-label="Thêm thao tác" data-dh-action="more" th:attr="data-entry-id=${entry.id}"><svg class="dh-icon"><use href="#dh-icon-more"></use></svg></button>
                     </div>
-                    <div class="dh-deadline-alert" th:if="${entry.deadlineText != null}"><svg class="dh-icon"><use href="#dh-icon-clock"></use></svg><span th:text="${entry.deadlineText}">Hạn duyệt ca: Trước 10:45 (còn 22 phút)</span></div>
-                    <h2 class="dh-entry-title"><a href="#" data-dh-action="details" th:attr="data-entry-id=${entry.id}" th:text="${entry.title} ?: 'Ngân hàng Nhà nước hạ trần lãi suất huy động 0,5%: Doanh nghiệp đón luồng vốn rẻ quay trở lại?'">Ngân hàng Nhà nước hạ trần lãi suất huy động 0,5%: Doanh nghiệp đón luồng vốn rẻ quay trở lại?</a></h2>
-                    <p class="dh-entry-excerpt" th:text="${entry.excerpt} ?: 'Sau động thái điều chỉnh lãi suất tiết kiệm chủ đạo, nhóm chuyên gia phân tích độc quyền dự phóng thanh khoản liên ngân hàng sẽ giải tỏa khoảng 180.000 tỷ đồng. Tuy nhiên, rào cản hấp thụ vốn tại nhóm doanh nghiệp sản xuất vừa và nhỏ vẫn là điểm nghẽn then chốt…'">Sau động thái điều chỉnh lãi suất tiết kiệm chủ đạo, nhóm chuyên gia phân tích độc quyền dự phóng thanh khoản liên ngân hàng sẽ giải tỏa khoảng 180.000 tỷ đồng. Tuy nhiên, rào cản hấp thụ vốn tại nhóm doanh nghiệp sản xuất vừa và nhỏ vẫn là điểm nghẽn then chốt…</p>
+                    <div class="dh-deadline-alert" th:if="${entry.deadlineText != null}"><svg class="dh-icon"><use href="#dh-icon-clock"></use></svg><span th:text="${entry.deadlineText}">Dự kiến đăng: 15/10/2026</span></div>
+                    <h2 class="dh-entry-title">
+                        <!-- Bài viết: mở màn thẩm định thật; đề tài: chưa có màn duyệt nên giữ nút cũ -->
+                        <a th:if="${entry.kind == 'article'}" th:href="@{/department-head/articles/{id}/review(id=${entry.id})}" th:text="${entry.title}">Tiêu đề bản thảo</a>
+                        <a th:unless="${entry.kind == 'article'}" href="#" data-dh-action="details" th:attr="data-entry-id=${entry.id}" th:text="${entry.title}">Tiêu đề đề tài</a>
+                    </h2>
+                    <p class="dh-entry-excerpt" th:if="${entry.excerpt != null}" th:text="${entry.excerpt}">Sapo / mô tả ngắn của bản thảo…</p>
                     <div class="dh-author-panel">
-                        <span class="dh-avatar dh-avatar--author" th:text="${entry.authorInitials} ?: 'MQ'">MQ</span>
-                        <div class="dh-author-info"><strong th:text="${entry.authorName} ?: 'Trần Minh Quân'">Trần Minh Quân</strong><span>Bút danh: <b th:text="${entry.penName} ?: 'Minh Quân'">Minh Quân</b> · <span th:text="${entry.submittedAgo} ?: '18 phút trước'">18 phút trước</span></span></div>
-                        <span class="dh-author-metric"><svg class="dh-icon"><use href="#dh-icon-book-open"></use></svg><b th:text="${entry.wordCount} ?: '1.840 từ'">1.840 từ</b><small th:text="${entry.wordChange} ?: '(−6 phút)'">(−6 phút)</small></span>
-                        <span class="dh-author-metric"><svg class="dh-icon"><use href="#dh-icon-file-check"></use></svg><b th:text="${entry.sourceCount} ?: '5 ảnh'">5 ảnh</b></span>
-                        <span class="dh-author-metric dh-source-check"><svg class="dh-icon"><use href="#dh-icon-check-circle"></use></svg><b th:text="${entry.sourceStatus} ?: '0% trùng lặp'">0% trùng lặp</b></span>
-                        <div class="dh-score"><span>ĐIỂM SEO &amp; DATA</span><strong><span th:text="${entry.score} ?: '96'">96</span><small>/ 100</small></strong><div class="dh-score-track"><span th:style="|width: ${entry.score != null ? entry.score : 96}%;|"></span></div></div>
+                        <span class="dh-avatar dh-avatar--author" th:text="${entry.authorInitials}">MQ</span>
+                        <div class="dh-author-info"><strong th:text="${entry.authorName}">Trần Minh Quân</strong><span th:text="${entry.submittedAgo}">18 phút trước</span></div>
+                        <span class="dh-author-metric" th:if="${entry.wordCount != null}"><svg class="dh-icon"><use href="#dh-icon-book-open"></use></svg><b th:text="${entry.wordCount}">1.840 từ</b></span>
+                        <span class="dh-author-metric" th:if="${entry.sourceCount != null}"><svg class="dh-icon"><use href="#dh-icon-file-check"></use></svg><b th:text="${entry.sourceCount}">5 nguồn</b></span>
                     </div>
                     <div class="dh-entry-footer">
-                        <div class="dh-entry-status"><span class="dh-status-dot"></span><span th:text="${entry.statusText} ?: 'Đang mở thẩm định bởi Trưởng ban'">Đang mở thẩm định bởi Trưởng ban</span></div>
-                        <div class="dh-entry-actions">
+                        <div class="dh-entry-status"><span class="dh-status-dot"></span><span th:text="${entry.statusText}">Chờ Trưởng ban thẩm định</span></div>
+                        <div class="dh-entry-actions" th:if="${entry.kind == 'article'}">
+                            <a class="dh-button dh-button--primary dh-button--small" th:href="@{/department-head/articles/{id}/review(id=${entry.id})}"><svg class="dh-icon"><use href="#dh-icon-edit"></use></svg>Đọc &amp; Thẩm định chi tiết</a>
+                        </div>
+                        <div class="dh-entry-actions" th:unless="${entry.kind == 'article'}">
                             <button class="dh-button dh-button--outline dh-button--small" type="button" data-dh-action="details" th:attr="data-entry-id=${entry.id}"><svg class="dh-icon"><use href="#dh-icon-edit"></use></svg>Đọc &amp; Thẩm định chi tiết</button>
                             <button class="dh-button dh-button--warning dh-button--small" type="button" data-dh-action="request-revision" th:attr="data-entry-id=${entry.id}"><svg class="dh-icon"><use href="#dh-icon-edit"></use></svg>Yêu cầu sửa</button>
                             <button class="dh-button dh-button--primary dh-button--small" type="button" data-dh-action="approve" th:attr="data-entry-id=${entry.id}"><svg class="dh-icon"><use href="#dh-icon-check-circle"></use></svg>Duyệt chuyển Tòa soạn</button>
                         </div>
                     </div>
                 </article>
-
-                <!-- Card demo dự phòng khi mở HTML trực tiếp hoặc chưa truyền entries từ Controller. -->
-                <article class="dh-draft-card dh-draft-card--urgent dh-draft-fallback" data-kind="article" data-priority="urgent" data-tags="exclusive featured" data-category="economy" data-type="news" data-deadline-order="1" data-created-order="2" data-title="Ngân hàng Nhà nước hạ trần lãi suất huy động">
-                    <div class="dh-entry-meta-row"><div class="dh-entry-tags"><span class="dh-tag dh-tag--urgent"><svg class="dh-icon"><use href="#dh-icon-flame"></use></svg>HỎA TỐC</span><span class="dh-tag dh-tag--exclusive"><svg class="dh-icon"><use href="#dh-icon-shield"></use></svg>ĐỘC QUYỀN BAN KINH TẾ</span><span class="dh-entry-code">#BT-2024-8842</span><span class="dh-entry-category">CHUYÊN MỤC: VĨ MÔ &amp; TÍN DỤNG</span></div><button class="dh-more-button" type="button" aria-label="Thêm thao tác" data-dh-action="more"><svg class="dh-icon"><use href="#dh-icon-more"></use></svg></button></div>
-                    <div class="dh-deadline-alert"><svg class="dh-icon"><use href="#dh-icon-clock"></use></svg><span>Hạn duyệt ca: Trước 10:45 (còn 22 phút)</span></div>
-                    <h2 class="dh-entry-title"><a href="#" data-dh-action="details">Ngân hàng Nhà nước hạ trần lãi suất huy động 0,5%: Doanh nghiệp đón luồng vốn rẻ quay trở lại?</a></h2>
-                    <p class="dh-entry-excerpt">Sau động thái điều chỉnh lãi suất tiết kiệm chủ đạo, nhóm chuyên gia phân tích độc quyền dự phóng thanh khoản liên ngân hàng sẽ giải tỏa khoảng 180.000 tỷ đồng. Tuy nhiên, rào cản hấp thụ vốn tại nhóm doanh nghiệp sản xuất vừa và nhỏ vẫn là điểm nghẽn then chốt…</p>
-                    <div class="dh-author-panel"><span class="dh-avatar dh-avatar--author">MQ</span><div class="dh-author-info"><strong>Trần Minh Quân</strong><span>Bút danh: <b>Minh Quân</b> · 18 phút trước</span></div><span class="dh-author-metric"><svg class="dh-icon"><use href="#dh-icon-book-open"></use></svg><b>1.840 từ</b><small>(−6 phút)</small></span><span class="dh-author-metric"><svg class="dh-icon"><use href="#dh-icon-file-check"></use></svg><b>5 ảnh</b></span><span class="dh-author-metric dh-source-check"><svg class="dh-icon"><use href="#dh-icon-check-circle"></use></svg><b>0% trùng lặp</b></span><div class="dh-score"><span>ĐIỂM SEO &amp; DATA</span><strong>96<small>/ 100</small></strong><div class="dh-score-track"><span style="width:96%"></span></div></div></div>
-                    <div class="dh-entry-footer"><div class="dh-entry-status"><span class="dh-status-dot"></span><span>Đang mở thẩm định bởi Trưởng ban</span></div><div class="dh-entry-actions"><button class="dh-button dh-button--outline dh-button--small" type="button" data-dh-action="details"><svg class="dh-icon"><use href="#dh-icon-edit"></use></svg>Đọc &amp; Thẩm định chi tiết</button><button class="dh-button dh-button--warning dh-button--small" type="button" data-dh-action="request-revision"><svg class="dh-icon"><use href="#dh-icon-edit"></use></svg>Yêu cầu sửa</button><button class="dh-button dh-button--primary dh-button--small" type="button" data-dh-action="approve"><svg class="dh-icon"><use href="#dh-icon-check-circle"></use></svg>Duyệt chuyển Tòa soạn</button></div></div>
-                </article>
-                <div class="dh-empty-state" id="dh-empty-state" hidden><span class="dh-empty-icon"><svg class="dh-icon"><use href="#dh-icon-search"></use></svg></span><strong>Không tìm thấy bản thảo phù hợp</strong><p>Thử thay đổi từ khóa hoặc điều kiện lọc để xem các mục khác.</p><button class="dh-button dh-button--outline dh-button--small" type="button" data-dh-action="clear-filters">Xóa bộ lọc</button></div>
+                <div class="dh-empty-state" id="dh-empty-state" hidden><span class="dh-empty-icon"><svg class="dh-icon"><use href="#dh-icon-search"></use></svg></span><strong>Không có bản thảo nào</strong><p>Không có mục chờ duyệt, hoặc không mục nào khớp với bộ lọc hiện tại.</p><button class="dh-button dh-button--outline dh-button--small" type="button" data-dh-action="clear-filters">Xóa bộ lọc</button></div>
             </section>
-            <footer class="dh-page-footer"><span>CMS Core · Quy trình thẩm định cấp 2</span><span>Dữ liệu hiển thị theo ca trực hiện tại</span></footer>
+            <footer class="dh-page-footer"><span>CMS Core · Quy trình thẩm định cấp 2</span><span th:text="${dashboard.departmentName} ?: ''">Ban Kinh tế &amp; Xã hội</span></footer>
         </main>
     </section>
 </th:block>

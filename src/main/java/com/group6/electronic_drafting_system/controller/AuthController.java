@@ -18,9 +18,15 @@ public class AuthController {
     public AuthController(AuthService authService) { this.authService = authService; }
 
     @GetMapping("/login")
-    public String loginPage(@RequestParam(required = false) String error, @RequestParam(required = false) String logout, Model model) {
+    public String loginPage(@RequestParam(required = false) String error, @RequestParam(required = false) String logout,
+                            @RequestParam(required = false) String awaiting, @RequestParam(required = false) String registered,
+                            Model model) {
         if (error != null) model.addAttribute("error", ErrorCode.fromName(error).getMessage());
         if (logout != null) model.addAttribute("message", "Bạn đã đăng xuất.");
+        // Tài khoản chờ Admin duyệt: là thông báo (khung xanh), không phải lỗi
+        if (awaiting != null) model.addAttribute("message", ErrorCode.AUTH_ACCOUNT_AWAITING_APPROVAL.getMessage());
+        if (registered != null) model.addAttribute("message",
+                "Đăng ký bằng Google thành công. " + ErrorCode.AUTH_ACCOUNT_AWAITING_APPROVAL.getMessage());
         return "login";
     }
 
@@ -36,8 +42,9 @@ public class AuthController {
                         + java.net.URLEncoder.encode(account.getEmail(), java.nio.charset.StandardCharsets.UTF_8);
             }
             authService.persistSecurityContext(request);
-            return "redirect:/";
+            return "redirect:/dashboard";
         } catch (ApplicationException ex) {
+            if (ex.getErrorCode() == ErrorCode.AUTH_ACCOUNT_AWAITING_APPROVAL) return "redirect:/login?awaiting";
             return "redirect:/login?error=" + ex.getErrorCode().name();
         } catch (AuthenticationException ex) {
             return "redirect:/login?error=" + ErrorCode.AUTH_INVALID_CREDENTIALS.name();
@@ -86,7 +93,7 @@ public class AuthController {
     public String verify(@RequestParam String email, @RequestParam String otp, RedirectAttributes redirect) {
         try {
             authService.verifyAndRegister(email, otp);
-            redirect.addFlashAttribute("message", "Xác minh thành công. Bạn có thể đăng nhập.");
+            redirect.addFlashAttribute("message", "Xác minh email thành công. Tài khoản đang chờ Quản trị viên duyệt và phân quyền; bạn sẽ nhận email khi được duyệt.");
             return "redirect:/login";
         } catch (ApplicationException ex) {
             redirect.addFlashAttribute("error", ex.getErrorCode().getMessage());

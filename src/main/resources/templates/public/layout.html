@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<!-- Fragment dùng chung cho trang công khai FL-07 -->
+<head th:fragment="pageHead(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' | Tòa soạn CMS Core'">Tòa soạn CMS Core</title>
+    <!-- Phông Be Vietnam Pro: hiển thị đầy đủ dấu tiếng Việt -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+    <link rel="stylesheet" th:href="@{/css/public.css}">
+</head>
+<body>
+
+<header th:fragment="siteHeader" class="site-header">
+    <div class="wrap bar">
+        <a class="brand" th:href="@{/}">CMS <span>Core</span></a>
+        <form class="search" method="get" th:action="@{/news}" role="search">
+            <input type="search" name="q" th:value="${q}" placeholder="Tìm bài viết..." aria-label="Tìm bài viết">
+            <button type="submit">Tìm</button>
+        </form>
+        <div class="account">
+            <a th:if="${currentUser == null}" th:href="@{/login}">Đăng nhập</a>
+            <form th:if="${currentUser != null}" method="post" th:action="@{/logout}">
+                <span class="user" th:text="${currentUser}">user</span>
+                <button type="submit" class="link">Đăng xuất</button>
+            </form>
+        </div>
+    </div>
+    <nav class="wrap categories" aria-label="Chuyên mục">
+        <a th:href="@{/news}" th:classappend="${activeCategory == null and activeNav == 'list'} ? 'on'">Tất cả</a>
+        <a th:each="c : ${categories}" th:href="@{/news(category=${c})}" th:text="${c}"
+           th:classappend="${c == activeCategory} ? 'on'">Chuyên mục</a>
+    </nav>
+</header>
+
+<!-- Ảnh đại diện; file ảnh không tải được thì giữ khung màu kèm tên chuyên mục -->
+<figure th:fragment="articleThumb(a, cls)" th:class="'thumb ' + ${cls}" th:attr="data-cat=${a.category}">
+    <img th:if="${a.featuredImageUrl != null}" th:src="@{${a.featuredImageUrl}}"
+         th:alt="${a.featuredImageCaption ?: a.title}" loading="lazy" onerror="this.remove()">
+</figure>
+
+<p th:fragment="articleMeta(a)" class="meta">
+    <a class="cat" th:href="@{/news(category=${a.category})}" th:text="${a.category}">Chuyên mục</a>
+    <span th:text="${a.author}">Tác giả</span>
+    <time th:datetime="${a.publishedAtVn}" th:text="${#temporals.format(a.publishedAtVn, 'dd/MM/yyyy HH:mm')}">01/01/2026</time>
+</p>
+
+<article th:fragment="articleCard(a)" class="card">
+    <a th:href="@{/news/{id}(id=${a.articleId})}" tabindex="-1" aria-hidden="true">
+        <figure th:replace="~{public/layout :: articleThumb(${a}, 'ratio')}"></figure>
+    </a>
+    <div class="card-body">
+        <p th:replace="~{public/layout :: articleMeta(${a})}"></p>
+        <h3><a th:href="@{/news/{id}(id=${a.articleId})}" th:text="${a.title}">Tiêu đề</a></h3>
+        <p class="sapo clamp" th:text="${a.sapo}">Sapo</p>
+    </div>
+</article>
+
+<footer th:fragment="siteFooter" class="site-footer">
+    <div class="wrap">
+        <p><strong>CMS Core</strong> – Hệ thống Tòa soạn Điện tử (đồ án SWP391, nhóm 6).</p>
+        <p>Nội dung trên trang đã được Trưởng phòng và Thư ký tòa soạn duyệt trước khi xuất bản.</p>
+    </div>
+</footer>
+
+</body>
+</html>

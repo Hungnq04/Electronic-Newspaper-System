@@ -16,4 +16,6 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
     @EntityGraph(attributePaths = {"role", "department"})
     List<Account> findByRole_RoleNameAndStatusOrderByFullNameAsc(RoleName roleName, AccountStatus status);
     boolean existsByUsernameIgnoreCase(String username);
+    // Danh sách chờ Admin duyệt, ai đăng ký trước lên trước
+    List<Account> findByStatusOrderByCreatedAtAscIdAsc(AccountStatus status);
 }

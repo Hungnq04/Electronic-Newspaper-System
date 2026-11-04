@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Create Topic Proposal + Submit Topic Confirmation (modal) -->
+<th:block th:fragment="topicProposalCreateContent">
+    <svg th:replace="~{reporter/topic-proposal-list :: tpSprite}"></svg>
+
+    <div class="tp-page">
+        <header th:replace="~{reporter/topic-proposal-list :: tpTopbar(${list})}"></header>
+
+        <main class="tp-main tp-main--narrow">
+            <a class="tp-back" th:href="@{/reporter/topics}">
+                <svg class="tp-icon"><use href="#tp-icon-arrow-left"></use></svg> Quay lại danh sách đề tài
+            </a>
+            <h1 class="tp-page-title">Đề Xuất Đề Tài Mới</h1>
+
+            <div class="tp-flash tp-flash--error" role="alert" th:if="${error}" th:text="${error}">Lỗi</div>
+
+            <!-- novalidate: dùng thông báo lỗi tiếng Việt của trang (JS) và của server thay cho bong bóng mặc định -->
+            <form class="tp-panel tp-form" method="post" th:action="@{/reporter/topics}" th:object="${topicForm}" novalidate data-tp-form>
+                <div class="tp-field" th:classappend="${#fields.hasErrors('title')} ? 'has-error'" data-tp-field="title">
+                    <div class="tp-label-row">
+                        <label for="title">Tiêu đề đề tài <span class="tp-required">*</span></label>
+                        <span class="tp-counter"><span data-tp-count="title">0</span> / <span th:text="${titleMax}">255</span> ký tự</span>
+                    </div>
+                    <input id="title" type="text" th:field="*{title}" th:maxlength="${titleMax}" required
+                           placeholder="Ví dụ: Áp lực nợ xấu bất động sản thương mại cuối năm 2026"
+                           aria-describedby="title-error">
+                    <p class="tp-error" id="title-error" data-tp-error="title" th:errors="*{title}" th:if="${#fields.hasErrors('title')}">Vui lòng nhập tiêu đề đề tài.</p>
+                </div>
+
+                <div class="tp-field" th:classappend="${#fields.hasErrors('departmentId')} ? 'has-error'" data-tp-field="departmentId">
+                    <div class="tp-label-row">
+                        <label for="departmentId">Ban phụ trách <span class="tp-required">*</span></label>
+                    </div>
+                    <select id="departmentId" th:field="*{departmentId}" required aria-describedby="departmentId-error">
+                        <option value="">— Chọn ban phụ trách —</option>
+                        <option th:each="d : ${departments}" th:value="${d.id()}" th:text="${d.name()}">Phòng Kinh tế</option>
+                    </select>
+                    <p class="tp-error" id="departmentId-error" data-tp-error="departmentId" th:errors="*{departmentId}" th:if="${#fields.hasErrors('departmentId')}">Vui lòng chọn ban phụ trách.</p>
+                </div>
+
+                <div class="tp-field" th:classappend="${#fields.hasErrors('summary')} ? 'has-error'" data-tp-field="summary">
+                    <div class="tp-label-row">
+                        <label for="summary">Tóm tắt nội dung <span class="tp-required">*</span></label>
+                        <span class="tp-counter"><span data-tp-count="summary">0</span> / <span th:text="${summaryMax}">4000</span> ký tự</span>
+                    </div>
+                    <textarea id="summary" rows="7" th:field="*{summary}" th:maxlength="${summaryMax}" required
+                              placeholder="Bối cảnh, nhân vật dự kiến phỏng vấn, dữ liệu sẽ khai thác…"
+                              aria-describedby="summary-error"></textarea>
+                    <p class="tp-error" id="summary-error" data-tp-error="summary" th:errors="*{summary}" th:if="${#fields.hasErrors('summary')}">Vui lòng nhập tóm tắt nội dung.</p>
+                </div>
+
+                <div class="tp-form-actions">
+                    <a class="tp-button tp-button--ghost" th:href="@{/reporter/topics}">
+                        <svg class="tp-icon"><use href="#tp-icon-x"></use></svg> Hủy
+                    </a>
+                    <!-- type=button: chỉ mở modal xác nhận; form chỉ được gửi khi bấm "Xác nhận gửi" -->
+                    <button type="button" class="tp-button tp-button--primary" data-tp-open-confirm>
+                        <svg class="tp-icon"><use href="#tp-icon-send"></use></svg> Gửi duyệt
+                    </button>
+                </div>
+            </form>
+        </main>
+
+        <!-- Submit Topic Confirmation -->
+        <div class="tp-modal-backdrop" hidden data-tp-confirm>
+            <div class="tp-modal" role="dialog" aria-modal="true" aria-labelledby="tp-confirm-title" aria-describedby="tp-confirm-desc">
+                <h2 id="tp-confirm-title">Xác nhận gửi đề tài</h2>
+                <p id="tp-confirm-desc">Đề tài sẽ được gửi đến Trưởng ban để duyệt và <b>không thể sửa</b> cho đến khi Trưởng ban yêu cầu chỉnh sửa.</p>
+                <dl class="tp-confirm-summary">
+                    <div><dt>Tiêu đề</dt><dd data-tp-confirm-title></dd></div>
+                    <div><dt>Ban phụ trách</dt><dd data-tp-confirm-department></dd></div>
+                </dl>
+                <div class="tp-modal-actions">
+                    <button type="button" class="tp-button tp-button--ghost" data-tp-cancel-confirm>Hủy, quay lại chỉnh sửa</button>
+                    <button type="button" class="tp-button tp-button--primary" data-tp-submit-confirm>
+                        <svg class="tp-icon"><use href="#tp-icon-send"></use></svg> Xác nhận gửi
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</th:block>
+</body>
+</html>

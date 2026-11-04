@@ -32,7 +32,9 @@ public class SidebarService {
                             new SidebarItem("Chờ xuất bản", "/secretary/publications", "file-text", null),
                             // FL-07 Iter3 (Vanh): bài đã hẹn giờ đăng (icon null = icon đồng hồ mặc định)
                             new SidebarItem("Đã hẹn giờ", "/secretary/scheduled-publications", null, null))));
-            case ADMIN -> List.of();
+            case ADMIN -> List.of(
+                    new SidebarGroup("QUẢN TRỊ", List.of(
+                            new SidebarItem("Tài khoản", "/admin/accounts", "users", null))));
         };
     }
 }

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="content">
+<header th:replace="~{fragment/secretary-topbar :: topbar(${headerName}, ${headerRole}, ${headerInitials})}"></header>
+<main class="page">
+    <a class="back-link" th:href="@{/admin/accounts}">&larr; Danh sách tài khoản</a>
+    <div class="page-head">
+        <div>
+            <h1 th:text="${acc.fullName}"></h1>
+            <p th:text="${acc.username} + ' · ' + ${acc.email}"></p>
+        </div>
+        <span class="badge" th:text="${acc.statusLabel}"
+              th:classappend="${acc.status.name() == 'ACTIVE'} ? 'badge-success'
+                            : (${acc.status.name() == 'AWAITING_APPROVAL'} ? 'badge-warning'
+                            : (${acc.status.name() == 'LOCKED'} ? 'badge-danger' : ''))"></span>
+    </div>
+
+    <div class="alert alert-success" th:if="${message}" th:text="${message}"></div>
+    <div class="alert alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <div class="workspace">
+        <!-- Cột trái: thông tin + việc đang làm -->
+        <div class="stack">
+            <section class="card card-body">
+                <h2>Thông tin tài khoản</h2>
+                <dl class="facts">
+                    <dt>Họ tên</dt><dd th:text="${acc.fullName}"></dd>
+                    <dt>Username</dt><dd th:text="${acc.username}"></dd>
+                    <dt>Email</dt><dd th:text="${acc.email}"></dd>
+                    <dt>Vai trò</dt><dd th:text="${acc.awaitingApproval} ? 'Chưa cấp (chờ duyệt)' : ${acc.roleLabel}"></dd>
+                    <dt>Phòng ban</dt><dd th:text="${acc.departmentName} ?: '—'"></dd>
+                    <dt>Trạng thái</dt><dd th:text="${acc.statusLabel}"></dd>
+                    <dt>Ngày tạo</dt><dd th:text="${#temporals.format(acc.createdAt, 'dd/MM/yyyy HH:mm')}"></dd>
+                </dl>
+            </section>
+
+            <section class="card card-body" th:unless="${acc.awaitingApproval}">
+                <h2>Việc đang phụ trách</h2>
+                <p class="muted" th:if="${#lists.isEmpty(acc.activeAssignments)}">Không có Assignment nào đang hiệu lực.</p>
+                <ul class="list" th:unless="${#lists.isEmpty(acc.activeAssignments)}">
+                    <li th:each="s : ${acc.activeAssignments}">
+                        <strong th:text="${s.topicTitle}"></strong>
+                        <span class="meta">
+                            <span th:text="${s.roleLabel}"></span>
+                            <span th:if="${s.deadline}" th:text="' · Hạn ' + ${#temporals.format(s.deadline, 'dd/MM/yyyy HH:mm')}"></span>
+                        </span>
+                    </li>
+                </ul>
+            </section>
+        </div>
+
+        <!-- Cột phải: các thao tác của Admin -->
+        <aside>
+            <!-- Duyệt tài khoản mới đăng ký (AWAITING_APPROVAL) -->
+            <section class="card card-body" th:if="${acc.awaitingApproval}">
+                <h2>Duyệt tài khoản</h2>
+                <p class="muted">Người này đã xác minh email và đang chờ được cấp vai trò để đăng nhập.</p>
+                <form method="post" th:action="@{/admin/accounts/{id}/approve(id=${acc.id})}" class="form">
+                    <label for="approve-role">Vai trò</label>
+                    <select id="approve-role" name="role" required>
+                        <option th:each="r : ${roles}" th:value="${r.value}" th:text="${r.label}"></option>
+                    </select>
+                    <label for="approve-dept">Phòng ban</label>
+                    <select id="approve-dept" name="departmentId">
+                        <option value="">— Không chọn —</option>
+                        <option th:each="d : ${departments}" th:value="${d.value}" th:text="${d.label}"></option>
+                    </select>
+                    <span class="hint">Bắt buộc nếu cấp vai trò Trưởng phòng.</span>
+                    <button type="submit" class="btn btn-block">Duyệt và kích hoạt</button>
+                </form>
+                <button type="button" class="btn btn-danger btn-block reject-btn" data-open="reject-dialog">Từ chối</button>
+            </section>
+
+            <!-- Đổi vai trò / phòng ban -->
+            <section class="card card-body" th:unless="${acc.awaitingApproval}">
+                <h2>Vai trò và phòng ban</h2>
+                <form method="post" th:action="@{/admin/accounts/{id}/role(id=${acc.id})}" class="form" th:if="${acc.canChangeRole}">
+                    <label for="role">Vai trò</label>
+                    <select id="role" name="role" required>
+                        <option th:each="r : ${roles}" th:value="${r.value}" th:text="${r.label}"
+                                th:selected="${r.value == acc.role.name()}"></option>
+                    </select>
+                    <label for="dept">Phòng ban</label>
+                    <select id="dept" name="departmentId">
+                        <option value="">— Không chọn —</option>
+                        <option th:each="d : ${departments}" th:value="${d.value}" th:text="${d.label}"
+                                th:selected="${acc.departmentId != null and d.value == acc.departmentId.toString()}"></option>
+                    </select>
+                    <span class="hint">Bắt buộc nếu là Trưởng phòng.</span>
+                    <button type="submit" class="btn btn-block">Lưu thay đổi</button>
+                </form>
+                <!-- Không đổi được: nói rõ lý do -->
+                <p class="muted" th:if="${acc.adminAccount}">Tài khoản Quản trị viên chỉ được xem, không đổi vai trò.</p>
+                <p class="muted" th:if="${!acc.adminAccount and acc.hasEditorialHistory}">
+                    Tài khoản đã tham gia biên tập (được giao việc, đề xuất / duyệt Topic, duyệt hoặc xuất bản bài)
+                    nên không đổi được vai trò hay phòng ban, để lịch sử luôn đúng. Nếu cần vai trò khác, hãy dùng một tài khoản mới.
+                </p>
+                <p class="muted" th:if="${!acc.adminAccount and !acc.hasEditorialHistory and !acc.canChangeRole}">
+                    Chỉ đổi được vai trò của tài khoản đang hoạt động hoặc đang bị khóa.
+                </p>
+            </section>
+
+            <!-- Khóa / mở khóa -->
+            <section class="card card-body" th:if="${acc.status.name() == 'ACTIVE' or acc.status.name() == 'LOCKED'}">
+                <h2>Khóa tài khoản</h2>
+                <th:block th:if="${acc.canLock}">
+                    <p class="muted">Tài khoản bị khóa sẽ không đăng nhập được cho tới khi được mở lại.</p>
+                    <button type="button" class="btn btn-danger btn-block" data-open="lock-dialog">Khóa tài khoản</button>
+                </th:block>
+                <p class="muted" th:if="${!acc.adminAccount and acc.status.name() == 'ACTIVE' and !acc.canLock}">
+                    Người này còn phụ trách Topic (xem "Việc đang phụ trách"). Hãy nhờ Thư ký / Trưởng phòng giao lại
+                    cho người khác trước khi khóa.
+                </p>
+                <th:block th:if="${acc.canUnlock}">
+                    <p class="muted">Tài khoản đang bị khóa.</p>
+                    <button type="button" class="btn btn-block" data-open="unlock-dialog">Mở khóa</button>
+                </th:block>
+                <p class="muted" th:if="${acc.adminAccount}">Không khóa tài khoản Quản trị viên.</p>
+            </section>
+        </aside>
+    </div>
+
+    <!-- Lock / Unlock Account Confirmation -->
+    <dialog id="lock-dialog" th:if="${acc.canLock}">
+        <form method="post" th:action="@{/admin/accounts/{id}/lock(id=${acc.id})}">
+            <input type="hidden" name="back" value="detail">
+            <h2>Khóa tài khoản?</h2>
+            <p><strong th:text="${acc.fullName}"></strong> sẽ không đăng nhập được cho tới khi được mở khóa.</p>
+            <div class="dialog-actions">
+                <button type="button" class="btn btn-ghost" data-close>Hủy</button>
+                <button type="submit" class="btn btn-danger">Khóa tài khoản</button>
+            </div>
+        </form>
+    </dialog>
+    <dialog id="unlock-dialog" th:if="${acc.canUnlock}">
+        <form method="post" th:action="@{/admin/accounts/{id}/unlock(id=${acc.id})}">
+            <input type="hidden" name="back" value="detail">
+            <h2>Mở khóa tài khoản?</h2>
+            <p><strong th:text="${acc.fullName}"></strong> sẽ đăng nhập lại được với vai trò hiện tại.</p>
+            <div class="dialog-actions">
+                <button type="button" class="btn btn-ghost" data-close>Hủy</button>
+                <button type="submit" class="btn">Mở khóa</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- Từ chối yêu cầu đăng ký -->
+    <dialog id="reject-dialog" th:if="${acc.awaitingApproval}">
+        <form method="post" th:action="@{/admin/accounts/{id}/reject(id=${acc.id})}">
+            <h2>Từ chối yêu cầu đăng ký?</h2>
+            <p>Tài khoản chuyển sang "Ngừng hoạt động" (không xóa) và người dùng nhận email thông báo.</p>
+            <label for="reason">Lý do (không bắt buộc)</label>
+            <textarea id="reason" name="reason" maxlength="1000"></textarea>
+            <div class="dialog-actions">
+                <button type="button" class="btn btn-ghost" data-close>Hủy</button>
+                <button type="submit" class="btn btn-danger">Từ chối</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script>
+        // Mở / đóng hộp thoại xác nhận
+        document.querySelectorAll('[data-open]').forEach(btn =>
+            btn.addEventListener('click', () => document.getElementById(btn.dataset.open).showModal()));
+        document.querySelectorAll('dialog [data-close]').forEach(btn =>
+            btn.addEventListener('click', () => btn.closest('dialog').close()));
+    </script>
+</main>
+</th:block>
+</body>
+</html>

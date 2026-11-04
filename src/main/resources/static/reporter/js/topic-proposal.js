@@ -1,12 +1,12 @@
-// FL-01: Topic Proposal List (tìm nhanh) + Create Topic Proposal (đếm ký tự, kiểm tra form, modal xác nhận).
+// FL-01: Topic Proposal List (tìm nhanh, chuông thông báo) + Create / Edit Topic (đếm ký tự, kiểm tra form, modal xác nhận).
 // Server vẫn kiểm tra lại toàn bộ; phần này chỉ để báo lỗi ngay trên form.
 (function () {
     'use strict';
 
-    // ---------- Topic Proposal List: tìm nhanh trong các thẻ đang hiển thị ----------
+    // ---------- Topic Proposal List: tìm nhanh trong các dòng đang hiển thị ----------
     var search = document.querySelector('[data-tp-search]');
     if (search) {
-        var cards = Array.prototype.slice.call(document.querySelectorAll('.tp-card'));
+        var cards = Array.prototype.slice.call(document.querySelectorAll('[data-tp-search-text]'));
         var empty = document.querySelector('[data-tp-search-empty]');
         search.addEventListener('input', function () {
             var q = search.value.trim().toLowerCase();
@@ -20,13 +20,30 @@
         });
     }
 
-    // ---------- Create Topic Proposal ----------
+    // ---------- Chuông thông báo (chỉ phóng viên): bấm để mở / đóng danh sách ----------
+    var bell = document.querySelector('[data-tp-bell]');
+    if (bell) {
+        var panel = document.querySelector('[data-tp-bell-panel]');
+        bell.addEventListener('click', function (e) {
+            e.stopPropagation();
+            panel.hidden = !panel.hidden;
+            bell.setAttribute('aria-expanded', String(!panel.hidden));
+        });
+        // Bấm ra ngoài thì đóng
+        document.addEventListener('click', function (e) {
+            if (!panel.hidden && !panel.contains(e.target)) {
+                panel.hidden = true;
+                bell.setAttribute('aria-expanded', 'false');
+            }
+        });
+    }
+
+    // ---------- Create Topic Proposal / Edit & Resubmit Topic ----------
     var form = document.querySelector('[data-tp-form]');
     if (!form) return;
 
     var fields = {
         title: { el: form.querySelector('#title'), message: 'Vui lòng nhập tiêu đề đề tài.' },
-        departmentId: { el: form.querySelector('#departmentId'), message: 'Vui lòng chọn ban phụ trách.' },
         summary: { el: form.querySelector('#summary'), message: 'Vui lòng nhập tóm tắt nội dung.' }
     };
     var modal = document.querySelector('[data-tp-confirm]');
@@ -74,7 +91,7 @@
     Object.keys(fields).forEach(function (name) {
         var el = fields[name].el;
         // Đã báo lỗi thì kiểm tra lại ngay khi người dùng sửa
-        el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', function () {
+        el.addEventListener('input', function () {
             if (el.closest('.tp-field').classList.contains('has-error')) validate(name);
         });
     });
@@ -88,9 +105,10 @@
         });
         if (firstInvalid) { firstInvalid.focus(); return; }
 
-        var select = fields.departmentId.el;
+        // Ban luôn là ban của phóng viên (hiện chỉ đọc trên form)
+        var department = form.querySelector('[data-tp-department-name]');
         modal.querySelector('[data-tp-confirm-title]').textContent = fields.title.el.value.trim();
-        modal.querySelector('[data-tp-confirm-department]').textContent = select.options[select.selectedIndex].text;
+        modal.querySelector('[data-tp-confirm-department]').textContent = department ? department.textContent.trim() : '';
         lastFocus = document.activeElement;
         modal.hidden = false;
         document.body.classList.add('tp-modal-open');

@@ -46,7 +46,7 @@ public class SecurityConfig {
                                                   AccountRepository accounts) throws Exception {
         return http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login", "/register", "/register/**", "/css/**", "/js/**", "/error", "/oauth2/**", "/login/oauth2/**").permitAll()
+                        .requestMatchers("/login", "/register", "/register/**", "/forgot-password", "/reset-password", "/otp/**", "/css/**", "/js/**", "/error", "/oauth2/**", "/login/oauth2/**").permitAll()
                         .requestMatchers("/department_head/css/**", "/department_head/js/**").permitAll()
                         .requestMatchers("/department-head/**").hasRole("DEPARTMENT_HEAD")
                         // Màn của Thư ký tòa soạn (FL-02, FL-06, FL-07); role còn được kiểm tra lại ở service

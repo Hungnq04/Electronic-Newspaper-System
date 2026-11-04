@@ -96,8 +96,7 @@ class TopicProposalAccessTests {
     void serviceRejectsNonReporterAccounts() {
         TopicCreateRequestDTO request = new TopicCreateRequestDTO();
         request.setTitle("x");
-        request.setSummary("y");
-        request.setDepartmentId(4);
+        request.setSummary("y"); // Iter2: không còn chọn ban, ban lấy từ tài khoản phóng viên
         for (RoleName role : new RoleName[] { RoleName.DEPARTMENT_HEAD, RoleName.EDITORIAL_SECRETARY }) {
             String email = accounts.findAll().stream()
                     .filter(a -> a.getRole().getRoleName() == role && a.getStatus() == AccountStatus.ACTIVE)

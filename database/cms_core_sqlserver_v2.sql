@@ -35,13 +35,17 @@
 --   6. Loại Source theo PRD 4.5 (DATA gộp vào DOCUMENT); OTP chỉ VERIFY_EMAIL / RESET_PASSWORD,
 --      hết hạn sau 10 phút, tối đa 5 lần nhập sai.
 --   7. Thêm quy tắc kiểm tra R18..R23 trong v_rule_violations; v_article_board hiện cả bài DRAFT.
---   8. [FL-01] topic thêm 3 cột: department_id (ban phụ trách, Reporter chọn khi đề xuất),
+--   8. [FL-01] topic thêm 3 cột: department_id (ban phụ trách = ban của Reporter đề xuất),
 --      awaiting_revision (cờ "Trưởng phòng yêu cầu sửa", status vẫn DEPARTMENT_REVIEW),
 --      reviewed_by_head_id (Trưởng phòng đã duyệt). Thêm bảng topic_feedback lưu từng vòng yêu cầu sửa
 --      (xem mục 2). awaiting_revision / reviewed_by_head_id / topic_feedback dùng từ màn duyệt Topic (Iter2).
 --      Tài khoản tự đăng ký (form + OTP hoặc Google) vào AWAITING_APPROVAL, Admin duyệt mới ACTIVE
 --      (Admin chỉ cấp REPORTER / DEPARTMENT_HEAD / EDITORIAL_SECRETARY; từ chối -> INACTIVE).
 --      DB đã dựng từ bản v2 trước đó: chạy database/fl01_iter1_migration.sql thay vì chạy lại file này.
+--   9. [FL-01 Iter2] Thêm bảng notification (thông báo trong hệ thống cho Reporter khi Topic bị yêu cầu
+--      sửa / được duyệt ACTIVE / bị REJECTED; chưa gửi email). Reporter chỉ đề xuất Topic cho ban của
+--      chính mình, nên topic.department_id luôn = account.department_id của người tạo (khớp R08).
+--      DB đã dựng trước đó: chạy thêm database/fl01_iter2_migration.sql (chỉ tạo bảng mới).
 -- =====================================================================
 -- QUY ƯỚC
 --   * Thời gian là DATETIMEOFFSET(0), dữ liệu mẫu dùng giờ Việt Nam (+07:00).
@@ -74,7 +78,7 @@ GO
 
 DROP VIEW  IF EXISTS v_rule_violations, v_article_timeline, v_article_board,
                      v_public_article, v_topic_team;
-DROP TABLE IF EXISTS publication, comment, article_review, article_source,
+DROP TABLE IF EXISTS notification, publication, comment, article_review, article_source,
                      article_version, article, topic_source, source,
                      assignment, topic_feedback, topic_review, topic, account_otp,
                      account, role, department;
@@ -224,6 +228,21 @@ CREATE TABLE topic_feedback (
     CONSTRAINT topic_feedback_topic_id_fkey FOREIGN KEY (topic_id) REFERENCES topic (topic_id),
     CONSTRAINT topic_feedback_author_id_fkey FOREIGN KEY (author_id) REFERENCES account (account_id)
 );
+
+-- [FL-01 Iter2] Thông báo trong hệ thống (chuông trên header của phóng viên)
+CREATE TABLE notification (
+    notification_id INT IDENTITY(1,1) NOT NULL,
+    account_id      INT           NOT NULL,                     -- FK, người nhận
+    topic_id        INT           NOT NULL,                     -- FK, bấm thông báo thì mở Topic này
+    message         NVARCHAR(500) NOT NULL,
+    is_read         BIT           NOT NULL CONSTRAINT df_notification_is_read DEFAULT 0,
+    created_at      DATETIMEOFFSET(0) NOT NULL CONSTRAINT df_notification_created_at DEFAULT SYSDATETIMEOFFSET(),
+    CONSTRAINT notification_pkey PRIMARY KEY (notification_id),
+    CONSTRAINT notification_account_id_fkey FOREIGN KEY (account_id) REFERENCES account (account_id),
+    CONSTRAINT notification_topic_id_fkey FOREIGN KEY (topic_id) REFERENCES topic (topic_id)
+);
+CREATE INDEX ix_notification_account ON notification (account_id, is_read);
+CREATE INDEX ix_notification_topic ON notification (topic_id);
 
 -- ---------------------------------------------------------------------
 -- 3. ASSIGNMENT (một người - một nhiệm vụ - trên một Topic)

@@ -72,11 +72,10 @@ public class GoogleLoginSuccessHandler implements AuthenticationSuccessHandler {
             return;
         }
         if (status == AccountStatus.PENDING) {
-            authService.sendVerificationCodeForExistingAccount(email);
-            SecurityContextHolder.clearContext();
-            if (request.getSession(false) != null) request.getSession(false).invalidate();
-            response.sendRedirect("/register/verify?email="
-                    + java.net.URLEncoder.encode(email, java.nio.charset.StandardCharsets.UTF_8) + "&pending=true");
+            // Google đã xác minh email thay cho OTP: PENDING -> AWAITING_APPROVAL, vẫn phải chờ Admin duyệt
+            authService.confirmEmailByGoogle(email);
+            endSession(request);
+            response.sendRedirect("/login?awaiting");
             return;
         }
         ensureRoleAuthority(request, response, authentication, account.get());

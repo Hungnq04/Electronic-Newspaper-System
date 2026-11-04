@@ -2,6 +2,7 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <body>
 <th:block th:fragment="content">
+<header th:replace="~{fragment/secretary-topbar :: topbar(${headerName}, ${headerRole}, ${headerInitials})}"></header>
 <main class="page">
     <div class="page-head">
         <div>

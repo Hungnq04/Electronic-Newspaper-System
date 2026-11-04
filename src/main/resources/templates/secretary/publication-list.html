@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- FL-07 Màn #61 Approved Article List: bài đã được Thư ký duyệt cuối (APPROVED), chờ quyết định xuất bản -->
+<th:block th:fragment="content">
+<main class="page">
+    <div class="page-head">
+        <div>
+            <h1>Chờ xuất bản</h1>
+            <p>Bài đã được duyệt cuối. Mở bài để đăng ngay, hẹn giờ đăng, hoặc trả về Lead Reporter.</p>
+        </div>
+        <span class="badge badge-info" th:text="${#lists.size(items)} + ' bài chờ xuất bản'"></span>
+    </div>
+
+    <div class="alert alert-success" th:if="${message}" th:text="${message}"></div>
+    <div class="alert alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <section class="card">
+        <div class="empty" th:if="${#lists.isEmpty(items)}">Hiện không có bài nào chờ xuất bản.</div>
+        <div class="table-wrap" th:unless="${#lists.isEmpty(items)}">
+            <table class="data">
+                <thead>
+                <tr>
+                    <th>Bài viết</th>
+                    <th>Lead Reporter</th>
+                    <th>Phiên bản sẽ đăng</th>
+                    <th>Duyệt cuối</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${items}">
+                    <td class="title-cell">
+                        <a th:href="@{/secretary/publications/{id}(id=${item.articleId})}" th:text="${item.title}"></a>
+                        <span class="sub"><span th:text="${item.topicTitle}"></span> · <span th:text="${item.category}"></span></span>
+                    </td>
+                    <td th:text="${item.leadName}"></td>
+                    <td th:text="'v' + ${item.versionLabel}"></td>
+                    <td>
+                        <span th:text="${item.finalApprovedBy} ?: '—'"></span>
+                        <span class="sub" th:if="${item.finalApprovedAt}"
+                              th:text="${#temporals.format(item.finalApprovedAt, 'dd/MM/yyyy HH:mm')}"></span>
+                    </td>
+                    <td>
+                        <a class="btn btn-sm" th:href="@{/secretary/publications/{id}(id=${item.articleId})}">Xuất bản</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</th:block>
+</body>
+</html>

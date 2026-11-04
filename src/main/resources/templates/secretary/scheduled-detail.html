@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- FL-07 Màn #68 Scheduled Publication Detail + pop-up #69 Cancel & Return to Lead Form -->
+<th:block th:fragment="content">
+<main class="page">
+    <a class="back-link" th:href="@{/secretary/scheduled-publications}">← Danh sách đã hẹn giờ</a>
+    <div class="page-head">
+        <div>
+            <h1>Lịch đăng bài viết</h1>
+            <p th:text="'Topic: ' + ${pub.topicTitle}"></p>
+        </div>
+        <div class="article-meta">
+            <span class="badge badge-info" th:text="'Phiên bản ' + ${pub.versionLabel}"></span>
+            <span class="badge badge-warning" th:text="${pub.statusLabel}"></span>
+        </div>
+    </div>
+
+    <div class="alert alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <div class="workspace">
+        <!-- Nội dung đúng phiên bản đã được hẹn đăng (bản ghim trong publication) -->
+        <article class="card article-preview">
+            <div class="category" th:text="${pub.category}"></div>
+            <h1 th:text="${pub.title}"></h1>
+            <p class="subtitle" th:if="${pub.subtitle}" th:text="${pub.subtitle}"></p>
+            <figure th:if="${pub.featuredImageUrl}">
+                <img th:src="${pub.featuredImageUrl}" th:alt="${pub.featuredImageCaption}"
+                     onerror="this.closest('figure').classList.add('img-missing')">
+                <figcaption th:text="${pub.featuredImageCaption}"></figcaption>
+            </figure>
+            <p class="sapo" th:text="${pub.sapo}"></p>
+            <p class="pub-paragraph" th:each="p : ${pub.paragraphs}" th:text="${p}"></p>
+        </article>
+
+        <aside>
+            <!-- Lịch đăng + nút hủy -->
+            <section class="card decision-card">
+                <div class="card-body">
+                    <h2>Lịch đăng</h2>
+                    <dl class="pub-facts">
+                        <dt>Hẹn đăng lúc</dt><dd th:text="${#temporals.format(pub.scheduledAt, 'HH:mm, dd/MM/yyyy')}"></dd>
+                        <dt>Người đặt lịch</dt><dd th:text="${pub.publishedBy}"></dd>
+                    </dl>
+                    <th:block th:if="${pub.canCancel}">
+                        <p class="pub-note">Nếu không đăng bài này nữa, hủy lịch để trả bài về Lead Reporter chỉnh sửa.</p>
+                        <button type="button" class="btn btn-danger btn-block" data-open="cancel-dialog">Hủy lịch &amp; trả về Lead</button>
+                    </th:block>
+                    <p class="pub-note" th:if="${pub.due}">Đã đến giờ đăng, hệ thống sẽ tự đăng bài trong ít phút. Không thể hủy lịch nữa.</p>
+                </div>
+            </section>
+
+            <!-- Thông tin duyệt -->
+            <section class="card">
+                <div class="card-body">
+                    <h2>Thông tin bài</h2>
+                    <dl class="pub-facts">
+                        <dt>Lead Reporter</dt><dd th:text="${pub.leadName}"></dd>
+                        <dt>Trưởng phòng duyệt</dt>
+                        <dd th:text="${pub.departmentApprovedBy} ? ${pub.departmentApprovedBy} + ' · ' + ${#temporals.format(pub.departmentApprovedAt, 'dd/MM/yyyy HH:mm')} : '—'"></dd>
+                        <dt>Thư ký duyệt cuối</dt>
+                        <dd th:text="${pub.finalApprovedBy} ? ${pub.finalApprovedBy} + ' · ' + ${#temporals.format(pub.finalApprovedAt, 'dd/MM/yyyy HH:mm')} : '—'"></dd>
+                        <th:block th:if="${pub.finalFeedback}">
+                            <dt>Nhận xét duyệt cuối</dt><dd th:text="${pub.finalFeedback}"></dd>
+                        </th:block>
+                    </dl>
+                </div>
+            </section>
+        </aside>
+    </div>
+</main>
+
+<!-- #69 Cancel & Return to Lead Form: lý do bắt buộc; xóa lịch đăng, bài về REVISION_REQUIRED -->
+<dialog id="cancel-dialog" th:if="${pub.canCancel}">
+    <form method="post" th:action="@{/secretary/scheduled-publications/{id}/cancel(id=${pub.articleId})}">
+        <h2>Hủy lịch đăng và trả bài?</h2>
+        <p>
+            Lịch đăng lúc <strong th:text="${#temporals.format(pub.scheduledAt, 'HH:mm, dd/MM/yyyy')}"></strong>
+            của bài "<strong th:text="${pub.title}"></strong>" sẽ bị xóa. Bài trở về Lead Reporter để chỉnh sửa,
+            sau đó phải qua Trưởng phòng rồi Thư ký duyệt lại từ đầu.
+        </p>
+        <label for="cancel-reason">Lý do hủy lịch (bắt buộc)</label>
+        <textarea id="cancel-reason" name="reason" maxlength="4000" required th:text="${cancelReason}"></textarea>
+        <div class="dialog-actions">
+            <button type="button" class="btn btn-ghost" data-close>Không hủy</button>
+            <button type="submit" class="btn btn-danger">Hủy lịch và trả bài</button>
+        </div>
+    </form>
+</dialog>
+
+<script th:inline="javascript">
+    (() => {
+        // Mở / đóng pop-up
+        document.querySelectorAll('[data-open]').forEach(btn =>
+            btn.addEventListener('click', () => document.getElementById(btn.dataset.open).showModal()));
+        document.querySelectorAll('dialog [data-close]').forEach(btn =>
+            btn.addEventListener('click', () => btn.closest('dialog').close()));
+
+        // Server báo lỗi (vd lý do trống): mở lại pop-up với lý do đã gõ
+        const cancelDialog = document.getElementById('cancel-dialog');
+        if (cancelDialog && /*[[${cancelReason != null}]]*/ false) cancelDialog.showModal();
+    })();
+</script>
+</th:block>
+</body>
+</html>

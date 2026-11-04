@@ -2,10 +2,12 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <body>
 <th:block th:fragment="content">
+<header th:replace="~{fragment/secretary-topbar :: topbar(${headerName}, ${headerRole}, ${headerInitials})}"></header>
 <main class="page">
     <a class="back-link" th:href="@{/secretary/final-reviews}">← Hàng đợi duyệt cuối</a>
     <div class="page-head">
         <div>
+            <nav class="breadcrumb" aria-label="Breadcrumb"><span>QUY TRÌNH CẤP 3</span> › <strong>Duyệt cuối &amp; Xuất bản</strong></nav>
             <h1>Duyệt cuối bài viết</h1>
             <p th:text="'Topic: ' + ${ws.topicTitle}"></p>
         </div>

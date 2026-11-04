@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- FL-01 Iter2: Topic Review Workspace của Trưởng ban + Approve Topic Confirmation + Request Changes Form -->
+<th:block th:fragment="content">
+<svg th:replace="~{reporter/topic-proposal-list :: tpSprite}"></svg>
+
+<div class="tp-page">
+    <header th:replace="~{reporter/topic-proposal-list :: tpTopbar(${ws})}"></header>
+    <main class="tp-main">
+        <div class="tp-flash tp-flash--ok" role="status" th:if="${message}" th:text="${message}"></div>
+        <div class="tp-flash tp-flash--error" role="alert" th:if="${error}" th:text="${error}"></div>
+
+        <div class="tp-heading-row">
+            <div class="tp-heading">
+                <nav class="tp-breadcrumb" aria-label="Breadcrumb">
+                    <span>ĐỀ TÀI</span><svg class="tp-icon tp-icon--tiny"><use href="#tp-icon-chevron-right"></use></svg><strong>Duyệt cấp ban</strong>
+                </nav>
+                <h1>Duyệt đề tài</h1>
+                <p>Ban: <b th:text="${ws.scopeLabel()}">Ban Kinh tế</b></p>
+            </div>
+        </div>
+
+        <th:block th:replace="~{fragment/topic-review :: stats(${ws})}"></th:block>
+
+        <section class="tp-filter-panel" aria-label="Tìm đề tài">
+            <span class="tp-sort-note">HÀNG CHỜ DUYỆT CẤP BAN</span>
+            <label class="tp-search">
+                <svg class="tp-icon"><use href="#tp-icon-search"></use></svg>
+                <input type="search" placeholder="Tìm theo tiêu đề, phóng viên, mã…" aria-label="Tìm đề tài" data-tp-search>
+            </label>
+        </section>
+
+        <div class="tp-workspace">
+            <th:block th:replace="~{fragment/topic-review :: queue(${ws}, '/department-head/topics', null)}"></th:block>
+
+            <div class="tp-workspace-detail">
+                <section class="tp-card">
+                    <div class="tp-card-head"><h2>Chi tiết đề tài</h2></div>
+                    <div class="tp-empty" th:if="${ws.selected() == null}">
+                        <svg class="tp-icon"><use href="#tp-icon-file"></use></svg>
+                        <strong>Chọn một đề tài trong hàng chờ để xem chi tiết</strong>
+                    </div>
+                    <div class="tp-card-body" th:if="${ws.selected() != null}">
+                        <th:block th:replace="~{fragment/topic-review :: detail(${ws})}"></th:block>
+
+                        <!-- Trưởng ban chỉ Duyệt hoặc Yêu cầu sửa, không có quyền Từ chối -->
+                        <div class="tp-detail-actions" th:if="${ws.canDecide()}">
+                            <button type="button" class="tp-button tp-button--primary" data-open="approve-dialog">
+                                <svg class="tp-icon"><use href="#tp-icon-check-circle"></use></svg> Duyệt đề tài
+                            </button>
+                            <button type="button" class="tp-button tp-button--danger" data-open="changes-dialog">
+                                <svg class="tp-icon"><use href="#tp-icon-edit"></use></svg> Yêu cầu sửa
+                            </button>
+                        </div>
+                        <div class="tp-note" style="margin-top:18px" th:unless="${ws.canDecide()}">
+                            Đề tài đang chờ phóng viên sửa, chưa thể ra quyết định.
+                        </div>
+                    </div>
+                </section>
+
+                <th:block th:if="${ws.selected() != null}">
+                    <th:block th:replace="~{fragment/topic-review :: history(${ws})}"></th:block>
+                </th:block>
+            </div>
+        </div>
+    </main>
+
+    <th:block th:if="${ws.selected() != null and ws.canDecide()}">
+        <!-- Approve Topic Confirmation -->
+        <dialog id="approve-dialog" class="tp-dialog">
+            <form method="post" th:action="@{/department-head/topics/{id}/approve(id=${ws.selected().id()})}">
+                <h2>Duyệt đề tài này?</h2>
+                <dl class="tp-confirm-summary">
+                    <div><dt>Tiêu đề</dt><dd th:text="${ws.selected().title()}"></dd></div>
+                </dl>
+                <div class="tp-modal-actions">
+                    <button type="button" class="tp-button tp-button--ghost" data-close>Hủy</button>
+                    <button type="submit" class="tp-button tp-button--primary">Xác nhận duyệt</button>
+                </div>
+            </form>
+        </dialog>
+
+        <!-- Request Changes Form -->
+        <dialog id="changes-dialog" class="tp-dialog" th:attr="data-reopen=${feedback != null}">
+            <form method="post" th:action="@{/department-head/topics/{id}/request-changes(id=${ws.selected().id()})}">
+                <h2>Yêu cầu phóng viên sửa đề tài</h2>
+                <label for="changes-feedback">Góp ý cần sửa <span class="tp-required">*</span></label>
+                <textarea id="changes-feedback" name="feedback" maxlength="4000" required th:text="${feedback}"></textarea>
+                <div class="tp-modal-actions">
+                    <button type="button" class="tp-button tp-button--ghost" data-close>Hủy</button>
+                    <button type="submit" class="tp-button tp-button--primary">Gửi yêu cầu sửa</button>
+                </div>
+            </form>
+        </dialog>
+    </th:block>
+</div>
+
+<th:block th:replace="~{fragment/topic-review :: dialog-script}"></th:block>
+</th:block>
+</body>
+</html>

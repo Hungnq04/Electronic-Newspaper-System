@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="content">
+<header th:replace="~{fragment/secretary-topbar :: topbar(${headerName}, ${headerRole}, ${headerInitials})}"></header>
+<main class="page" style="max-width:920px">
+    <a class="back-link" th:href="@{/secretary/topics}">← Topic tòa soạn</a>
+    <div class="page-head">
+        <div>
+            <nav class="breadcrumb" aria-label="Breadcrumb"><span>TOPIC TÒA SOẠN</span> › <strong>Tạo Editorial Topic</strong></nav>
+            <h1>Tạo Editorial Topic</h1>
+            <p>Topic cấp tòa soạn được kích hoạt ngay khi lưu, không cần qua duyệt. Sau khi lưu, chọn Trưởng phòng để giao.</p>
+        </div>
+    </div>
+
+    <div class="alert alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <form class="card card-body" method="post" th:action="@{/secretary/topics}" th:object="${form}">
+        <div class="form-grid">
+            <div class="field full" th:classappend="${#fields.hasErrors('title')} ? 'has-error'">
+                <label for="title">Tên Topic <span class="req">*</span></label>
+                <input id="title" th:field="*{title}" maxlength="255" required autofocus>
+                <div class="field-error" th:errors="*{title}"></div>
+            </div>
+            <div class="field" th:classappend="${#fields.hasErrors('category')} ? 'has-error'">
+                <label for="category">Chuyên mục <span class="req">*</span></label>
+                <input id="category" th:field="*{category}" maxlength="100" list="category-options" required>
+                <datalist id="category-options">
+                    <option th:each="c : ${categories}" th:value="${c}"></option>
+                </datalist>
+                <div class="field-error" th:errors="*{category}"></div>
+            </div>
+            <div class="field" th:classappend="${#fields.hasErrors('priority')} ? 'has-error'">
+                <label for="priority">Mức ưu tiên <span class="req">*</span></label>
+                <select id="priority" th:field="*{priority}">
+                    <option value="LOW">Thấp</option>
+                    <option value="NORMAL">Bình thường</option>
+                    <option value="HIGH">Cao</option>
+                    <option value="URGENT">Khẩn</option>
+                </select>
+                <div class="field-error" th:errors="*{priority}"></div>
+            </div>
+            <div class="field" th:classappend="${#fields.hasErrors('expectedDate')} ? 'has-error'">
+                <label for="expectedDate">Ngày dự kiến</label>
+                <input id="expectedDate" type="date" th:field="*{expectedDate}">
+                <div class="field-error" th:errors="*{expectedDate}"></div>
+            </div>
+            <div class="field full" th:classappend="${#fields.hasErrors('description')} ? 'has-error'">
+                <label for="description">Mô tả</label>
+                <textarea id="description" th:field="*{description}" maxlength="4000"
+                          placeholder="Phạm vi, các bài dự kiến, góc tiếp cận..."></textarea>
+                <div class="field-error" th:errors="*{description}"></div>
+            </div>
+            <div class="field full" th:classappend="${#fields.hasErrors('rationale')} ? 'has-error'">
+                <label for="rationale">Định hướng / căn cứ</label>
+                <textarea id="rationale" th:field="*{rationale}" maxlength="4000"
+                          placeholder="Vì sao tòa soạn triển khai Topic này"></textarea>
+                <div class="field-error" th:errors="*{rationale}"></div>
+            </div>
+        </div>
+        <div class="form-actions">
+            <a class="btn btn-ghost" th:href="@{/secretary/topics}">Hủy</a>
+            <button type="submit" class="btn">Lưu và chọn Trưởng phòng</button>
+        </div>
+    </form>
+</main>
+</th:block>
+</body>
+</html>

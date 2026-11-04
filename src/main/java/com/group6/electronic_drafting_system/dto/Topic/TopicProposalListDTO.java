@@ -5,8 +5,10 @@ import java.util.List;
 
 // Dữ liệu trang Topic Proposal List. tabs: "Tất cả" + 4 status, kèm số đếm trên toàn bộ Topic được xem
 // (không phụ thuộc tab đang chọn); topics: danh sách đã lọc theo tab.
+// unreadNotifications + notifications: chuông thông báo trên header (chỉ phóng viên).
 public record TopicProposalListDTO(String fullName, String roleLabel, String initials,
-                                   List<StatusTab> tabs, List<TopicListItemDTO> topics) {
+                                   List<StatusTab> tabs, List<TopicListItemDTO> topics,
+                                   long unreadNotifications, List<NotificationItemDTO> notifications) {
 
     // status == null là tab "Tất cả"
     public record StatusTab(TopicStatus status, String label, long count, boolean active) {

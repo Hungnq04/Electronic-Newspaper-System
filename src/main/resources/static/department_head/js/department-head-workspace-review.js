@@ -1,265 +1,517 @@
-// Màn thẩm định bài viết của Trưởng phòng (workspacereview.html).
-// File được nạp ở cuối <body> nên mọi phần tử HTML đã có sẵn khi chạy.
-const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const articleCard = document.getElementById('article-card');
+// =====================================================================
+// Màn thẩm định bài viết của Trưởng ban (department_head/workspacereview.html)
+//
+// File này làm 6 việc:
+//   1. Hiện thông báo nhỏ (toast) sau mỗi thao tác
+//   2. Hỏi lại trước khi xóa góp ý
+//   3. Tô vàng chữ đã được góp ý; bấm qua lại giữa chữ trong bài và thẻ góp ý
+//   4. Bôi đen chữ -> hiện khung góp ý -> gửi góp ý lên server
+//   5. So sánh hai phiên bản của bài
+//   6. Đổi tab góp ý, mở / đóng hộp thoại "Duyệt" và "Yêu cầu sửa"
+//
+// Cách ẩn / hiện một phần tử: el.hidden = true (ẩn) hoặc el.hidden = false (hiện).
+// File được nạp ở cuối trang (layout/app.html) nên mọi phần tử HTML đã có sẵn khi chạy.
+// =====================================================================
 
-// ---------- Toast ----------
-let toastTimer;
-function toast(msg, isError) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.remove('hidden');
-  t.classList.toggle('bg-error', !!isError);
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.add('hidden'), 3500);
+// Lấy phần tử theo id cho gọn: byId('toast') giống document.getElementById('toast')
+function byId(id) {
+  return document.getElementById(id);
 }
-(() => {
-  const t = document.getElementById('toast');
-  if (t.dataset.message) toast(t.dataset.message, t.dataset.error === 'true');
-})();
 
-// ---------- Hỏi lại trước khi gửi form có data-confirm (ví dụ: Xóa góp ý) ----------
-document.querySelectorAll('form[data-confirm]').forEach(form => {
-  form.addEventListener('submit', e => {
-    if (!confirm(form.dataset.confirm)) e.preventDefault();
+// Đổi ký tự đặc biệt (& < > ") thành dạng an toàn trước khi chèn chữ vào HTML,
+// để chữ trong bài không bị trình duyệt hiểu nhầm thành thẻ HTML
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// Khung chứa bài viết đang duyệt (tít, sapo, thân bài)
+const articleCard = byId('article-card');
+
+
+// ---------------------------------------------------------------------
+// 1. Thông báo nhỏ (toast)
+// ---------------------------------------------------------------------
+let toastTimer = null;
+
+// Hiện thông báo trong 3,5 giây. isError = true thì nền đỏ
+function showToast(message, isError) {
+  const toast = byId('toast');
+  toast.textContent = message;
+  toast.classList.toggle('is-error', isError === true);
+  toast.hidden = false;
+  clearTimeout(toastTimer);                  // nếu thông báo cũ chưa tắt thì hủy hẹn giờ cũ
+  toastTimer = setTimeout(function () {
+    toast.hidden = true;
+  }, 3500);
+}
+
+// Controller gửi kèm thông báo (flash) sau mỗi thao tác: hiện ngay khi trang vừa mở
+const toastBox = byId('toast');
+if (toastBox.dataset.message) {
+  showToast(toastBox.dataset.message, toastBox.dataset.error === 'true');
+}
+
+
+// ---------------------------------------------------------------------
+// 2. Hỏi lại trước khi gửi form có data-confirm (ví dụ nút "Xóa" góp ý)
+// ---------------------------------------------------------------------
+document.querySelectorAll('form[data-confirm]').forEach(function (form) {
+  form.addEventListener('submit', function (event) {
+    // confirm() hiện hộp thoại OK / Cancel. Bấm Cancel thì chặn, không gửi form
+    if (!confirm(form.dataset.confirm)) {
+      event.preventDefault();
+    }
   });
 });
 
-// ---------- Vị trí ký tự trong một đoạn ----------
-// Vị trí (đếm từ 0) của điểm (node, offset) tính từ đầu phần tử el = độ dài chữ đứng trước điểm đó
+
+// ---------------------------------------------------------------------
+// 3. Vị trí ký tự + tô vàng các góp ý đã lưu
+//
+// Mỗi góp ý lưu vị trí: đoạn nào (data-field + data-paragraph) và từ ký tự thứ mấy
+// đến ký tự thứ mấy (start, end; đếm từ 0, ký tự ở vị trí end không tính).
+// "Range" là một vùng chữ trên trang, giống vùng bạn bôi đen bằng chuột.
+// ---------------------------------------------------------------------
+
+// Đếm xem từ đầu phần tử el tới điểm (node, offset) có bao nhiêu ký tự
 function offsetIn(el, node, offset) {
-  const r = document.createRange();
-  r.setStart(el, 0);
-  r.setEnd(node, offset);
-  return r.toString().length;
-}
-// Ngược lại: từ vị trí [start, end) trong el tạo ra Range để tô màu
-function rangeFromOffsets(el, start, end) {
-  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
   const range = document.createRange();
-  let pos = 0, node, startSet = false;
-  while ((node = walker.nextNode())) {
-    const len = node.textContent.length;
-    if (!startSet && start <= pos + len) { range.setStart(node, start - pos); startSet = true; }
-    if (startSet && end <= pos + len) { range.setEnd(node, end - pos); return range; }
-    pos += len;
-  }
-  return null;
-}
-function anchorElement(field, paragraph) {
-  return articleCard.querySelector(`[data-field="${field}"][data-paragraph="${paragraph}"]`);
+  range.setStart(el, 0);
+  range.setEnd(node, offset);
+  return range.toString().length;
 }
 
-// ---------- Tô màu các góp ý đã lưu ----------
-document.querySelectorAll('.comment-card[data-field]').forEach(card => {
+// Ngược lại với offsetIn: từ vị trí [start, end) trong el, tạo ra Range để tô màu
+function rangeFromOffsets(el, start, end) {
+  // TreeWalker đi lần lượt qua từng mẩu chữ (text node) bên trong el
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  const range = document.createRange();
+  let position = 0;           // đã đi qua bao nhiêu ký tự
+  let startFound = false;
+  let node = walker.nextNode();
+  while (node) {
+    const length = node.textContent.length;
+    if (!startFound && start <= position + length) {
+      range.setStart(node, start - position);
+      startFound = true;
+    }
+    if (startFound && end <= position + length) {
+      range.setEnd(node, end - position);
+      return range;
+    }
+    position += length;
+    node = walker.nextNode();
+  }
+  return null;                // vị trí không còn đúng (ví dụ chữ đã đổi): bỏ qua
+}
+
+// Tìm phần tử chứa đoạn chữ theo vị trí đã lưu, ví dụ field = "CONTENT", paragraph = "3"
+function anchorElement(field, paragraph) {
+  return articleCard.querySelector('[data-field="' + field + '"][data-paragraph="' + paragraph + '"]');
+}
+
+// Tô vàng chữ của từng góp ý đã lưu: bọc chữ đó trong thẻ <mark class="ws-mark">
+// (chỉ thẻ góp ý có data-field mới gắn vị trí; góp ý chung thì không có)
+document.querySelectorAll('.comment-card[data-field]').forEach(function (card) {
   const el = anchorElement(card.dataset.field, card.dataset.paragraph);
   if (!el) return;
   const range = rangeFromOffsets(el, Number(card.dataset.start), Number(card.dataset.end));
   if (!range) return;
   const mark = document.createElement('mark');
-  mark.dataset.cid = card.dataset.cid;
-  mark.className = 'bg-tertiary-fixed text-on-tertiary-fixed font-semibold px-0.5 rounded cursor-pointer';
-  try { range.surroundContents(mark); } catch (_) { /* hai góp ý chồng lên nhau: bỏ qua phần tô màu */ }
+  mark.className = 'ws-mark';
+  mark.dataset.cid = card.dataset.cid;        // nhớ thẻ <mark> này thuộc góp ý nào
+  try {
+    range.surroundContents(mark);
+  } catch (error) {
+    // Hai góp ý chồng lên nhau thì không bọc được: bỏ qua phần tô màu, góp ý vẫn hiện ở cột bên phải
+  }
 });
 
-function flash(el) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+// Nháy viền vàng để người dùng thấy phần tử vừa được nhảy tới
+function flash(el) {
+  el.classList.remove('ws-flash');
+  void el.offsetWidth;                         // bắt trình duyệt vẽ lại, để hiệu ứng chạy lại từ đầu
+  el.classList.add('ws-flash');
+}
 
-// Bấm "Xem vị trí" ở thẻ góp ý -> cuộn tới chữ được tô
-document.getElementById('tab-now').addEventListener('click', e => {
-  if (!e.target.closest('[data-goto]')) return;
-  const card = e.target.closest('.comment-card');
-  if (comparing) toggleCompare();
-  const mark = document.querySelector(`mark[data-cid="${card.dataset.cid}"]`);
-  if (mark) { mark.scrollIntoView({ behavior: 'smooth', block: 'center' }); flash(mark); }
+// Bấm "Xem vị trí →" ở thẻ góp ý -> cuộn tới chữ được tô vàng trong bài
+byId('tab-now').addEventListener('click', function (event) {
+  if (!event.target.closest('[data-goto]')) return;      // chỉ xử lý khi bấm đúng nút "Xem vị trí"
+  const card = event.target.closest('.comment-card');
+  if (comparing) toggleCompare();                         // đang xem màn so sánh thì quay lại bài
+  const mark = document.querySelector('mark[data-cid="' + card.dataset.cid + '"]');
+  if (mark) {
+    mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    flash(mark);
+  }
 });
-// Bấm vào chữ được tô -> nhảy tới thẻ góp ý
-articleCard.addEventListener('click', e => {
-  const m = e.target.closest('mark[data-cid]');
-  if (!m) return;
+
+// Bấm vào chữ được tô vàng -> nhảy tới thẻ góp ý tương ứng ở cột bên phải
+articleCard.addEventListener('click', function (event) {
+  const mark = event.target.closest('mark[data-cid]');
+  if (!mark) return;
   showTab('now');
-  const card = document.querySelector(`.comment-card[data-cid="${m.dataset.cid}"]`);
-  if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); flash(card); }
+  const card = document.querySelector('.comment-card[data-cid="' + mark.dataset.cid + '"]');
+  if (card) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    flash(card);
+  }
 });
 
-// ---------- Bôi đen -> khung góp ý ----------
-const popover = document.getElementById('comment-popover');
-if (popover) {
-  const popText = document.getElementById('popover-text');
-  const popSave = document.getElementById('popover-save');
-  let pending = null;
-  const hidePopover = () => { popover.classList.add('hidden'); pending = null; popText.value = ''; popSave.disabled = true; };
-  window.hidePopover = hidePopover;
-  const anchorOf = node => { const el = node.nodeType === 1 ? node : node.parentElement; return el ? el.closest('[data-field]') : null; };
 
-  articleCard.addEventListener('mouseup', e => {
-    if (popover.contains(e.target)) return;
-    setTimeout(() => {
-      const sel = window.getSelection();
-      if (!sel.rangeCount || sel.isCollapsed) return;
-      const range = sel.getRangeAt(0);
-      const a1 = anchorOf(range.startContainer), a2 = anchorOf(range.endContainer);
-      if (!sel.toString().trim() || !a1) return;
-      if (a1 !== a2) { toast('Chỉ chọn trong một đoạn để góp ý.'); return; }
-      pending = {
-        field: a1.dataset.field,
-        paragraph: a1.dataset.paragraph,
-        start: offsetIn(a1, range.startContainer, range.startOffset),
-        end: offsetIn(a1, range.endContainer, range.endOffset)
+// ---------------------------------------------------------------------
+// 4. Bôi đen chữ -> khung góp ý
+//    Khung góp ý chỉ có khi mình đang được duyệt bài này (không thì popover = null)
+// ---------------------------------------------------------------------
+const popover = byId('comment-popover');
+let pendingAnchor = null;                     // vị trí đoạn chữ vừa bôi đen, chờ bấm "Thêm góp ý"
+
+// Đóng khung góp ý và xóa chữ đang gõ dở
+function hidePopover() {
+  if (!popover) return;
+  popover.hidden = true;
+  pendingAnchor = null;
+  byId('popover-text').value = '';
+  byId('popover-save').disabled = true;
+}
+
+// Tìm phần tử có data-field chứa node (node có thể là một mẩu chữ hoặc một thẻ HTML)
+function anchorOf(node) {
+  const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+  return el ? el.closest('[data-field]') : null;
+}
+
+if (popover) {
+  const popoverText = byId('popover-text');
+  const popoverSave = byId('popover-save');
+
+  // Nhả chuột sau khi bôi đen trong bài -> mở khung góp ý ngay dưới chỗ bôi đen
+  articleCard.addEventListener('mouseup', function (event) {
+    if (popover.contains(event.target)) return;          // bấm bên trong khung góp ý thì bỏ qua
+    // setTimeout(..., 0): đợi trình duyệt cập nhật xong vùng bôi đen rồi mới đọc
+    setTimeout(function () {
+      const selection = window.getSelection();
+      if (!selection.rangeCount || selection.isCollapsed) return;    // không bôi đen gì
+      const range = selection.getRangeAt(0);
+      const startAnchor = anchorOf(range.startContainer);
+      const endAnchor = anchorOf(range.endContainer);
+      if (!selection.toString().trim() || !startAnchor) return;      // bôi đen khoảng trắng hoặc ngoài chữ bài
+      if (startAnchor !== endAnchor) {
+        showToast('Chỉ chọn trong một đoạn để góp ý.');
+        return;
+      }
+
+      // Ghi nhớ vị trí để gửi lên server khi bấm "Thêm góp ý"
+      pendingAnchor = {
+        field: startAnchor.dataset.field,
+        paragraph: startAnchor.dataset.paragraph,
+        start: offsetIn(startAnchor, range.startContainer, range.startOffset),
+        end: offsetIn(startAnchor, range.endContainer, range.endOffset)
       };
-      document.getElementById('popover-anchor').textContent = a1.dataset.anchor;
-      document.getElementById('popover-quote').textContent = `“${sel.toString()}”`;
-      const r = range.getBoundingClientRect(), c = articleCard.getBoundingClientRect();
-      popover.classList.remove('hidden');
-      popover.style.top = (r.bottom - c.top + 10) + 'px';
-      popover.style.left = Math.max(16, Math.min(r.left - c.left, c.width - popover.offsetWidth - 16)) + 'px';
-      popText.focus();
+      byId('popover-anchor').textContent = startAnchor.dataset.anchor;
+      byId('popover-quote').textContent = '“' + selection.toString() + '”';
+
+      // Đặt khung góp ý ngay dưới vùng bôi đen (tọa độ tính theo khung bài viết)
+      const selectionBox = range.getBoundingClientRect();
+      const cardBox = articleCard.getBoundingClientRect();
+      popover.hidden = false;
+      popover.style.top = (selectionBox.bottom - cardBox.top + 10) + 'px';
+      const maxLeft = cardBox.width - popover.offsetWidth - 16;   // không cho khung tràn ra ngoài bên phải
+      popover.style.left = Math.max(16, Math.min(selectionBox.left - cardBox.left, maxLeft)) + 'px';
+      // Bôi đen gần cuối màn hình thì cuộn lên một chút để khung góp ý không bị thanh nút ở đáy che
+      // (khoảng chừa ra là scroll-margin-bottom trong CSS của .ws-popover)
+      popover.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      popoverText.focus({ preventScroll: true });
     }, 0);
   });
-  popText.addEventListener('input', () => { popSave.disabled = !popText.value.trim(); });
-  document.querySelectorAll('[data-chip]').forEach(b => b.addEventListener('click', () => {
-    popText.value = (popText.value ? popText.value.trim() + ' ' : '') + b.textContent.trim() + '.';
-    popSave.disabled = false;
-    popText.focus();
-  }));
-  document.getElementById('popover-close').addEventListener('click', hidePopover);
-  document.getElementById('popover-cancel').addEventListener('click', hidePopover);
 
-  // Lưu góp ý: điền vào form ẩn rồi gửi lên server (server kiểm tra lại vị trí và tự lấy đoạn trích)
-  popSave.addEventListener('click', () => {
-    if (!pending) return;
-    const form = document.getElementById('comment-form');
-    form.anchorField.value = pending.field;
-    form.anchorParagraph.value = pending.paragraph;
-    form.anchorStart.value = pending.start;
-    form.anchorEnd.value = pending.end;
-    form.content.value = popText.value.trim();
-    popSave.disabled = true;
+  // Chỉ bật nút "Thêm góp ý" khi đã gõ nội dung
+  popoverText.addEventListener('input', function () {
+    popoverSave.disabled = !popoverText.value.trim();
+  });
+
+  // Bấm một gợi ý nhanh -> nối chữ của gợi ý vào ô nội dung góp ý
+  document.querySelectorAll('[data-chip]').forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      const current = popoverText.value.trim();
+      popoverText.value = (current ? current + ' ' : '') + chip.textContent.trim() + '.';
+      popoverSave.disabled = false;
+      popoverText.focus();
+    });
+  });
+
+  byId('popover-close').addEventListener('click', hidePopover);
+  byId('popover-cancel').addEventListener('click', hidePopover);
+
+  // Lưu góp ý: điền vị trí + nội dung vào form ẩn #comment-form rồi gửi lên server.
+  // Server tự kiểm tra lại vị trí và tự lấy đoạn trích, không tin dữ liệu trình duyệt gửi lên.
+  popoverSave.addEventListener('click', function () {
+    if (!pendingAnchor) return;
+    const form = byId('comment-form');
+    form.anchorField.value = pendingAnchor.field;
+    form.anchorParagraph.value = pendingAnchor.paragraph;
+    form.anchorStart.value = pendingAnchor.start;
+    form.anchorEnd.value = pendingAnchor.end;
+    form.content.value = popoverText.value.trim();
+    popoverSave.disabled = true;               // chặn bấm 2 lần
     form.submit();
   });
 }
 
-// ---------- So sánh phiên bản ----------
-// Đọc dữ liệu một version từ khối ẩn #version-data: { "Tít": "...", "Sapo": "...", "Đoạn 1": "..." }
+
+// ---------------------------------------------------------------------
+// 5. So sánh phiên bản (chỉ có khi bài có từ 2 phiên bản trở lên)
+// ---------------------------------------------------------------------
+const compareCard = byId('compare-card');     // null nếu bài mới có 1 phiên bản
+const baseSelect = byId('compare-base');      // ô chọn "So với v..."
+let comparing = false;                        // true = đang xem màn so sánh
+
+// Đọc chữ của một phiên bản từ khối ẩn #version-data.
+// Kết quả dạng { "Tít": "...", "Tít phụ": "...", "Sapo": "...", "Đoạn 1": "...", ... }
 function readVersion(label) {
-  const box = document.querySelector(`#version-data > [data-label="${label}"]`);
-  const out = {};
-  if (box) box.querySelectorAll('[data-key]').forEach(el => { out[el.dataset.key] = el.textContent.trim(); });
-  return out;
-}
-function tokenize(s) { return s.match(/\s+|[^\s]+/g) || []; }
-// So sánh theo từng từ (thuật toán dãy con chung dài nhất - LCS)
-function diffTokens(a, b) {
-  const n = a.length, m = b.length;
-  const dp = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
-  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--)
-    dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
-  const ops = []; let i = 0, j = 0;
-  while (i < n && j < m) {
-    if (a[i] === b[j]) { ops.push(['eq', a[i]]); i++; j++; }
-    else if (dp[i + 1][j] >= dp[i][j + 1]) ops.push(['del', a[i++]]);
-    else ops.push(['ins', b[j++]]);
+  const box = document.querySelector('#version-data > [data-label="' + label + '"]');
+  const result = {};
+  if (box) {
+    box.querySelectorAll('[data-key]').forEach(function (el) {
+      result[el.dataset.key] = el.textContent.trim();
+    });
   }
-  while (i < n) ops.push(['del', a[i++]]);
-  while (j < m) ops.push(['ins', b[j++]]);
-  return ops;
+  return result;
 }
 
-const compareCard = document.getElementById('compare-card');
-const baseSelect = document.getElementById('compare-base');
-let comparing = false;
+// Đếm số "Đoạn n" có trong một phiên bản
+function countParagraphs(version) {
+  return Object.keys(version).filter(function (key) {
+    return key.startsWith('Đoạn ');
+  }).length;
+}
 
-function renderCompare() {
-  const versionsBox = document.querySelectorAll('#version-data > [data-label]');
-  const currentLabel = versionsBox[versionsBox.length - 1].dataset.label;
-  const baseLabel = baseSelect.value;
-  const oldV = readVersion(baseLabel), newV = readVersion(currentLabel);
-  const onlyChanged = document.getElementById('compare-only-changed').checked;
-  document.getElementById('compare-head-old').textContent = `v${baseLabel} · bản trước`;
+// Tách câu thành từng từ và khoảng trắng: "Xin chào" -> ["Xin", " ", "chào"]
+function tokenize(text) {
+  return text.match(/\s+|[^\s]+/g) || [];
+}
 
-  // Thứ tự các ô: Tít, Tít phụ, Sapo, rồi Đoạn 1..n (lấy số đoạn nhiều hơn của hai bản)
-  const countParagraphs = v => Object.keys(v).filter(k => k.startsWith('Đoạn ')).length;
-  const keys = ['Tít', 'Tít phụ', 'Sapo'];
-  for (let i = 1; i <= Math.max(countParagraphs(oldV), countParagraphs(newV)); i++) keys.push('Đoạn ' + i);
+// So sánh 2 dãy từ, trả về danh sách thao tác:
+//   ['eq', từ] = giữ nguyên, ['del', từ] = bị xóa, ['ins', từ] = thêm mới.
+// Dùng thuật toán "dãy con chung dài nhất" (LCS): tìm nhiều từ giống nhau nhất giữa 2 bản,
+// phần còn lại là chữ bị xóa (ở bản cũ) hoặc chữ thêm mới (ở bản mới).
+function diffTokens(oldWords, newWords) {
+  const n = oldWords.length;
+  const m = newWords.length;
 
-  let changed = 0, added = 0, removed = 0, html = '';
-  keys.forEach(key => {
-    const oldT = oldV[key] || '', newT = newV[key] || '';
-    if (!oldT && !newT) return;
-    const same = oldT === newT;
-    if (!same) { if (!oldT) added++; else if (!newT) removed++; else changed++; }
-    if (onlyChanged && same) return;
-    let left = '', right = '';
-    if (!oldT) {
-      left = `<span class="text-secondary italic">(Chưa có trong v${baseLabel})</span>`;
-      right = `<span class="diff-ins">${esc(newT)}</span>`;
-    } else if (!newT) {
-      left = `<span class="diff-del">${esc(oldT)}</span>`;
-      right = '<span class="text-secondary italic">(Đã bỏ)</span>';
+  // lcs[i][j] = số từ giống nhau nhiều nhất giữa oldWords (tính từ vị trí i) và newWords (tính từ vị trí j)
+  const lcs = [];
+  for (let i = 0; i <= n; i++) {
+    lcs.push(new Uint16Array(m + 1));          // mảng số nguyên, mặc định toàn số 0
+  }
+  for (let i = n - 1; i >= 0; i--) {
+    for (let j = m - 1; j >= 0; j--) {
+      if (oldWords[i] === newWords[j]) {
+        lcs[i][j] = lcs[i + 1][j + 1] + 1;
+      } else {
+        lcs[i][j] = Math.max(lcs[i + 1][j], lcs[i][j + 1]);
+      }
+    }
+  }
+
+  // Đi lại từ đầu 2 dãy để ghi ra từng thao tác
+  const operations = [];
+  let i = 0;
+  let j = 0;
+  while (i < n && j < m) {
+    if (oldWords[i] === newWords[j]) {
+      operations.push(['eq', oldWords[i]]);
+      i++;
+      j++;
+    } else if (lcs[i + 1][j] >= lcs[i][j + 1]) {
+      operations.push(['del', oldWords[i]]);
+      i++;
     } else {
-      diffTokens(tokenize(oldT), tokenize(newT)).forEach(([t, v]) => {
-        if (t === 'eq') { left += esc(v); right += esc(v); }
-        else if (t === 'del') left += `<span class="diff-del">${esc(v)}</span>`;
-        else right += `<span class="diff-ins">${esc(v)}</span>`;
+      operations.push(['ins', newWords[j]]);
+      j++;
+    }
+  }
+  while (i < n) {                              // còn dư từ ở bản cũ: đều là chữ bị xóa
+    operations.push(['del', oldWords[i]]);
+    i++;
+  }
+  while (j < m) {                              // còn dư từ ở bản mới: đều là chữ thêm mới
+    operations.push(['ins', newWords[j]]);
+    j++;
+  }
+  return operations;
+}
+
+// Nhãn nhỏ ở cột trái mỗi dòng so sánh: Không đổi / Thêm mới / Đã bỏ / Đã sửa
+function changeTag(oldText, newText) {
+  if (oldText === newText) return '<span class="ws-compare-tag">Không đổi</span>';
+  if (!oldText) return '<span class="ws-compare-tag ws-compare-tag--added">Thêm mới</span>';
+  if (!newText) return '<span class="ws-compare-tag ws-compare-tag--removed">Đã bỏ</span>';
+  return '<span class="ws-compare-tag ws-compare-tag--changed">Đã sửa</span>';
+}
+
+// Dựng lại toàn bộ bảng so sánh giữa bản chọn ở ô "So với" và bản đang duyệt
+function renderCompare() {
+  const allVersions = document.querySelectorAll('#version-data > [data-label]');
+  const currentLabel = allVersions[allVersions.length - 1].dataset.label;   // bản cuối cùng = bản đang duyệt
+  const baseLabel = baseSelect.value;
+  const oldVersion = readVersion(baseLabel);
+  const newVersion = readVersion(currentLabel);
+  const onlyChanged = byId('compare-only-changed').checked;
+  byId('compare-head-old').textContent = 'v' + baseLabel + ' · bản trước';
+
+  // Thứ tự các dòng: Tít, Tít phụ, Sapo, rồi Đoạn 1..n (lấy theo bản có nhiều đoạn hơn)
+  const keys = ['Tít', 'Tít phụ', 'Sapo'];
+  const paragraphCount = Math.max(countParagraphs(oldVersion), countParagraphs(newVersion));
+  for (let k = 1; k <= paragraphCount; k++) {
+    keys.push('Đoạn ' + k);
+  }
+
+  let changed = 0;
+  let added = 0;
+  let removed = 0;
+  let html = '';
+  keys.forEach(function (key) {
+    const oldText = oldVersion[key] || '';
+    const newText = newVersion[key] || '';
+    if (!oldText && !newText) return;                    // cả 2 bản đều không có ô này
+    const same = oldText === newText;
+    if (!same) {
+      if (!oldText) added++;
+      else if (!newText) removed++;
+      else changed++;
+    }
+    if (onlyChanged && same) return;                     // đang bật "Chỉ hiện đoạn thay đổi"
+
+    // Chữ cột bản cũ (left) và cột bản đang duyệt (right): tô đỏ chữ bị xóa, tô xanh chữ thêm mới
+    let left = '';
+    let right = '';
+    if (!oldText) {
+      left = '<span class="ws-compare-missing">(Chưa có trong v' + escapeHtml(baseLabel) + ')</span>';
+      right = '<span class="diff-ins">' + escapeHtml(newText) + '</span>';
+    } else if (!newText) {
+      left = '<span class="diff-del">' + escapeHtml(oldText) + '</span>';
+      right = '<span class="ws-compare-missing">(Đã bỏ)</span>';
+    } else {
+      diffTokens(tokenize(oldText), tokenize(newText)).forEach(function (operation) {
+        const type = operation[0];
+        const word = escapeHtml(operation[1]);
+        if (type === 'eq') {
+          left += word;
+          right += word;
+        } else if (type === 'del') {
+          left += '<span class="diff-del">' + word + '</span>';
+        } else {
+          right += '<span class="diff-ins">' + word + '</span>';
+        }
       });
     }
-    const tag = same ? '<span class="font-label-sm text-label-sm text-secondary">Không đổi</span>'
-      : !oldT ? '<span class="font-label-sm text-label-sm font-bold text-success-badge">Thêm mới</span>'
-      : !newT ? '<span class="font-label-sm text-label-sm font-bold text-error">Đã bỏ</span>'
-      : '<span class="font-label-sm text-label-sm font-bold text-on-tertiary-container">Đã sửa</span>';
-    html += `<div class="grid grid-cols-1 md:grid-cols-[6rem_1fr_1fr] gap-x-space-md gap-y-1 py-space-sm border-b border-surface-container-high last:border-0">
-      <div class="flex md:flex-col gap-2 md:gap-1"><span class="font-label-md text-label-md font-bold">${esc(key)}</span>${tag}</div>
-      <div class="font-body-md text-body-md leading-relaxed whitespace-pre-line ${same ? 'text-secondary' : ''}"><span class="md:hidden font-label-sm text-label-sm text-secondary block">v${baseLabel}</span>${left}</div>
-      <div class="font-body-md text-body-md leading-relaxed whitespace-pre-line ${same ? 'text-secondary' : ''}"><span class="md:hidden font-label-sm text-label-sm text-primary block">v${currentLabel}</span>${right}</div>
-    </div>`;
+
+    // Một dòng gồm 3 cột: tên ô + nhãn | chữ bản cũ | chữ bản đang duyệt
+    // (ws-compare-mobile-label chỉ hiện trên điện thoại, khi 3 cột xếp chồng lên nhau)
+    const textClass = same ? 'ws-compare-text is-same' : 'ws-compare-text';
+    html += '<div class="ws-compare-row">'
+      + '<div class="ws-compare-key"><b>' + escapeHtml(key) + '</b>' + changeTag(oldText, newText) + '</div>'
+      + '<div class="' + textClass + '"><span class="ws-compare-mobile-label">v' + escapeHtml(baseLabel) + '</span>' + left + '</div>'
+      + '<div class="' + textClass + '"><span class="ws-compare-mobile-label is-current">v' + escapeHtml(currentLabel) + '</span>' + right + '</div>'
+      + '</div>';
   });
-  document.getElementById('compare-rows').innerHTML = html || '<p class="text-secondary font-body-sm text-body-sm">Không có đoạn nào thay đổi.</p>';
-  document.getElementById('compare-summary').textContent =
-    `${changed} phần đã sửa, ${added} phần thêm mới, ${removed} phần đã bỏ so với v${baseLabel}.`;
+
+  byId('compare-rows').innerHTML = html || '<p class="ws-note">Không có đoạn nào thay đổi.</p>';
+  byId('compare-summary').textContent =
+    changed + ' phần đã sửa, ' + added + ' phần thêm mới, ' + removed + ' phần đã bỏ so với v' + baseLabel + '.';
 }
 
+// Chuyển qua lại giữa bài đang duyệt và màn so sánh
 function toggleCompare() {
   comparing = !comparing;
-  if (window.hidePopover) window.hidePopover();
-  articleCard.classList.toggle('hidden', comparing);
-  compareCard.classList.toggle('hidden', !comparing);
-  document.getElementById('btn-compare-label').textContent = comparing ? 'Quay lại bản đang duyệt' : 'So sánh phiên bản';
+  hidePopover();
+  articleCard.hidden = comparing;            // đang so sánh thì ẩn bài viết...
+  compareCard.hidden = !comparing;           // ...và hiện màn so sánh (và ngược lại)
+  byId('btn-compare-label').textContent = comparing ? 'Quay lại bản đang duyệt' : 'So sánh phiên bản';
   if (comparing) renderCompare();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
 if (compareCard) {
-  document.getElementById('btn-compare').addEventListener('click', toggleCompare);
-  document.getElementById('compare-only-changed').addEventListener('change', renderCompare);
-  baseSelect.addEventListener('change', () => { if (comparing) renderCompare(); });
+  byId('btn-compare').addEventListener('click', toggleCompare);
+  byId('compare-only-changed').addEventListener('change', renderCompare);
+  baseSelect.addEventListener('change', function () {
+    if (comparing) renderCompare();          // đổi bản để so sánh thì dựng lại bảng
+  });
 }
 
-// ---------- Tab góp ý ----------
+
+// ---------------------------------------------------------------------
+// 6. Tab góp ý (Vòng này / Vòng trước) và hộp thoại Duyệt / Yêu cầu sửa
+// ---------------------------------------------------------------------
+
+// name = 'now' (góp ý vòng này) hoặc 'prev' (góp ý vòng trước)
 function showTab(name) {
-  document.getElementById('tab-now').classList.toggle('hidden', name !== 'now');
-  const prev = document.getElementById('tab-prev');
-  if (prev) prev.classList.toggle('hidden', name !== 'prev');
-  document.querySelectorAll('.tab-btn').forEach(b => {
-    const on = b.dataset.tab === name;
-    b.classList.toggle('bg-primary', on); b.classList.toggle('text-on-primary', on); b.classList.toggle('font-semibold', on);
-    b.classList.toggle('text-on-surface-variant', !on);
+  byId('tab-now').hidden = name !== 'now';
+  const prevPanel = byId('tab-prev');          // null nếu bài mới có 1 phiên bản
+  if (prevPanel) prevPanel.hidden = name !== 'prev';
+  document.querySelectorAll('.tab-btn').forEach(function (button) {
+    const active = button.dataset.tab === name;
+    button.classList.toggle('is-active', active);
+    button.setAttribute('aria-selected', active ? 'true' : 'false');
   });
 }
-document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+document.querySelectorAll('.tab-btn').forEach(function (button) {
+  button.addEventListener('click', function () {
+    showTab(button.dataset.tab);
+  });
+});
 
-// ---------- Hộp thoại Duyệt / Yêu cầu sửa ----------
+// Hộp thoại (modal): chỉ có khi mình đang được duyệt bài này
 const modals = document.querySelectorAll('#modal-revise, #modal-approve');
-const closeModals = () => modals.forEach(m => m.classList.add('hidden'));
-document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeModals));
-modals.forEach(m => m.addEventListener('click', e => { if (e.target === m) closeModals(); }));
-const btnRevise = document.getElementById('btn-revise');
-if (btnRevise) {
-  btnRevise.addEventListener('click', () => {
-    document.getElementById('modal-revise').classList.remove('hidden');
-    document.getElementById('revise-feedback').focus();
+
+function closeModals() {
+  modals.forEach(function (modal) {
+    modal.hidden = true;
   });
-  const feedback = document.getElementById('revise-feedback');
-  feedback.addEventListener('input', () => { document.getElementById('revise-submit').disabled = !feedback.value.trim(); });
-  document.getElementById('btn-approve').addEventListener('click', () => document.getElementById('modal-approve').classList.remove('hidden'));
 }
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { if (window.hidePopover) window.hidePopover(); closeModals(); }
+
+// Nút "Hủy" trong hộp thoại
+document.querySelectorAll('[data-close]').forEach(function (button) {
+  button.addEventListener('click', closeModals);
+});
+// Bấm ra vùng tối bên ngoài hộp thoại cũng đóng hộp thoại
+modals.forEach(function (modal) {
+  modal.addEventListener('click', function (event) {
+    if (event.target === modal) closeModals();
+  });
+});
+
+const btnRevise = byId('btn-revise');
+if (btnRevise) {
+  const reviseFeedback = byId('revise-feedback');
+
+  // Mở hộp thoại "Yêu cầu sửa"
+  btnRevise.addEventListener('click', function () {
+    byId('modal-revise').hidden = false;
+    reviseFeedback.focus();
+  });
+
+  // Nhận xét chung là bắt buộc: chỉ bật nút "Gửi trả bài" khi đã gõ chữ
+  reviseFeedback.addEventListener('input', function () {
+    byId('revise-submit').disabled = !reviseFeedback.value.trim();
+  });
+
+  // Mở hộp thoại "Duyệt"
+  byId('btn-approve').addEventListener('click', function () {
+    byId('modal-approve').hidden = false;
+  });
+}
+
+// Phím Esc: đóng khung góp ý và hộp thoại
+document.addEventListener('keydown', function (event) {
+  if (event.key === 'Escape') {
+    hidePopover();
+    closeModals();
+  }
 });

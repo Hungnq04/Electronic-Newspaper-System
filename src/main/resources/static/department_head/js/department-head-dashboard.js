@@ -12,6 +12,8 @@
   const category = root.querySelector('#dh-category-filter');
   const type = root.querySelector('#dh-type-filter');
   const emptyState = root.querySelector('#dh-empty-state');
+  // Số "bản ghi" trên đầu bảng: cập nhật theo số dòng đang hiện sau khi lọc
+  const visibleCount = root.querySelector('#dh-visible-count');
   const priorityButtons = Array.from(root.querySelectorAll('[data-dh-priority]'));
   const tagButtons = Array.from(root.querySelectorAll('[data-dh-tag]'));
   const sortButtons = Array.from(root.querySelectorAll('[data-dh-sort]'));
@@ -24,7 +26,8 @@
 
   const normalize = value => (value || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
   const update = () => {
-    const query = normalize([search?.value, globalSearch?.value].filter(Boolean).join(' '));
+    // Hai ô tìm (trên topbar và trong bộ lọc) luôn cùng nội dung, nên chỉ cần lấy một ô
+    const query = normalize(search?.value || globalSearch?.value);
     let visible = 0;
     cards.forEach(card => {
       const haystack = normalize((card.dataset.title || '') + ' ' + card.textContent);
@@ -39,6 +42,7 @@
       if (matches) visible++;
     });
     if (emptyState) emptyState.hidden = visible !== 0;
+    if (visibleCount) visibleCount.textContent = visible;
   };
 
   const setActive = (items, active, attr) => items.forEach(item => {
@@ -68,8 +72,9 @@
     update();
   }));
   [search, globalSearch].filter(Boolean).forEach(input => input.addEventListener('input', () => {
+    // Gõ ở ô nào thì chép sang ô còn lại (kể cả khi xóa trắng), giống màn /reporter/tasks
     const other = input === search ? globalSearch : search;
-    if (other && input.value && !other.value) other.value = input.value;
+    if (other) other.value = input.value;
     update();
   }));
   [category, type].filter(Boolean).forEach(select => select.addEventListener('change', update));
@@ -79,7 +84,8 @@
     setActive(sortButtons, button);
     const visibleCards = cards.filter(card => !card.classList.contains('dh-draft-fallback'));
     const rank = card => Number(state.sort === 'newest' ? card.dataset.createdOrder : state.sort === 'oldest' ? -(Number(card.dataset.createdOrder) || 0) : card.dataset.deadlineOrder) || 999999;
-    visibleCards.sort((a, b) => rank(a) - rank(b)).forEach(card => list.insertBefore(card, emptyState));
+    // Các dòng nằm trong <tbody id="dh-draft-list">: gắn lại theo thứ tự mới là bảng tự sắp xếp
+    visibleCards.sort((a, b) => rank(a) - rank(b)).forEach(card => list.appendChild(card));
     update();
   }));
 

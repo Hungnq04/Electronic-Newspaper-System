@@ -1,10 +1,10 @@
 package com.group6.electronic_drafting_system.service.impl;
 
-import com.group6.electronic_drafting_system.dto.topic.EditorialTopicForm;
-import com.group6.electronic_drafting_system.dto.topic.EditorialTopicRowDTO;
-import com.group6.electronic_drafting_system.dto.topic.TopicAssignForm;
-import com.group6.electronic_drafting_system.dto.topic.TopicAssignPageDTO;
-import com.group6.electronic_drafting_system.dto.topic.TopicAssignPageDTO.HeadOption;
+import com.group6.electronic_drafting_system.dto.Topic.EditorialTopicForm;
+import com.group6.electronic_drafting_system.dto.Topic.EditorialTopicRowDTO;
+import com.group6.electronic_drafting_system.dto.Topic.TopicAssignForm;
+import com.group6.electronic_drafting_system.dto.Topic.TopicAssignPageDTO;
+import com.group6.electronic_drafting_system.dto.Topic.TopicAssignPageDTO.HeadOption;
 import com.group6.electronic_drafting_system.entity.Account;
 import com.group6.electronic_drafting_system.entity.Assignment;
 import com.group6.electronic_drafting_system.entity.Topic;

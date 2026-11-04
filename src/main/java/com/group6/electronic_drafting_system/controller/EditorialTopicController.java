@@ -1,7 +1,7 @@
 package com.group6.electronic_drafting_system.controller;
 
-import com.group6.electronic_drafting_system.dto.topic.EditorialTopicForm;
-import com.group6.electronic_drafting_system.dto.topic.TopicAssignForm;
+import com.group6.electronic_drafting_system.dto.Topic.EditorialTopicForm;
+import com.group6.electronic_drafting_system.dto.Topic.TopicAssignForm;
 import com.group6.electronic_drafting_system.exception.ApplicationException;
 import com.group6.electronic_drafting_system.exception.ErrorCode;
 import com.group6.electronic_drafting_system.service.EditorialTopicService;

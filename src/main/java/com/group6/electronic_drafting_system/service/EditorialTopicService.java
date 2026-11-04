@@ -1,9 +1,9 @@
 package com.group6.electronic_drafting_system.service;
 
-import com.group6.electronic_drafting_system.dto.topic.EditorialTopicForm;
-import com.group6.electronic_drafting_system.dto.topic.EditorialTopicRowDTO;
-import com.group6.electronic_drafting_system.dto.topic.TopicAssignForm;
-import com.group6.electronic_drafting_system.dto.topic.TopicAssignPageDTO;
+import com.group6.electronic_drafting_system.dto.Topic.EditorialTopicForm;
+import com.group6.electronic_drafting_system.dto.Topic.EditorialTopicRowDTO;
+import com.group6.electronic_drafting_system.dto.Topic.TopicAssignForm;
+import com.group6.electronic_drafting_system.dto.Topic.TopicAssignPageDTO;
 import java.util.List;
 
 // Topic cấp tòa soạn của Thư ký (FL-02: UC-05 Create Editorial Topic, UC-06 Assign, UC-07 Reassign)

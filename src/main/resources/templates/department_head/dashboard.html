@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+<th:block th:fragment="departmentHeadContent">
+    <h1 th:text="${loiChao}">Xin chào trưởng phòng</h1>
+    <p>Bạn đang đăng nhập bằng: <b th:text="${dashboard.email}">Email mẫu</b></p>
+    <p>Tên tài khoản: <b th:text="${dashboard.username}">Tên tài khoản mẫu</b></p>
+    <p>Họ tên: <b th:text="${dashboard.fullName}">Họ tên mẫu</b></p>
+    <p>Bài chờ duyệt: <b th:text="${dashboard.pendingArticlesCount}">0</b></p>
+    <p>Đang trả về sửa: <b th:text="${dashboard.rC}">0</b></p>
+    <p>Bài được duyệt hôm nay: <b th:text="${dashboard.chapthuanngayhomnay}">0</b></p>
+    <p>Đề tài đang chờ duyệt: <b th:text="${dashboard.detaidangchoduyet}">0</b></p>
+    <h2>Danh sách bài chờ duyệt</h2>
+    <ul>
+        <li th:each="article : ${dashboard.pendingArticles}" th:text="${article.title}">Tiêu đề mẫu</li>
+    </ul>
+
+</th:block>     
+</body>
+</html>

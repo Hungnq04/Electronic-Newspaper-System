@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+<th:block th:fragment="reviewWorkspace">
+    <h1>Đang thẩm định bài số <span th:text="${article.id}">0</span></h1>
+    <a th:href="@{/department-head/dashboard}">Quay lại trang tổng quan</a>
+</th:block>     
+</body>
+</html>

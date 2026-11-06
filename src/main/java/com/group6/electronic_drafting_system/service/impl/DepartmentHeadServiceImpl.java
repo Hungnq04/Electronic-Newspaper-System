@@ -45,8 +45,6 @@ public class DepartmentHeadServiceImpl implements DepartmentHeadService {
         OffsetDateTime startOfToday = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime();
         Account head = accounts.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new ApplicationException(ErrorCode.AUTH_ACCOUNT_NOT_REGISTERED));
-        // Lấy số lượng bài đang được trả về  của trưởng phòng
-        long revisionCount = articles.countByStatusForDepartmentHead(ArticleStatus.REVISION_REQUIRED, head.getId());
         // Lấy số lượng bài được duyệt trong ngày của trưởng phòng
         long approvedTodayCount = articlesReview.countDecisionsSince(ReviewStage.DEPARTMENT,ArticleReviewDecision.APPROVED , startOfToday,  head.getId());
         long pendingTopicCount =0;
@@ -55,9 +53,12 @@ public class DepartmentHeadServiceImpl implements DepartmentHeadService {
 
         }
         // Lấy danh sách bài đang chờ duyệt của trưởng phòng
+        // Lấy số lượng bài trả về chỉnh sửa của trưởng phòng
         List<Article> articleList = new ArrayList<>();
+        long revisionCount = 0;
         if(head.getDepartment() != null){
             articleList = articles.findByStatusForDepartment(ArticleStatus.DEPARTMENT_REVIEW,head.getDepartment().getId(), head.getId());
+            revisionCount =articles.findByStatusForDepartment(ArticleStatus.REVISION_REQUIRED,head.getDepartment().getId(), head.getId()).size();
         }
         List<PendingArticleDTO> pendingArticles = new ArrayList<>();
         for (Article article : articleList) {

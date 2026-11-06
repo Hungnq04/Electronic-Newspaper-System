@@ -55,8 +55,10 @@ public class DepartmentHeadServiceImpl implements DepartmentHeadService {
 
         }
         // Lấy danh sách bài đang chờ duyệt của trưởng phòng
-        List<Article> articleList = articles.findByStatusForDepartment(ArticleStatus.DEPARTMENT_REVIEW,
-                head.getDepartment().getId(), head.getId());
+        List<Article> articleList = new ArrayList<>();
+        if(head.getDepartment() != null){
+            articleList = articles.findByStatusForDepartment(ArticleStatus.DEPARTMENT_REVIEW,head.getDepartment().getId(), head.getId());
+        }
         List<PendingArticleDTO> pendingArticles = new ArrayList<>();
         for (Article article : articleList) {
             PendingArticleDTO pendingArticleDTO = PendingArticleDTO.builder()

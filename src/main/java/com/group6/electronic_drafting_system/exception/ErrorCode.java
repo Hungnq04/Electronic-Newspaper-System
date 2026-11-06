@@ -18,7 +18,11 @@ public enum ErrorCode {
     AUTH_ACCOUNT_ALREADY_VERIFIED(1108, "Tài khoản đã được xác minh. Vui lòng đăng nhập.", HttpStatus.CONFLICT),
     AUTH_OTP_EXPIRED(1109, "Mã xác minh đã hết hạn. Vui lòng yêu cầu gửi lại mã.", HttpStatus.BAD_REQUEST),
     AUTH_OTP_TOO_MANY_ATTEMPTS(1110, "Bạn đã nhập sai quá 5 lần. Vui lòng yêu cầu gửi lại mã mới.", HttpStatus.TOO_MANY_REQUESTS),    AUTH_GOOGLE_LOGIN_FAILED(1111, "Đăng nhập bằng Google không thành công. Vui lòng thử lại.", HttpStatus.UNAUTHORIZED),
-    AUTH_ACCOUNT_AWAITING_APPROVAL(1112, "Tài khoản đã xác minh email và đang chờ Quản trị viên duyệt, phân quyền. Bạn sẽ nhận email khi được duyệt.", HttpStatus.FORBIDDEN),
+    AUTH_ACCOUNT_AWAITING_APPROVAL(1112, "Tài khoản đang chờ quản trị viên duyệt và cấp quyền.", HttpStatus.FORBIDDEN),
+    // FL-01 Iter3: OTP gửi lại quá sớm, đặt lại mật khẩu khi chưa qua OTP, email sai định dạng
+    AUTH_OTP_RESEND_TOO_SOON(1113, "Vui lòng chờ 60 giây rồi mới gửi lại mã.", HttpStatus.TOO_MANY_REQUESTS),
+    AUTH_RESET_NOT_ALLOWED(1114, "Vui lòng xác minh mã OTP trước khi đặt lại mật khẩu.", HttpStatus.FORBIDDEN),
+    AUTH_EMAIL_INVALID(1115, "Email không hợp lệ.", HttpStatus.BAD_REQUEST),
     AUTH_ACCOUNT_ALREADY_EXISTS(2000, "Email này đã được đăng ký.", HttpStatus.CONFLICT),
     AUTH_UNEXPECTED_ERROR(9999, "Đã xảy ra lỗi. Vui lòng thử lại sau.", HttpStatus.INTERNAL_SERVER_ERROR),
 
@@ -54,14 +58,34 @@ public enum ErrorCode {
     TOPIC_SOURCE_NOT_FOUND(1402, "Không tìm thấy ảnh / video trong tư liệu của đề tài.", HttpStatus.NOT_FOUND),
 
     TOPIC_CREATE_FORBIDDEN(1600, "Chỉ phóng viên đang hoạt động mới được đề xuất đề tài.", HttpStatus.FORBIDDEN),
-    TOPIC_DEPARTMENT_INVALID(1601, "Ban phụ trách không hợp lệ hoặc chưa có Trưởng ban. Vui lòng chọn lại.", HttpStatus.BAD_REQUEST),
+    TOPIC_DEPARTMENT_INVALID(1601, "Ban của bạn chưa có Trưởng ban đang hoạt động nên chưa thể gửi đề tài. Vui lòng liên hệ Quản trị viên.", HttpStatus.BAD_REQUEST),
     TOPIC_ACCESS_DENIED(1602, "Bạn không có quyền xem danh sách đề tài.", HttpStatus.FORBIDDEN),
+    // FL-01 Iter2: duyệt Topic, sửa và gửi lại, thông báo
+    // (TOPIC_NOT_FOUND dùng chung với FL-02, khai báo ở nhóm TV4 bên dưới; mã 1603 bỏ trống)
+    TOPIC_ALREADY_PROCESSED(1604, "Đề tài đã được xử lý.", HttpStatus.CONFLICT),
+    TOPIC_REVIEW_FORBIDDEN(1605, "Bạn không có quyền duyệt đề tài này.", HttpStatus.FORBIDDEN),
+    TOPIC_VIEW_FORBIDDEN(1606, "Bạn không có quyền xem đề tài này.", HttpStatus.FORBIDDEN),
+    TOPIC_EDIT_FORBIDDEN(1607, "Chỉ người đề xuất được sửa đề tài, và chỉ khi Trưởng ban đang yêu cầu chỉnh sửa.", HttpStatus.FORBIDDEN),
+    TOPIC_FEEDBACK_REQUIRED(1608, "Vui lòng nhập nội dung góp ý cho phóng viên.", HttpStatus.BAD_REQUEST),
+    TOPIC_REJECT_REASON_REQUIRED(1609, "Vui lòng nhập lý do từ chối đề tài.", HttpStatus.BAD_REQUEST),
+    TOPIC_FEEDBACK_TOO_LONG(1610, "Nội dung góp ý / lý do tối đa 4000 ký tự.", HttpStatus.BAD_REQUEST),
+    TOPIC_TEAM_UNAVAILABLE(1611, "Không thể duyệt: phóng viên đề xuất hoặc Trưởng ban đã duyệt đề tài không còn hoạt động.", HttpStatus.CONFLICT),
+    TOPIC_REPORTER_NO_DEPARTMENT(1612, "Tài khoản của bạn chưa được gán ban nên chưa thể đề xuất đề tài. Vui lòng liên hệ Quản trị viên.", HttpStatus.BAD_REQUEST),
+    NOTIFICATION_NOT_FOUND(1613, "Không tìm thấy thông báo.", HttpStatus.NOT_FOUND),
 
     ACCOUNT_APPROVAL_FORBIDDEN(1700, "Chỉ Quản trị viên đang hoạt động mới được duyệt tài khoản.", HttpStatus.FORBIDDEN),
     ACCOUNT_NOT_FOUND(1701, "Không tìm thấy tài khoản.", HttpStatus.NOT_FOUND),
     ACCOUNT_NOT_AWAITING_APPROVAL(1702, "Tài khoản không ở trạng thái chờ duyệt.", HttpStatus.CONFLICT),
     ACCOUNT_ROLE_NOT_ALLOWED(1703, "Chỉ được cấp vai trò Phóng viên, Trưởng ban hoặc Thư ký tòa soạn.", HttpStatus.BAD_REQUEST),
-    ACCOUNT_DEPARTMENT_REQUIRED(1704, "Trưởng ban phải được gán một phòng ban.", HttpStatus.BAD_REQUEST),
+    ACCOUNT_DEPARTMENT_REQUIRED(1704, "Phóng viên và Trưởng ban phải được gán một phòng ban.", HttpStatus.BAD_REQUEST),
+
+    // TV4 - Quản trị tài khoản của Admin (FR-15)
+    ADMIN_FORBIDDEN(1810, "Chỉ Quản trị viên đang hoạt động mới được quản lý tài khoản.", HttpStatus.FORBIDDEN),
+    ADMIN_ACCOUNT_PROTECTED(1811, "Không được khóa hoặc đổi vai trò của tài khoản Quản trị viên.", HttpStatus.FORBIDDEN),
+    ADMIN_ACCOUNT_STATUS_INVALID(1812, "Thao tác không phù hợp với trạng thái hiện tại của tài khoản. Vui lòng tải lại trang.", HttpStatus.CONFLICT),
+    ADMIN_LOCK_HAS_ASSIGNMENT(1813, "Tài khoản đang phụ trách Topic chưa xong. Hãy nhờ Thư ký / Trưởng phòng giao lại cho người khác trước khi khóa.", HttpStatus.CONFLICT),
+    ADMIN_CHANGE_HAS_HISTORY(1814, "Tài khoản đã tham gia biên tập nên không đổi được vai trò hay phòng ban (để giữ đúng lịch sử). Nếu cần vai trò khác, hãy dùng một tài khoản mới.", HttpStatus.CONFLICT),
+    ADMIN_NOTHING_CHANGED(1815, "Vai trò và phòng ban không thay đổi.", HttpStatus.BAD_REQUEST),
 
     MEDIA_FILE_REQUIRED(1500, "Vui lòng chọn ảnh hoặc video để tải lên.", HttpStatus.BAD_REQUEST),
     MEDIA_TYPE_NOT_SUPPORTED(1501, "Chỉ hỗ trợ ảnh JPG, PNG, WebP, GIF và video MP4, WebM, MOV.", HttpStatus.BAD_REQUEST),
@@ -75,7 +99,17 @@ public enum ErrorCode {
     TOPIC_NOT_ACTIVE(1802, "Chỉ giao được Topic đang ở trạng thái ACTIVE.", HttpStatus.CONFLICT),
     TOPIC_HEAD_INVALID(1803, "Người được chọn không phải Trưởng phòng đang hoạt động.", HttpStatus.BAD_REQUEST),
     TOPIC_HEAD_UNCHANGED(1804, "Topic đang do chính Trưởng phòng này phụ trách.", HttpStatus.CONFLICT),
-    ASSIGNMENT_DEADLINE_PAST(1805, "Deadline phải ở tương lai.", HttpStatus.BAD_REQUEST);
+    ASSIGNMENT_DEADLINE_PAST(1805, "Deadline phải ở tương lai.", HttpStatus.BAD_REQUEST),
+
+    // FL-07 Xuất bản (Vanh) - dùng dải 19xx để không trùng mã 18xx của FL-02
+    PUBLICATION_ACCESS_DENIED(1900, "Chỉ Thư ký tòa soạn đang hoạt động mới được xuất bản bài viết.", HttpStatus.FORBIDDEN),
+    PUBLICATION_NOT_APPROVED(1901, "Bài viết không còn ở trạng thái chờ xuất bản (có thể đã được đăng hoặc hẹn giờ).", HttpStatus.CONFLICT),
+    PUBLICATION_FINAL_APPROVAL_MISSING(1902, "Phiên bản mới nhất chưa được Thư ký tòa soạn duyệt cuối nên chưa thể xuất bản.", HttpStatus.CONFLICT),
+    PUBLICATION_SCHEDULE_TIME_REQUIRED(1903, "Vui lòng chọn ngày giờ đăng hợp lệ.", HttpStatus.BAD_REQUEST),
+    PUBLICATION_SCHEDULE_TIME_TOO_SOON(1904, "Thời điểm đăng phải sau thời điểm hiện tại ít nhất 5 phút.", HttpStatus.BAD_REQUEST),
+    PUBLICATION_REASON_REQUIRED(1905, "Vui lòng nhập lý do trả bài về Lead Reporter.", HttpStatus.BAD_REQUEST),
+    PUBLICATION_NOT_SCHEDULED(1906, "Bài viết không còn ở trạng thái hẹn giờ đăng (có thể đã được đăng hoặc đã hủy lịch).", HttpStatus.CONFLICT),
+    PUBLICATION_SCHEDULE_ALREADY_DUE(1907, "Đã đến giờ đăng nên không thể hủy lịch nữa. Bài sẽ được hệ thống tự đăng.", HttpStatus.CONFLICT);
 
     private final int code;
     private final String message;

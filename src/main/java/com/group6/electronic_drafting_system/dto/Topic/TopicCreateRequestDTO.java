@@ -1,12 +1,12 @@
 package com.group6.electronic_drafting_system.dto.Topic;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
-// Form "Create Topic Proposal": đúng 3 trường; category / priority / status do service tự điền
+// Form "Create Topic Proposal" và "Edit & Resubmit Topic": tiêu đề + tóm tắt.
+// Ban phụ trách luôn là ban của phóng viên (service tự lấy), category / priority / status do service tự điền.
 @Getter @Setter
 public class TopicCreateRequestDTO {
     public static final int TITLE_MAX = 255;
@@ -19,7 +19,4 @@ public class TopicCreateRequestDTO {
     @NotBlank(message = "Vui lòng nhập tóm tắt nội dung.")
     @Size(max = SUMMARY_MAX, message = "Tóm tắt tối đa 4000 ký tự.")
     private String summary;
-
-    @NotNull(message = "Vui lòng chọn ban phụ trách.")
-    private Integer departmentId;
 }

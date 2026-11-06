@@ -14,6 +14,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface AssignmentRepository extends JpaRepository<Assignment, Integer> {
+    // Admin: việc đang làm của một tài khoản (status = ASSIGNED, đúng điều kiện của rule R23)
+    @EntityGraph(attributePaths = "topic")
+    List<Assignment> findByAccount_IdAndStatusOrderByAssignedAtDesc(Integer accountId, AssignmentStatus status);
+
     @EntityGraph(attributePaths = "account")
     List<Assignment> findByTopicAndStatusNot(Topic topic, AssignmentStatus status);
 

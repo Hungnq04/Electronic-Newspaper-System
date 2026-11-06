@@ -2,9 +2,7 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <body>
 <th:block th:fragment="content">
-<header class="sec-topbar">
-    <div th:replace="~{fragment/department-head-header :: header('dashboard', ${headerName}, ${headerRole}, ${headerInitials})}"></div>
-</header>
+<header th:replace="~{fragment/secretary-topbar :: topbar(${headerName}, ${headerRole}, ${headerInitials})}"></header>
 <main class="page" style="max-width:920px">
     <a class="back-link" th:href="@{/secretary/topics}">← Topic tòa soạn</a>
     <div class="page-head">

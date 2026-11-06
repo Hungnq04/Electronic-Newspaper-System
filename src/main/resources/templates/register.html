@@ -1,8 +1,0 @@
-<!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Đăng ký | CMS Core</title><link rel="stylesheet" th:href="@{/css/auth.css}"></head>
-<body><main class="card"><h1>Tạo tài khoản</h1><p class="err" th:if="${error}" th:text="${error}"></p><p class="msg" th:if="${message}" th:text="${message}"></p>
-<form method="post" th:action="@{/register}"><label for="fullName">Họ tên</label><input id="fullName" name="fullName" maxlength="100" required th:value="${fullName}"><label for="email">Gmail</label><input id="email" name="email" type="email" required th:value="${email}"><label for="password">Mật khẩu (ít nhất 8 ký tự)</label><input id="password" name="password" type="password" minlength="8" required autocomplete="new-password"><button type="submit">Đăng ký</button></form>
-<p class="hint">Bạn sẽ nhập OTP ở trang tiếp theo. Mã có hiệu lực 60 giây.</p>
-<a class="google" href="/oauth2/authorization/google">Đăng ký bằng Google</a>
-<p class="links"><a href="/login">Quay lại đăng nhập</a></p></main></body></html>

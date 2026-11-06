@@ -1,5 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;600;700&display=swap");
-/* Pop-up Login (FL-01). Cùng tông đỏ đô với các màn phóng viên. Tiền tố lp- để không đụng auth.css của Register / OTP. */
+/* Pop-up Login (FL-01). Cùng tông đỏ đô với các màn phóng viên. Tiền tố lp-. Từ Iter3, Register / OTP / Forgot / Reset cũng là pop-up trong login.html. */
 :root { --lp-brand:#8b1e2d; --lp-brand-dark:#6f1622; --lp-ink:#1f2430; --lp-muted:#646b7b; --lp-line:#d3d7e1;
     --lp-red:#c42b3a; --lp-red-pale:#fff0f1; --lp-green:#1d7a46; --lp-green-pale:#eaf8ef;
     --lp-serif:"Noto Serif","Times New Roman",serif; --lp-sans:Inter,"Segoe UI",Roboto,Arial,sans-serif; }
@@ -57,3 +57,21 @@
     .lp-dialog { padding:22px 18px 18px; }
     .lp-backdrop-brand { left:16px; top:16px; }
 }
+
+/* FL-01 Iter3: các pop-up Register / OTP / Forgot / Reset dùng chung khung trên */
+[hidden] { display:none !important; }
+.lp-field-error { margin-top:5px; font-size:12px; font-weight:600; color:var(--lp-red); }
+.lp-form input.lp-invalid { border-color:var(--lp-red); }
+.lp-forgot { margin:8px 0 0; text-align:right; font-size:12.5px; }
+.lp-forgot a { color:var(--lp-brand); font-weight:700; text-decoration:none; }
+.lp-forgot a:hover { text-decoration:underline; }
+.lp-submit--link { display:flex; align-items:center; justify-content:center; text-decoration:none; }
+
+/* 6 ô OTP */
+.lp-otp { display:flex; gap:8px; justify-content:space-between; margin-top:6px; }
+.lp-form .lp-otp input { width:48px; height:54px; padding:0; text-align:center; font-size:22px; font-weight:700; }
+.lp-resend { margin-top:12px; text-align:center; }
+.lp-link-button { border:0; background:transparent; color:var(--lp-brand); font:inherit; font-size:13px; font-weight:700; cursor:pointer; }
+.lp-link-button:hover:not(:disabled) { text-decoration:underline; }
+.lp-link-button:disabled { color:var(--lp-muted); cursor:not-allowed; }
+@media (max-width: 480px) { .lp-form .lp-otp input { width:40px; height:48px; } }

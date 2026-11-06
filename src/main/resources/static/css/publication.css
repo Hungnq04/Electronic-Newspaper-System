@@ -1,0 +1,37 @@
+/* FL-07 Iter2: Approved Article List, Publication Detail và các pop-up xuất bản.
+   Dùng chung biến màu và class của secretary.css; file này chỉ thêm phần còn thiếu. */
+
+/* Đoạn văn của bài (không đánh số như màn duyệt) */
+.article-preview .pub-paragraph { margin: 0 0 14px; line-height: 1.7; }
+
+/* Danh sách thông tin dạng "nhãn: giá trị" */
+.pub-facts {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 8px 12px;
+    margin: 12px 0 0;
+    font-size: 14px;
+}
+.pub-facts dt { color: var(--text-muted); }
+.pub-facts dd { margin: 0; overflow-wrap: anywhere; }
+.decision-card .pub-facts + .btn { margin-top: 14px; }
+
+/* Ô chọn ngày giờ trong pop-up hẹn giờ */
+dialog input[type="datetime-local"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font: inherit;
+    color: var(--text);
+    background: var(--surface);
+}
+dialog input[type="datetime-local"]:focus {
+    outline: 2px solid var(--primary);
+    outline-offset: 1px;
+}
+#schedule-confirm-text { white-space: nowrap; }
+
+/* Iter3: ghi chú nhỏ trong thẻ Lịch đăng */
+.decision-card .pub-note { margin: 14px 0 12px; color: var(--text-muted); font-size: 14px; }
+.decision-card .pub-note:last-child { margin-bottom: 0; }

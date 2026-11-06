@@ -1,0 +1,41 @@
+/* Màn quản trị tài khoản (/admin/**). Dùng chung biến màu, nút, bảng, dialog từ secretary.css; file này chỉ thêm phần riêng */
+
+/* Tab lọc trạng thái */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.tabs a {
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 14px;
+    text-decoration: none;
+}
+.tabs a:hover { background: var(--surface-muted); }
+.tabs a.active { border-color: var(--primary); background: var(--info-bg); color: var(--primary); font-weight: bold; }
+.tabs .count { margin-left: 4px; color: var(--text-muted); font-size: 12px; }
+
+/* Ô tìm kiếm + lọc vai trò */
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.filters input, .filters select, .form select {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    font: inherit;
+}
+.filters input { flex: 1 1 240px; }
+
+table.data td.actions { white-space: nowrap; }
+table.data td.actions .btn { margin-right: 4px; }
+
+/* Trang chi tiết */
+.stack { display: grid; gap: 16px; }
+.form { display: grid; gap: 6px; }
+.form label { font-weight: bold; font-size: 14px; }
+.form select { width: 100%; margin-bottom: 6px; }
+.form .btn { margin-top: 6px; }
+.hint { color: var(--text-muted); font-size: 12px; }
+.muted { margin: 0; color: var(--text-muted); font-size: 14px; }
+.muted + .btn, .muted + .muted { margin-top: 10px; }
+.reject-btn { margin-top: 8px; }

@@ -22,7 +22,7 @@
         <header class="dht-topbar">
             <nav class="dht-breadcrumb" aria-label="Breadcrumb">
                 <span>PHÂN CÔNG</span><svg class="dht-icon dht-icon--tiny"><use href="#dha-icon-chevron-right"></use></svg>
-                <a th:href="@{/department-head/topics}">Đề tài đã duyệt</a><svg class="dht-icon dht-icon--tiny"><use href="#dha-icon-chevron-right"></use></svg>
+                <a th:href="@{/department-head/approved-topics}">Đề tài đã duyệt</a><svg class="dht-icon dht-icon--tiny"><use href="#dha-icon-chevron-right"></use></svg>
                 <strong th:text="${page.editable()} ? 'Giao việc' : 'Quản lý nhóm'">Giao việc</strong>
             </nav>
             <div class="dht-account">
@@ -40,7 +40,7 @@
 
             <!-- Tiêu đề + thông tin nhanh của đề tài -->
             <div class="dha-heading">
-                <a class="dha-back" th:href="@{/department-head/topics}"><svg class="dht-icon"><use href="#dha-icon-arrow-left"></use></svg>Trở về danh sách đề tài</a>
+                <a class="dha-back" th:href="@{/department-head/approved-topics}"><svg class="dht-icon"><use href="#dha-icon-arrow-left"></use></svg>Trở về danh sách đề tài</a>
                 <h1 th:text="${(page.editable() ? 'Giao việc đề tài: ' : 'Quản lý nhóm đề tài: ') + t.title()}">Giao việc đề tài: Điều tra quy hoạch quỹ đất công viên ven sông</h1>
                 <div class="dha-meta">
                     <span class="dht-code" th:text="|#${t.topicId()}|">#12</span>
@@ -284,7 +284,7 @@
                         <div class="dha-actions">
                             <span class="dht-muted">Nhiệm vụ sẽ xuất hiện trong danh sách "Nhiệm vụ tác nghiệp" của từng phóng viên.</span>
                             <div class="dha-buttons">
-                                <a class="dht-button dht-button--outline" th:href="@{/department-head/topics}">Hủy</a>
+                                <a class="dht-button dht-button--outline" th:href="@{/department-head/approved-topics}">Hủy</a>
                                 <button class="dht-button dht-button--primary" type="submit"><svg class="dht-icon"><use href="#dha-icon-send"></use></svg>Xác nhận giao việc</button>
                             </div>
                         </div>

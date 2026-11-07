@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <body>
 <!-- SVG sprite dùng chung cho các màn đề tài (FL-01) -->
 <svg th:fragment="tpSprite" class="tp-svg-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
@@ -14,29 +14,51 @@
     <symbol id="tp-icon-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></symbol>
     <symbol id="tp-icon-send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></symbol>
     <symbol id="tp-icon-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="tp-icon-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+    <symbol id="tp-icon-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+    <symbol id="tp-icon-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></symbol>
     <symbol id="tp-icon-inbox" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1Z"/></symbol>
+    <symbol id="tp-icon-clipboard" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5h6a1.5 1.5 0 0 0-1.5-1.5h-3A1.5 1.5 0 0 0 9 4.5ZM9 10h6M9 14h6M9 18h3"/></symbol>
+    <symbol id="tp-icon-hourglass" viewBox="0 0 24 24"><path d="M6 2h12M6 22h12M7 2v4a5 5 0 0 0 10 0V2M7 22v-4a5 5 0 0 1 10 0v4"/></symbol>
+    <symbol id="tp-icon-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16.5 9"/></symbol>
+    <symbol id="tp-icon-x-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/></symbol>
+    <symbol id="tp-icon-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="tp-icon-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
 </svg>
 
-<!-- Thanh trên cùng: tên hệ thống, người đăng nhập, Đăng xuất (POST /logout kèm CSRF) -->
+<!-- Thanh trên cùng: tên hệ thống, chuông, người đăng nhập (Đăng xuất nằm ở sidebar) -->
 <header th:fragment="tpTopbar(list)" class="tp-topbar">
     <div class="tp-topbar-brand">
         <svg class="tp-icon"><use href="#tp-icon-news"></use></svg>
         <span>Hệ Thống Tòa Soạn Số</span>
     </div>
     <div class="tp-topbar-right">
+        <!-- Chuông thông báo: chỉ hiện cho phóng viên. Bấm một thông báo -> đánh dấu đã đọc và mở đề tài -->
+        <div class="tp-bell-wrap" sec:authorize="hasRole('REPORTER')">
+            <button type="button" class="tp-bell" aria-label="Thông báo" aria-expanded="false" data-tp-bell>
+                <svg class="tp-icon"><use href="#tp-icon-bell"></use></svg>
+                <span class="tp-bell-count" th:if="${list.unreadNotifications() > 0}"
+                      th:text="${list.unreadNotifications() > 99} ? '99+' : ${list.unreadNotifications()}">1</span>
+            </button>
+            <div class="tp-bell-panel" hidden data-tp-bell-panel>
+                <strong class="tp-bell-head">Thông báo</strong>
+                <p class="tp-bell-empty" th:if="${list.notifications().isEmpty()}">Chưa có thông báo nào.</p>
+                <a th:each="n : ${list.notifications()}" class="tp-bell-item" th:classappend="${n.read()} ? '' : 'is-unread'"
+                   th:href="@{/reporter/notifications/{id}/open(id=${n.id()})}">
+                    <span th:text="${n.message()}">Nội dung thông báo</span>
+                    <small th:text="${#temporals.format(n.createdAt(), 'dd/MM/yyyy HH:mm')}">14/10/2026 09:30</small>
+                </a>
+            </div>
+        </div>
+        <span class="tp-topbar-divider"></span>
+        <!-- Avatar bên trái, tên + chức danh bên phải (giống màn Nhiệm vụ tác nghiệp) -->
         <div class="tp-account">
+            <span class="tp-avatar" th:text="${list.initials()}">VA</span>
             <div class="tp-account-copy">
                 <strong th:text="${list.fullName()}">Nguyễn Văn A</strong>
                 <small th:text="${list.roleLabel()}">Phóng viên · Phòng Kinh tế</small>
             </div>
-            <span class="tp-avatar" th:text="${list.initials()}">VA</span>
         </div>
-        <span class="tp-topbar-divider"></span>
-        <form th:action="@{/logout}" method="post" class="tp-logout">
-            <button type="submit" class="tp-link-button">
-                <svg class="tp-icon"><use href="#tp-icon-logout"></use></svg> Đăng xuất
-            </button>
-        </form>
     </div>
 </header>
 
@@ -52,82 +74,123 @@
             <div class="tp-flash tp-flash--ok" role="status" th:if="${success}" th:text="${success}" data-tp-flash>Đã gửi đề tài thành công.</div>
             <div class="tp-flash tp-flash--error" role="alert" th:if="${error}" th:text="${error}">Lỗi</div>
 
+            <div class="tp-heading-row">
+                <div class="tp-heading">
+                    <nav class="tp-breadcrumb" aria-label="Breadcrumb">
+                        <span>ĐỀ TÀI</span><svg class="tp-icon tp-icon--tiny"><use href="#tp-icon-chevron-right"></use></svg><strong>Đề tài đề xuất</strong>
+                    </nav>
+                    <h1>Danh sách đề tài đề xuất</h1>
+                    <p>Phóng viên: <b th:text="${list.fullName()}">Nguyễn Văn A</b></p>
+                </div>
+                <div class="tp-heading-actions">
+                    <a class="tp-button tp-button--primary" th:href="@{/reporter/topics/new}">
+                        <svg class="tp-icon"><use href="#tp-icon-plus"></use></svg> Đề xuất đề tài mới
+                    </a>
+                </div>
+            </div>
+
             <!-- Thống kê theo status (trên toàn bộ đề tài của mình) -->
             <section class="tp-stats" aria-label="Thống kê đề tài">
-                <div class="tp-stat">
-                    <span class="tp-stat-label">TỔNG ĐỀ TÀI CÁ NHÂN</span>
-                    <span class="tp-stat-value"><b th:text="${list.countOf('all')}">0</b> <small>đề tài</small></span>
-                </div>
-                <div class="tp-stat tp-stat--department-review">
-                    <span class="tp-stat-label">CHỜ TRƯỞNG BAN DUYỆT <i class="tp-dot"></i></span>
-                    <span class="tp-stat-value"><b th:text="${list.countOf('department-review')}">0</b> <small>chờ cấp ban</small></span>
-                </div>
-                <div class="tp-stat tp-stat--secretary-review">
-                    <span class="tp-stat-label">CHỜ THƯ KÝ DUYỆT <i class="tp-dot"></i></span>
-                    <span class="tp-stat-value"><b th:text="${list.countOf('secretary-review')}">0</b> <small>đã qua ban</small></span>
-                </div>
-                <div class="tp-stat tp-stat--active">
-                    <span class="tp-stat-label">ĐÃ DUYỆT <i class="tp-dot"></i></span>
-                    <span class="tp-stat-value"><b th:text="${list.countOf('active')}">0</b> <small>được triển khai</small></span>
-                </div>
-                <div class="tp-stat tp-stat--rejected">
-                    <span class="tp-stat-label">BỊ TỪ CHỐI <i class="tp-dot"></i></span>
-                    <span class="tp-stat-value"><b th:text="${list.countOf('rejected')}">0</b> <small>không được duyệt</small></span>
-                </div>
+                <article class="tp-stat">
+                    <div class="tp-stat-head"><span>TỔNG ĐỀ TÀI</span><span class="tp-stat-icon"><svg class="tp-icon"><use href="#tp-icon-clipboard"></use></svg></span></div>
+                    <strong class="tp-stat-value" th:text="${list.countOf('all')}">0</strong>
+                    <div class="tp-stat-foot">Tất cả đề tài bạn đã đề xuất</div>
+                </article>
+                <article class="tp-stat tp-stat--amber">
+                    <div class="tp-stat-head"><span>CHỜ TRƯỞNG BAN</span><span class="tp-stat-icon"><svg class="tp-icon"><use href="#tp-icon-hourglass"></use></svg></span></div>
+                    <strong class="tp-stat-value" th:text="${list.countOf('department-review')}">0</strong>
+                    <div class="tp-stat-foot">Đang chờ duyệt cấp ban</div>
+                </article>
+                <article class="tp-stat tp-stat--blue">
+                    <div class="tp-stat-head"><span>CHỜ THƯ KÝ</span><span class="tp-stat-icon"><svg class="tp-icon"><use href="#tp-icon-hourglass"></use></svg></span></div>
+                    <strong class="tp-stat-value" th:text="${list.countOf('secretary-review')}">0</strong>
+                    <div class="tp-stat-foot">Đã qua ban, chờ duyệt cuối</div>
+                </article>
+                <article class="tp-stat tp-stat--green">
+                    <div class="tp-stat-head"><span>ĐÃ DUYỆT</span><span class="tp-stat-icon"><svg class="tp-icon"><use href="#tp-icon-check-circle"></use></svg></span></div>
+                    <strong class="tp-stat-value" th:text="${list.countOf('active')}">0</strong>
+                    <div class="tp-stat-foot">Được triển khai</div>
+                </article>
+                <article class="tp-stat tp-stat--red">
+                    <div class="tp-stat-head"><span>BỊ TỪ CHỐI</span><span class="tp-stat-icon"><svg class="tp-icon"><use href="#tp-icon-x-circle"></use></svg></span></div>
+                    <strong class="tp-stat-value" th:text="${list.countOf('rejected')}">0</strong>
+                    <div class="tp-stat-foot">Không được duyệt</div>
+                </article>
             </section>
 
-            <section class="tp-panel tp-hero">
-                <div>
-                    <span class="tp-eyebrow"><svg class="tp-icon"><use href="#tp-icon-news"></use></svg> BẢN ĐỀ TÀI PHÓNG VIÊN</span>
-                    <h1>Danh Sách Đề Tài Đề Xuất</h1>
-                </div>
-                <a class="tp-button tp-button--primary" th:href="@{/reporter/topics/new}">
-                    <svg class="tp-icon"><use href="#tp-icon-plus"></use></svg> Đề xuất đề tài mới
-                </a>
-            </section>
-
-            <!-- Tìm nhanh (lọc trên trang) + tab lọc theo status (lọc ở server) -->
-            <section class="tp-panel tp-toolbar">
+            <!-- Tab lọc theo status (lọc ở server) + tìm nhanh (lọc trên trang) -->
+            <section class="tp-filter-panel" aria-label="Bộ lọc đề tài">
+                <nav class="tp-tabs" aria-label="Lọc theo trạng thái">
+                    <a th:each="tab : ${list.tabs()}" class="tp-tab" th:classappend="${tab.active()} ? 'is-active'"
+                       th:href="${tab.filterValue() == null} ? @{/reporter/topics} : @{/reporter/topics(status=${tab.filterValue()})}"
+                       th:attr="aria-current=${tab.active()} ? 'page' : null">
+                        <span th:text="${tab.label()}">Tất cả</span> <b th:text="${tab.count()}">0</b>
+                    </a>
+                </nav>
                 <label class="tp-search">
                     <svg class="tp-icon"><use href="#tp-icon-search"></use></svg>
                     <input type="search" placeholder="Tìm theo tiêu đề, nội dung…" aria-label="Tìm đề tài" data-tp-search>
                 </label>
-                <nav class="tp-tabs" aria-label="Lọc theo trạng thái">
-                    <a th:each="tab : ${list.tabs()}"
-                       class="tp-tab" th:classappend="${tab.active()} ? |tp-tab--${tab.key()} is-active| : |tp-tab--${tab.key()}|"
-                       th:href="${tab.filterValue() == null} ? @{/reporter/topics} : @{/reporter/topics(status=${tab.filterValue()})}"
-                       th:attr="aria-current=${tab.active()} ? 'page' : null">
-                        <span th:text="${tab.label()}">Tất cả</span> <b th:text="|(${tab.count()})|">(0)</b>
-                    </a>
-                </nav>
             </section>
 
-            <section class="tp-list" aria-label="Danh sách đề tài">
-                <article th:each="t : ${list.topics()}" class="tp-card" th:classappend="|tp-status--${t.statusKey()}|"
-                         th:attr="data-tp-search-text=${#strings.toLowerCase(t.title() + ' ' + (t.summary() ?: ''))}">
-                    <div class="tp-card-meta">
-                        <span class="tp-code" th:text="${t.code()}">TP-2026-0001</span>
-                        <span class="tp-chip" th:text="${t.departmentName() ?: '—'}">Phòng Kinh tế</span>
-                        <span class="tp-meta-item">
-                            <svg class="tp-icon"><use href="#tp-icon-clock"></use></svg>
-                            <time th:datetime="${t.createdAt()}" th:text="${#temporals.format(t.createdAt(), 'dd/MM/yyyy HH:mm')}">14/10/2026 09:30</time>
-                        </span>
-                        <span class="tp-badge" th:classappend="|tp-badge--${t.statusKey()}|"><i class="tp-dot"></i><span th:text="${t.statusLabel()}">Chờ Trưởng ban duyệt</span></span>
-                        <span class="tp-badge tp-badge--revision" th:if="${t.awaitingRevision()}"><i class="tp-dot"></i>Cần sửa</span>
-                    </div>
-                    <h2 class="tp-card-title" th:text="${t.title()}">Tiêu đề đề tài</h2>
-                    <p class="tp-card-summary" th:text="${t.summary()}">Tóm tắt nội dung</p>
-                    <div class="tp-card-foot">
-                        <span><svg class="tp-icon"><use href="#tp-icon-building"></use></svg> Ban phụ trách: <b th:text="${t.departmentName() ?: 'Chưa xác định'}">Phòng Kinh tế</b></span>
-                    </div>
-                </article>
+            <section class="tp-card" aria-label="Danh sách đề tài">
+                <div class="tp-card-head">
+                    <h2>Danh sách đề tài <span class="tp-count-pill"><b th:text="${#lists.size(list.topics())}">0</b> bản ghi</span></h2>
+                    <span class="tp-sort-note">Sắp xếp: Mới gửi gần nhất</span>
+                </div>
+                <div class="tp-table-wrap" th:unless="${list.topics().isEmpty()}">
+                    <table class="tp-table">
+                        <thead>
+                        <tr>
+                            <th>Đề tài</th>
+                            <th>Ban phụ trách</th>
+                            <th>Ngày gửi</th>
+                            <th>Trạng thái</th>
+                            <th class="tp-right">Thao tác</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="t : ${list.topics()}" th:classappend="|tp-row--${t.statusKey()}|"
+                            th:attr="data-tp-search-text=${#strings.toLowerCase(t.title() + ' ' + (t.summary() ?: ''))}">
+                            <td class="tp-col-topic">
+                                <span class="tp-code" th:text="${t.code()}">TP-2026-0001</span>
+                                <a class="tp-row-title" th:href="@{/reporter/topics/{id}/feedback(id=${t.id()})}" th:text="${t.title()}">Tiêu đề đề tài</a>
+                                <p class="tp-row-summary" th:text="${t.summary()}">Tóm tắt nội dung</p>
+                            </td>
+                            <td><span class="tp-chip" th:text="${t.departmentName() ?: 'Chưa xác định'}">Phòng Kinh tế</span></td>
+                            <td>
+                                <span class="tp-date"><svg class="tp-icon"><use href="#tp-icon-clock"></use></svg>
+                                    <span th:text="${#temporals.format(t.createdAt(), 'dd/MM/yyyy')}">14/10/2026</span></span>
+                                <div class="tp-muted" th:text="${#temporals.format(t.createdAt(), 'HH:mm')}">09:30</div>
+                            </td>
+                            <td>
+                                <div class="tp-badges">
+                                    <span class="tp-badge" th:classappend="|tp-badge--${t.statusKey()}|"><i class="tp-dot"></i><span th:text="${t.statusLabel()}">Chờ Trưởng ban duyệt</span></span>
+                                    <span class="tp-badge tp-badge--revision" th:if="${t.awaitingRevision()}"><i class="tp-dot"></i>Cần sửa</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="tp-row-actions">
+                                    <a class="tp-button tp-button--ghost tp-button--sm" th:href="@{/reporter/topics/{id}/feedback(id=${t.id()})}">
+                                        <svg class="tp-icon"><use href="#tp-icon-eye"></use></svg> Góp ý
+                                    </a>
+                                    <!-- Chỉ khi Trưởng ban đang yêu cầu sửa (server vẫn kiểm tra lại) -->
+                                    <a class="tp-button tp-button--primary tp-button--sm" th:if="${t.status().name() == 'DEPARTMENT_REVIEW' and t.awaitingRevision()}"
+                                       th:href="@{/reporter/topics/{id}/edit(id=${t.id()})}">
+                                        <svg class="tp-icon"><use href="#tp-icon-edit"></use></svg> Sửa
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
 
-                <div class="tp-panel tp-empty" th:if="${list.topics().isEmpty()}">
+                <div class="tp-empty" th:if="${list.topics().isEmpty()}">
                     <svg class="tp-icon"><use href="#tp-icon-inbox"></use></svg>
                     <strong th:text="${list.countOf('all') == 0} ? 'Bạn chưa đề xuất đề tài nào' : 'Không có đề tài ở trạng thái này'">Bạn chưa đề xuất đề tài nào</strong>
-                    <p th:if="${list.countOf('all') == 0}">Bấm "Đề xuất đề tài mới" để gửi đề tài đầu tiên tới Trưởng ban.</p>
                 </div>
-                <div class="tp-panel tp-empty" hidden data-tp-search-empty>
+                <div class="tp-empty" hidden data-tp-search-empty>
                     <svg class="tp-icon"><use href="#tp-icon-search"></use></svg>
                     <strong>Không tìm thấy đề tài phù hợp</strong>
                 </div>

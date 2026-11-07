@@ -31,6 +31,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class DepartmentHeadController {
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(DepartmentHeadController.class);
     private static final String TOPICS_PATH = "/department-head/topics";
+    // Trang danh sách đề tài cần giao việc. URL /department-head/topics thuộc màn Duyệt đề tài (DepartmentHeadTopicController).
+    private static final String APPROVED_TOPICS_PATH = "/department-head/approved-topics";
+    private static final String NEWSREADER_FONT = "https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap";
     private final DepartmentHeadService departmentHeadService;
     private final DepartmentHeadReviewService reviewService;
     private final DepartmentHeadTopicService departmentHeadTopicService;
@@ -48,13 +51,14 @@ public class DepartmentHeadController {
         model.addAttribute("pageTitle", "Duyệt bản thảo – Trưởng ban");
         model.addAttribute("contentView", "department_head/dashboard");
         model.addAttribute("contentFragment", "departmentHeadContent");
-        model.addAttribute("pageCss", List.of("/department_head/css/department-head-dashboard.css"));
+        // Dùng chung giao diện của màn /reporter/tasks; file dashboard.css chỉ giữ vài chi tiết riêng
+        model.addAttribute("pageCss", List.of("/reporter/css/reporter-tasks.css", "/department_head/css/department-head-dashboard.css"));
         model.addAttribute("pageJs", List.of("/department_head/js/department-head-dashboard.js"));
         return "layout/app";
     }
 
     // Danh sách đề tài ACTIVE mà Trưởng phòng đang phụ trách, kèm tình trạng giao việc
-    @GetMapping("/topics")
+    @GetMapping("/approved-topics")
     public String topics(Authentication auth, Model model) {
         model.addAttribute("board", departmentHeadTopicService.getBoard(currentEmail(auth)));
         model.addAttribute("pageTitle", "Đề tài đã duyệt – Trưởng ban");
@@ -73,7 +77,7 @@ public class DepartmentHeadController {
             page = departmentHeadTopicService.getAssignmentPage(topicId, currentEmail(auth));
         } catch (ApplicationException ex) {
             redirect.addFlashAttribute("error", ex.getErrorCode().getMessage());
-            return "redirect:" + TOPICS_PATH;
+            return "redirect:" + APPROVED_TOPICS_PATH;
         }
         TopicAssignmentFormDTO form = TopicAssignmentFormDTO.prefill(
                 DepartmentHeadTopicMapper.toInputValue(page.leadDeadline()), page.leadRequirements());
@@ -88,7 +92,7 @@ public class DepartmentHeadController {
         try {
             departmentHeadTopicService.confirmAssignment(topicId, form, email);
             redirect.addFlashAttribute("message", "Đã giao việc cho đề tài #" + topicId + ".");
-            return "redirect:" + TOPICS_PATH;
+            return "redirect:" + APPROVED_TOPICS_PATH;
         } catch (ApplicationException ex) {
             model.addAttribute("error", ex.getErrorCode().getMessage());
         } catch (Exception ex) {
@@ -160,7 +164,7 @@ public class DepartmentHeadController {
             return assignmentPage(model, departmentHeadTopicService.getAssignmentPage(topicId, email), form, leadForm);
         } catch (ApplicationException ex) {
             redirect.addFlashAttribute("error", ex.getErrorCode().getMessage());
-            return "redirect:" + TOPICS_PATH;
+            return "redirect:" + APPROVED_TOPICS_PATH;
         }
     }
 
@@ -178,16 +182,25 @@ public class DepartmentHeadController {
         model.addAttribute("pageCss", List.of("/department_head/css/department-head-topics.css", "/department_head/css/department-head-assignment.css"));
         model.addAttribute("pageJs", List.of("/department_head/js/department-head-assignment.js"));
         // Trang giao việc vẫn sáng mục "Đề tài đã duyệt" trên sidebar
-        model.addAttribute("activePath", TOPICS_PATH);
+        model.addAttribute("activePath", APPROVED_TOPICS_PATH);
         return "layout/app";
     }
 
     // ---------- Màn thẩm định bài viết (workspace) ----------
 
+    // Màn thẩm định nằm trong layout chung (sidebar + nội dung), giống màn dashboard
     @GetMapping("/articles/{articleId}/review")
     public String reviewWorkspace(@PathVariable Integer articleId, Authentication authentication, Model model) {
         model.addAttribute("workspace", reviewService.openWorkspace(currentEmail(authentication), articleId));
-        return "department_head/workspacereview";
+        model.addAttribute("pageTitle", "Thẩm định bản thảo – Trưởng ban");
+        model.addAttribute("contentView", "department_head/workspacereview");
+        model.addAttribute("contentFragment", "reviewWorkspaceContent");
+        // Phông Newsreader có chữ nghiêng (cho sapo) + giao diện chung của /reporter/tasks + CSS riêng của màn thẩm định
+        model.addAttribute("pageCss", List.of(NEWSREADER_FONT, "/reporter/css/reporter-tasks.css", "/department_head/css/department-head-workspace-review.css"));
+        model.addAttribute("pageJs", List.of("/department_head/js/department-head-workspace-review.js"));
+        // Đang thẩm định một bài thì sidebar vẫn sáng mục "Duyệt bản thảo"
+        model.addAttribute("activePath", "/department-head/dashboard");
+        return "layout/app";
     }
 
     @PostMapping("/articles/{articleId}/comments")

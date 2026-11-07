@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="content">
+<header th:replace="~{fragment/secretary-topbar :: topbar(${headerName}, ${headerRole}, ${headerInitials})}"></header>
+<main class="page">
+    <a class="back-link" th:href="@{/secretary/topics}">← Topic tòa soạn</a>
+    <div class="page-head">
+        <div>
+            <nav class="breadcrumb" aria-label="Breadcrumb"><span>TOPIC TÒA SOẠN</span> › <strong>Giao Trưởng phòng</strong></nav>
+            <h1th:text="${page.currentHeadId} ? 'Giao lại Topic cho Trưởng phòng khác' : 'Giao Topic cho Trưởng phòng'"></h1>
+            <p th:text="${page.title}"></p>
+        </div>
+    </div>
+
+    <div class="alert alert-success" th:if="${message}" th:text="${message}"></div>
+    <div class="alert alert-error" th:if="${error}" th:text="${error}"></div>
+    <div class="alert alert-warning" th:if="${page.currentHeadId}"
+         th:text="'Topic đang do ' + ${page.currentHeadName} + ' phụ trách. Giao lại sẽ đóng phân công hiện tại (giữ lịch sử) và tạo phân công mới.'"></div>
+
+    <div class="workspace">
+        <!-- Department Head Selection -->
+        <form id="assign-form" class="card card-body" method="post"
+              th:action="@{/secretary/topics/{id}/assign(id=${page.topicId})}" th:object="${form}">
+            <h2>Chọn Trưởng phòng</h2>
+            <p class="sub" th:if="${#lists.isEmpty(page.departmentHeads)}">Chưa có Trưởng phòng nào đang hoạt động.</p>
+            <div class="choice-list">
+                <label class="choice" th:each="h : ${page.departmentHeads}">
+                    <input type="radio" name="departmentHeadId" th:value="${h.id}" required
+                           th:checked="${form.departmentHeadId == h.id}" th:disabled="${h.id == page.currentHeadId}"
+                           th:attr="data-name=${h.fullName}">
+                    <span class="grow">
+                        <strong th:text="${h.fullName}"></strong>
+                        <span class="sub" th:text="${h.departmentName} ?: 'Chưa gán phòng ban'"></span>
+                    </span>
+                    <span class="badge" th:if="${h.id == page.currentHeadId}">Đang phụ trách</span>
+                    <span class="badge" th:unless="${h.id == page.currentHeadId}"
+                          th:text="${h.activeTopicCount} + ' Topic đang phụ trách'"></span>
+                </label>
+            </div>
+
+            <div class="form-grid" style="margin-top:18px">
+                <div class="field">
+                    <label for="deadline">Deadline</label>
+                    <input id="deadline" type="datetime-local" th:field="*{deadline}">
+                    <div class="hint">Có thể để trống và bổ sung sau.</div>
+                </div>
+                <div class="field full">
+                    <label for="requirements">Yêu cầu cho Trưởng phòng</label>
+                    <textarea id="requirements" th:field="*{requirements}" maxlength="4000"
+                              placeholder="Ví dụ: triển khai loạt 3 bài, ưu tiên phỏng vấn chuyên gia..."></textarea>
+                </div>
+            </div>
+            <div class="form-actions">
+                <a class="btn btn-ghost" th:href="@{/secretary/topics}">Để sau</a>
+                <button type="button" class="btn" id="open-confirm">Giao Topic</button>
+            </div>
+        </form>
+
+        <!-- Thông tin Topic -->
+        <aside>
+            <section class="card">
+                <div class="card-body">
+                    <h2>Thông tin Topic</h2>
+                    <dl class="facts">
+                        <dt>Chuyên mục</dt><dd th:text="${page.category}"></dd>
+                        <dt>Ưu tiên</dt><dd th:text="${page.priorityLabel}"></dd>
+                        <dt>Dự kiến</dt><dd th:text="${page.expectedDate} ? ${#temporals.format(page.expectedDate, 'dd/MM/yyyy')} : '—'"></dd>
+                        <dt>Người tạo</dt><dd th:text="${page.creatorName}"></dd>
+                        <dt>Tạo lúc</dt><dd th:text="${#temporals.format(page.createdAt, 'dd/MM/yyyy HH:mm')}"></dd>
+                        <th:block th:if="${page.currentHeadId}">
+                            <dt>Giao lúc</dt><dd th:text="${#temporals.format(page.currentAssignedAt, 'dd/MM/yyyy HH:mm')}"></dd>
+                        </th:block>
+                    </dl>
+                    <p th:if="${page.description}" th:text="${page.description}" style="margin:12px 0 0"></p>
+                    <p class="sub" th:if="${page.rationale}" th:text="'Định hướng: ' + ${page.rationale}" style="margin-top:8px"></p>
+                </div>
+            </section>
+            <section class="card" th:unless="${#lists.isEmpty(page.teamSummary)}">
+                <div class="card-body">
+                    <h2>Đội phóng viên hiện tại</h2>
+                    <ul class="list">
+                        <li th:each="m : ${page.teamSummary}" th:text="${m}"></li>
+                    </ul>
+                    <p class="sub" style="margin-top:8px">Đội phóng viên giữ nguyên khi đổi Trưởng phòng.</p>
+                </div>
+            </section>
+        </aside>
+    </div>
+</main>
+
+<!-- Topic Assignment Confirmation -->
+<dialog id="confirm-dialog">
+    <form method="dialog">
+        <h2>Xác nhận giao Topic</h2>
+        <p id="confirm-text"></p>
+        <div class="dialog-actions">
+            <button type="button" class="btn btn-ghost" data-close>Hủy</button>
+            <button type="button" class="btn" id="confirm-submit">Xác nhận</button>
+        </div>
+    </form>
+</dialog>
+
+<script th:inline="javascript">
+    (() => {
+        const form = document.getElementById('assign-form');
+        const dialog = document.getElementById('confirm-dialog');
+        const topic = /*[[${page.title}]]*/ '';
+        const reassign = /*[[${page.currentHeadId != null}]]*/ false;
+        document.getElementById('open-confirm').addEventListener('click', () => {
+            // Kiểm tra form (đã chọn Trưởng phòng...) trước khi mở hộp thoại
+            if (!form.reportValidity()) return;
+            const chosen = form.querySelector('input[name="departmentHeadId"]:checked');
+            document.getElementById('confirm-text').textContent = (reassign ? 'Giao lại' : 'Giao') + ' Topic "' + topic
+                + '" cho ' + chosen.dataset.name + '?';
+            dialog.showModal();
+        });
+        document.getElementById('confirm-submit').addEventListener('click', () => form.submit());
+        dialog.querySelector('[data-close]').addEventListener('click', () => dialog.close());
+    })();
+</script>
+</th:block>
+</body>
+</html>

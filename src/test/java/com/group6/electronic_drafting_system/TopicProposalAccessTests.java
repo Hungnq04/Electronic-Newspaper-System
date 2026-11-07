@@ -78,8 +78,9 @@ class TopicProposalAccessTests {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void adminGoesToPublicHome() throws Exception {
-        mvc.perform(get("/dashboard")).andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/"));
+    void adminLandsOnAccountList() throws Exception {
+        // TV4 Iter3: Admin đã có màn quản trị tài khoản
+        mvc.perform(get("/dashboard")).andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/admin/accounts"));
     }
 
     @Test
@@ -96,8 +97,7 @@ class TopicProposalAccessTests {
     void serviceRejectsNonReporterAccounts() {
         TopicCreateRequestDTO request = new TopicCreateRequestDTO();
         request.setTitle("x");
-        request.setSummary("y");
-        request.setDepartmentId(4);
+        request.setSummary("y"); // Iter2: không còn chọn ban, ban lấy từ tài khoản phóng viên
         for (RoleName role : new RoleName[] { RoleName.DEPARTMENT_HEAD, RoleName.EDITORIAL_SECRETARY }) {
             String email = accounts.findAll().stream()
                     .filter(a -> a.getRole().getRoleName() == role && a.getStatus() == AccountStatus.ACTIVE)

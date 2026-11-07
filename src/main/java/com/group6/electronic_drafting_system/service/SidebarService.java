@@ -14,9 +14,10 @@ public class SidebarService {
         return switch (role) {
             case DEPARTMENT_HEAD -> List.of(
                     new SidebarGroup("THẨM ĐỊNH NỘI DUNG", List.of(
-                            new SidebarItem("Duyệt bản thảo", "/department-head/dashboard", "clipboard-check", null))),
+                            new SidebarItem("Duyệt bản thảo", "/department-head/dashboard", "clipboard-check", null),
+                            new SidebarItem("Duyệt đề tài", "/department-head/topics", "file-text", null))),
                     new SidebarGroup("PHÂN CÔNG", List.of(
-                            new SidebarItem("Đề tài đã duyệt", "/department-head/topics", "file-text", null))));
+                            new SidebarItem("Đề tài đã duyệt", "/department-head/approved-topics", "file-text", null))));
             case REPORTER -> List.of(
                     new SidebarGroup("TÁC NGHIỆP", List.of(
                             new SidebarItem("Danh sách đề tài", "/reporter/topics", "file-text", null),
@@ -25,8 +26,17 @@ public class SidebarService {
             // TODO: bổ sung menu khi làm màn hình cho các quyền còn lại
             case EDITORIAL_SECRETARY -> List.of(
                     new SidebarGroup("BIÊN TẬP TÒA SOẠN", List.of(
-                            new SidebarItem("Duyệt cuối", "/secretary/final-reviews", "clipboard-check", null))));
-            case ADMIN -> List.of();
+                            new SidebarItem("Topic tòa soạn", "/secretary/topics", "shapes", null),
+                            new SidebarItem("Duyệt cuối", "/secretary/final-reviews", "clipboard-check", null),
+                            // FL-01 Iter2: đổi URL sang /secretary/topic-reviews vì /secretary/topics là màn Topic tòa soạn (FL-02)
+                            new SidebarItem("Duyệt đề tài cuối", "/secretary/topic-reviews", "file-text", null),
+                            // FL-07 (Vanh): bài đã duyệt cuối, chờ xuất bản
+                            new SidebarItem("Chờ xuất bản", "/secretary/publications", "file-text", null),
+                            // FL-07 Iter3 (Vanh): bài đã hẹn giờ đăng (icon null = icon đồng hồ mặc định)
+                            new SidebarItem("Đã hẹn giờ", "/secretary/scheduled-publications", null, null))));
+            case ADMIN -> List.of(
+                    new SidebarGroup("QUẢN TRỊ", List.of(
+                            new SidebarItem("Tài khoản", "/admin/accounts", "users", null))));
         };
     }
 }

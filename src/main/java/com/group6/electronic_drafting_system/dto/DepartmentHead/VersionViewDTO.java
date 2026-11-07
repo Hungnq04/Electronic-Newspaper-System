@@ -15,5 +15,8 @@ public class VersionViewDTO {
     private String title;
     private String subtitle;
     private String sapo;
+    // Chữ của từng đoạn (dùng cho so sánh phiên bản)
     private List<String> paragraphs;
+    // Thân bài theo đúng bố cục phóng viên sắp xếp (đoạn, ảnh, video, bảng)
+    private List<ContentBlockDTO> blocks;
 }

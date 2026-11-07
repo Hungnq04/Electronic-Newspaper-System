@@ -51,7 +51,7 @@ public class DepartmentHeadTopicMapper {
                 stateOf(lead));
     }
 
-    // 3 mức giao việc, suy ra từ assignment LEAD (CLAUDE.md mục 4.3)
+    // 3 mức giao việc
     public static TopicAssignmentState stateOf(Assignment lead) {
         if (lead == null) return TopicAssignmentState.NO_LEAD;
         boolean noRequirements = lead.getRequirements() == null || lead.getRequirements().isBlank();

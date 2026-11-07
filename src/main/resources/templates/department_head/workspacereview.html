@@ -1,12 +1,41 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
 </head>
+
 <body>
-<th:block th:fragment="reviewWorkspace">
-    <h1>Đang thẩm định bài số <span th:text="${article.id}">0</span></h1>
-    <a th:href="@{/department-head/dashboard}">Quay lại trang tổng quan</a>
-</th:block>     
+    <th:block th:fragment="reviewWorkspace">
+        <h1>Đang thẩm định bài số <span th:text="${articleId}">0</span></h1>
+        <a th:href="@{/department-head/dashboard}">Quay lại trang tổng quan</a>
+        <h2 th:text="${version.title}">Tít bài</h2>
+        <h3 th:if="${version.subtitle != null and !#strings.isEmpty(version.subtitle)}" th:text="${version.subtitle}">
+            Tít phụ</h3>
+        <p><i th:text="${version.sapo}">Sapo</i></p>
+        <p th:each="paragraph : ${version.paragraphs}" th:text="${paragraph}">Đoạn nội dung</p>
+        <h3>Góp ý</h3>
+        <p th:if="${#lists.isEmpty(comments)}">Chưa có góp ý nào.</p>
+        <div th:each="comment : ${comments}">
+            <b th:text="${comment.authorName}">Người viết</b>:
+            <span th:text="${comment.content}">Nội dung</span>
+        </div>
+
+        <form method="post" th:action="@{/department-head/articles/{id}/comments(id=${articleId})}">
+            <textarea name="content" required></textarea>
+            <button type="submit">Thêm góp ý chung</button>
+        </form>
+        <form method="post" th:action="@{/department-head/articles/{id}/approve(id=${articleId})}">
+            <label>Ghi chú (không bắt buộc)</label>
+            <textarea name="feedback"></textarea>
+            <button type="submit">Duyệt, chuyển Thư ký</button>
+        </form>
+        <form method="post" th:action="@{/department-head/articles/{id}/request-revision(id=${articleId})}">
+            <label>Nhận xét (bắt buộc)</label>
+            <textarea name="feedback" required></textarea>
+            <button type="submit">Yêu cầu sửa</button>
+        </form>
+    </th:block>
 </body>
+
 </html>

@@ -15,10 +15,9 @@
     <p>Đề tài đang chờ duyệt: <b th:text="${dashboard.detaidangchoduyet}">0</b></p>
     <h2>Danh sách bài chờ duyệt</h2>
     <ul>
-        <li th:each="article : ${dashboard.pendingArticles}" >
-            <a th:href="@{/department-head/articles/{id}/review(id=${article.articleId})}" th:text="${article.title}">Tiêu đề mẫu</a></li>
+        <li th:each="article : ${dashboard.pendingArticles}" ><a th:href="@{/department-head/articles/{id}/review(id=${article.articleId})}" th:text="${article.title}">Tiêu đề mẫu</a></li>
     </ul>
-
+    
 </th:block>     
 </body>
 </html>

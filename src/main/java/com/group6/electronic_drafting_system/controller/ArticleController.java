@@ -113,8 +113,27 @@ public class ArticleController {
             redirect.addFlashAttribute("message", "Đã nộp bài. Bản thảo được chuyển tới Trưởng ban duyệt.");
         } catch (ApplicationException ex) {
             redirect.addFlashAttribute("error", ex.getErrorCode().getMessage());
+            // Giữ lại ghi chú vừa gõ để hiện lại trong ô "Ghi chú" (bản nháp đã được service giữ lại)
+            redirect.addFlashAttribute("changeSummary", request.getChangeSummary());
         } catch (Exception ex) {
             log.error("Submit failed for article {}", id, ex);
+            redirect.addFlashAttribute("error", ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage());
+        }
+        return "redirect:/articles/" + id + "/edit";
+    }
+
+    // Khôi phục version cũ vào bản đang soạn (UC-24). Nút "Khôi phục bản này" trong cửa sổ chi tiết phiên bản.
+    // Service kiểm tra: đúng Lead đang hoạt động, bài đang DRAFT / REVISION_REQUIRED, version thuộc bài này.
+    @PostMapping("/{id}/versions/{versionId}/restore")
+    public String restoreVersion(@PathVariable Integer id, @PathVariable Integer versionId, Authentication auth, RedirectAttributes redirect) {
+        try {
+            String label = articleService.restoreVersion(id, versionId, currentEmail(auth));
+            redirect.addFlashAttribute("message", "Đã khôi phục nội dung phiên bản " + label
+                    + " vào bản đang soạn. Lịch sử phiên bản giữ nguyên; phiên bản mới sẽ được tạo khi bạn nộp lại.");
+        } catch (ApplicationException ex) {
+            redirect.addFlashAttribute("error", ex.getErrorCode().getMessage());
+        } catch (Exception ex) {
+            log.error("Restore version {} failed for article {}", versionId, id, ex);
             redirect.addFlashAttribute("error", ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage());
         }
         return "redirect:/articles/" + id + "/edit";

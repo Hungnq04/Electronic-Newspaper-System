@@ -83,7 +83,7 @@ public class ArticleMapper {
     // assignment: nhiệm vụ viết chính hiện hành của người dùng trên đề tài (null nếu đã bị gỡ)
     public ArticleEditorDTO toEditorDTO(Article article, boolean editable, Assignment assignment, String reviewerName,
                                         ArticleEditorDTO.Review latestReview, List<ArticleEditorDTO.Version> versions,
-                                        ArticleEditorDTO.Version returnedVersion,
+                                        ArticleEditorDTO.Version returnedVersion, String restoredFromLabel,
                                         List<ArticleEditorDTO.Source> sources, List<ArticleEditorDTO.TopicMedia> topicMedia) {
         Topic topic = article.getTopic();
         Account lead = article.getLead();
@@ -91,7 +91,7 @@ public class ArticleMapper {
                 article.getCategory(), article.getStatus(), editable, article.getCreatedAt(), article.getUpdatedAt(), article.getSubmittedAt(),
                 assignment == null ? null : assignment.getId(), topic.getId(), topic.getTitle(), topic.getCategory(), topic.getPriority(), topic.getExpectedDate(),
                 lead.getFullName(), departmentName(lead), reviewerName, assignment == null ? null : assignment.getDeadline(),
-                latestReview, versions, returnedVersion, sources, topicMedia);
+                latestReview, versions, returnedVersion, restoredFromLabel, sources, topicMedia);
     }
 
     // Trang "Viết bài mới": chưa có bản ghi article, lấy dữ liệu từ form (khi nhập lỗi) và đề tài của nhiệm vụ
@@ -103,7 +103,7 @@ public class ArticleMapper {
         return new ArticleEditorDTO(null, title, form.getSubtitle(), form.getSapo(), form.getContent() == null ? "" : form.getContent(),
                 category, ArticleStatus.DRAFT, true, null, null, null,
                 assignment.getId(), topic.getId(), topic.getTitle(), topic.getCategory(), topic.getPriority(), topic.getExpectedDate(),
-                lead.getFullName(), departmentName(lead), reviewerName, assignment.getDeadline(), null, List.of(), null, List.of(), topicMedia);
+                lead.getFullName(), departmentName(lead), reviewerName, assignment.getDeadline(), null, List.of(), null, null, List.of(), topicMedia);
     }
 
     public Article toEntity(ArticleDraftRequestDTO request, Topic topic, Account lead) {

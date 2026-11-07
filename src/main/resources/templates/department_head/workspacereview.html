@@ -353,18 +353,21 @@
                             </form>
                         </div>
 
-                        <!-- Tab "Vòng trước": góp ý trên phiên bản liền trước. Trưởng ban xác nhận Lead đã sửa hay chưa
-                             (comment.status: RESOLVED = đã sửa, OPEN = chưa sửa). Ẩn sẵn, bấm tab thì JS hiện ra.
-                             Dữ liệu: w.previousComments (service tạo bằng rootComments(previous)).
+                        <!-- Tab "Vòng trước": góp ý trên phiên bản liền trước + góp ý CHƯA SỬA của các phiên bản cũ hơn.
+                             Trưởng ban xác nhận Lead đã sửa hay chưa (comment.status: RESOLVED = đã sửa, OPEN = chưa sửa).
+                             Ẩn sẵn, bấm tab thì JS hiện ra. Dữ liệu: w.previousComments (service tạo bằng earlierComments()).
                              Nút "Đã sửa" / "Chưa sửa": POST .../comments/{c}/resolve?resolved=true|false
                              -> DepartmentHeadController.resolveComment() -> service.setPreviousCommentResolved() -->
 
                         <div th:if="${w.previous != null}" id="tab-prev" class="ws-tab-panel" hidden>
-                            <p class="ws-note">Góp ý vòng trước trên <b th:text="|v${w.previous.label}|">v1.0</b>. Kiểm tra bản mới rồi đánh dấu đã sửa hay chưa.</p>
+                            <p class="ws-note">Góp ý trên <b th:text="|v${w.previous.label}|">v1.0</b> và góp ý chưa sửa của các phiên bản cũ hơn. Kiểm tra bản mới rồi đánh dấu đã sửa hay chưa.</p>
                             <p class="ws-note" th:if="${#lists.isEmpty(w.previousComments)}"><i>Vòng trước không có góp ý.</i></p>
                             <div class="ws-comment ws-comment--prev" th:each="c : ${w.previousComments}" th:classappend="${c.resolved} ? 'is-resolved'">
                                 <div class="ws-comment-top">
                                     <b th:text="${c.anchorLabel}">Đoạn 1</b>
+                                    <!-- Góp ý từ phiên bản cũ hơn bản liền trước: ghi rõ phiên bản để khỏi nhầm -->
+                                    <span class="ws-badge" th:if="${c.versionLabel != null and c.versionLabel != w.previous.label}"
+                                          th:text="|Từ v${c.versionLabel}|">Từ v1.0</span>
                                     <span th:if="${c.resolved}" class="ws-badge ws-badge--done">Đã sửa</span>
                                     <span th:unless="${c.resolved}" class="ws-badge ws-badge--open">Chưa sửa</span>
                                 </div>

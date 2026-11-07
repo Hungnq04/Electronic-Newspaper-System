@@ -30,6 +30,7 @@ import com.group6.electronic_drafting_system.repository.CommentRepository;
 import com.group6.electronic_drafting_system.service.DepartmentHeadReviewService;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -175,7 +176,7 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
                 .sources(sources)
                 .featuredImage(featuredImage)
                 .comments(rootComments(current))                              // góp ý vòng này (hàm phụ rootComments)
-                .previousComments(previous != null ? rootComments(previous) : List.of())   // góp ý vòng trước
+                .previousComments(earlierComments(allVersions))               // góp ý các vòng trước (hàm phụ earlierComments)
                 .build();
     }
 
@@ -385,6 +386,24 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
                 .map(root -> mapper.toComment(root, all.stream()
                         .filter(c -> c.getParent() != null && c.getParent().getId().equals(root.getId())).toList()))
                 .toList();
+    }
+
+    // Góp ý của các vòng trước cho tab "Vòng trước" (UC-21, FR-08 "các Comment chưa RESOLVED"):
+    //   - version LIỀN TRƯỚC: lấy hết (cả đã sửa lẫn chưa sửa) để Trưởng ban đối chiếu với bản mới
+    //   - các version CŨ HƠN: chỉ lấy góp ý còn OPEN (chưa sửa), để không bị sót qua nhiều vòng
+    // allVersions xếp tăng dần [v1.0, v1.1, ..., bản đang duyệt]; version đang duyệt không tính.
+    private List<ReviewCommentDTO> earlierComments(List<ArticleVersion> allVersions) {
+        List<ReviewCommentDTO> result = new ArrayList<>();
+        int previousIndex = allVersions.size() - 2;   // vị trí version liền trước; < 0 nghĩa là bài mới nộp 1 lần
+        if (previousIndex < 0) return result;
+        result.addAll(rootComments(allVersions.get(previousIndex)));
+        // Đi lùi từ version cũ hơn liền kề về v1.0
+        for (int i = previousIndex - 1; i >= 0; i--) {
+            for (ReviewCommentDTO comment : rootComments(allVersions.get(i))) {
+                if (!comment.isResolved()) result.add(comment);
+            }
+        }
+        return result;
     }
 
     // Đổi chữ "TITLE" / "SAPO" / "CONTENT"... (form gửi lên) thành enum AnchorField; chữ lạ thì báo lỗi.

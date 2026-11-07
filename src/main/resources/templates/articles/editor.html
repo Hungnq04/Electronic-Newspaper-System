@@ -209,12 +209,21 @@
                     <span class="label">Phản hồi gần nhất · <span th:text="${article.latestReview().reviewerName()} + ' (' + ${article.latestReview().stageLabel()} + ')'"></span></span>
                     <p th:text="${article.latestReview().feedback()}"></p>
                 </div>
-                <th:block th:if="${article.editable}">
-                    <label class="label" for="changeSummary">Ghi chú cho bản nộp</label>
-                    <textarea id="changeSummary" name="changeSummary" rows="3" class="note-input"
-                              placeholder="Tóm tắt thay đổi / lời nhắn cho Trưởng ban…" th:text="${changeSummary}"></textarea>
-                    <button type="submit" name="action" value="submit" class="btn primary block"><i data-lucide="send"></i>Nộp bản thảo duyệt bài</button>
-                    <p class="hint">Mỗi lần nộp sẽ tạo một phiên bản mới; bài bị khóa chỉnh sửa cho tới khi được trả về.</p>
+                <!-- resubmit = bài đã có phiên bản (đã nộp ít nhất 1 lần) -> lần này là NỘP LẠI, ghi chú bắt buộc (UC-25).
+                     Backend (ArticleServiceImpl.submitVersion) kiểm tra lại, ô required ở đây chỉ để nhắc sớm. -->
+                <th:block th:if="${article.editable}" th:with="resubmit=${!article.versions().isEmpty()}">
+                    <label class="label" for="changeSummary">
+                        <span th:text="${resubmit} ? 'Ghi chú đã sửa gì' : 'Ghi chú cho bản nộp'">Ghi chú cho bản nộp</span>
+                        <span class="required-mark" th:if="${resubmit}">*</span>
+                    </label>
+                    <!-- Vừa khôi phục version cũ thì điền sẵn "Khôi phục từ version X" (Lead có thể ghi thêm) -->
+                    <textarea id="changeSummary" name="changeSummary" rows="3" class="note-input" th:required="${resubmit}"
+                              th:placeholder="${resubmit} ? 'Ví dụ: Sửa số liệu đoạn 2 theo góp ý của Trưởng ban…' : 'Tóm tắt thay đổi / lời nhắn cho Trưởng ban…'"
+                              th:text="${changeSummary != null ? changeSummary : (article.restoredFromLabel() != null ? 'Khôi phục từ version ' + article.restoredFromLabel() : '')}"></textarea>
+                    <button type="submit" name="action" value="submit" class="btn primary block" th:attr="data-resubmit=${resubmit}">
+                        <i data-lucide="send"></i><span th:text="${resubmit} ? 'Nộp lại cho Trưởng ban' : 'Nộp bản thảo duyệt bài'">Nộp bản thảo duyệt bài</span></button>
+                    <p class="hint">Mỗi lần nộp sẽ tạo một phiên bản mới; bài bị khóa chỉnh sửa cho tới khi được trả về.
+                        <th:block th:if="${resubmit}">Bài nộp lại luôn qua Trưởng ban trước, kể cả khi Thư ký là người trả bài.</th:block></p>
                 </th:block>
             </section>
 
@@ -312,6 +321,13 @@
             </div>
         </div>
         <p class="version-meta" th:text="'Nộp bởi ' + ${v.creatorName()} + ' lúc ' + ${#temporals.format(v.createdAt(), 'HH:mm dd/MM/yyyy')}"></p>
+        <!-- Khôi phục (UC-24): chỉ hiện khi bài còn sửa được. Chép nội dung bản này vào bản đang soạn, KHÔNG xóa / sửa version nào.
+             Backend (ArticleServiceImpl.restoreVersion) kiểm tra lại quyền Lead và trạng thái bài. -->
+        <form class="restore-form" method="post" th:if="${article.editable}"
+              th:action="@{/articles/{id}/versions/{versionId}/restore(id=${article.id},versionId=${v.id()})}"
+              th:attr="data-confirm='Khôi phục nội dung phiên bản ' + ${v.label()} + ' vào bản đang soạn? Nội dung đang soạn sẽ bị thay thế; lịch sử phiên bản giữ nguyên.'">
+            <button type="submit" class="btn mini"><i data-lucide="rotate-ccw"></i>Khôi phục bản này vào bản đang soạn</button>
+        </form>
         <div class="field-box" th:if="${v.changeSummary() != null}">
             <span class="label">Ghi chú khi nộp</span>
             <p class="pre-wrap" th:text="${v.changeSummary()}"></p>

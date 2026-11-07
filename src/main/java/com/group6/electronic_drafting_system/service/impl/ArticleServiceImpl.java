@@ -161,14 +161,45 @@ public class ArticleServiceImpl implements ArticleService {
         // Bài đang bị trả về: phiên bản bị trả về là phiên bản mới nhất (danh sách xếp mới nhất trước)
         ArticleEditorDTO.Version returnedVersion =
                 article.getStatus() == ArticleStatus.REVISION_REQUIRED && !history.isEmpty() ? history.get(0) : null;
+        // Vừa khôi phục version nào (restored_from_version_id) -> lấy nhãn "1.0", "1.1"... để điền sẵn ghi chú
+        String restoredFromLabel = history.stream()
+                .filter(v -> v.id().equals(article.getRestoredFromVersionId()))
+                .map(ArticleEditorDTO.Version::label)
+                .findFirst().orElse(null);
         return articleMapper.toEditorDTO(article, lead != null && EDITABLE.contains(article.getStatus()), lead,
                 reviewerName(topicId),
                 // Chỉ lấy phản hồi đã có quyết định: lượt đang duyệt dở thì phóng viên chưa được thấy
                 reviews.findFirstByVersion_Article_IdAndDecisionIsNotNullOrderByIdDesc(articleId).map(articleMapper::toReviewItem).orElse(null),
                 history,
                 returnedVersion,
+                restoredFromLabel,
                 articleSources.findByArticleOrdered(articleId).stream().map(articleMapper::toSourceItem).toList(),
                 topicMedia(topicId));
+    }
+
+    // Khôi phục version cũ (UC-24, EC-03, BR-18): chép tít, tít phụ, sapo, nội dung của version vào BẢN ĐANG SOẠN.
+    // - Không sửa, không xóa, không tạo version nào (version chỉ tạo ở lần nộp lại kế tiếp).
+    // - Trả về nhãn version (vd "1.0") để controller báo cho người dùng.
+    @Override
+    @Transactional
+    public String restoreVersion(Integer articleId, Integer versionId, String email) {
+        // Kiểm tra quyền: phải là Lead đang hoạt động của bài và bài đang sửa được (DRAFT / REVISION_REQUIRED)
+        Article article = editableArticle(articleId, email);
+        // Version phải thuộc đúng bài này (rule R22): tìm trong danh sách version của bài, không tin id gửi lên
+        ArticleVersion version = versions.findByArticle_IdOrderByVersionNumberDesc(articleId).stream()
+                .filter(v -> v.getId().equals(versionId))
+                .findFirst()
+                .orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_VERSION_NOT_FOUND));
+
+        // Chép nội dung version vào bản đang soạn (chuyên mục và tư liệu đính kèm giữ nguyên vì không lưu theo version)
+        article.setTitle(version.getTitle());
+        article.setSubtitle(version.getSubtitle());
+        article.setSapo(version.getSapo());
+        article.setContent(version.getContent());
+        // Ghi lại đã khôi phục từ version nào (DB cho phép vì bài đang DRAFT / REVISION_REQUIRED - ck_article_restore)
+        article.setRestoredFromVersionId(version.getId());
+        article.setUpdatedAt(OffsetDateTime.now().truncatedTo(ChronoUnit.SECONDS));
+        return version.getVersionLabel();
     }
 
     // Ảnh / video trong kho tư liệu của đề tài để chèn vào bài
@@ -232,8 +263,11 @@ public class ArticleServiceImpl implements ArticleService {
         return article.getUpdatedAt();
     }
 
+    // noRollbackFor: nếu bị lỗi kiểm tra (thiếu ghi chú, thiếu tư liệu...) thì VẪN GIỮ bản nháp vừa sửa,
+    // chỉ không tạo version. Không có dòng này, transaction bị hủy và Lead mất phần vừa gõ.
+    // An toàn vì submitVersion() kiểm tra hết TRƯỚC khi lưu version và đổi trạng thái.
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = ApplicationException.class)
     public void submit(Integer articleId, ArticleDraftRequestDTO request, String email) {
         Article article = editableArticle(articleId, email);
         applyDraft(article, request);
@@ -328,12 +362,52 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     // Nộp bài: chụp article_version mới và chuyển sang chờ Trưởng ban duyệt
+    // Dùng cho cả nộp lần đầu (FL-04) và nộp lại (FL-05). Kiểm tra HẾT rồi mới lưu version và đổi trạng thái.
     private void submitVersion(Article article, String changeSummary) {
+        // 1. Trường bắt buộc (FR-07)
         if (article.getSapo() == null) throw new ApplicationException(ErrorCode.ARTICLE_SAPO_REQUIRED);
         if (Jsoup.parse(article.getContent()).text().isBlank()) throw new ApplicationException(ErrorCode.ARTICLE_CONTENT_REQUIRED);
-        versions.save(articleMapper.toVersion(article, versions.findFirstByArticleOrderByVersionNumberDesc(article).map(ArticleVersion::getVersionNumber).orElse(0) + 1, changeSummary));
+
+        // 2. Ít nhất một tư liệu, và mọi ảnh có chú thích (FR-07, giống rule R19 trong DB)
+        //    Bài vừa tạo (chưa lưu) thì chưa có id nên cũng chưa có tư liệu nào.
+        List<ArticleSource> attached = article.getId() == null ? List.of() : articleSources.findByArticleOrdered(article.getId());
+        if (attached.isEmpty()) throw new ApplicationException(ErrorCode.ARTICLE_SOURCE_REQUIRED);
+        boolean imageWithoutCaption = attached.stream()
+                .anyMatch(s -> s.getSource().getSourceType() == SourceType.IMAGE
+                        && (s.getCaption() == null || s.getCaption().isBlank()));
+        if (imageWithoutCaption) throw new ApplicationException(ErrorCode.ARTICLE_IMAGE_CAPTION_REQUIRED);
+
+        // 3. Nộp lại (đã có version trước): bắt buộc ghi chú và nội dung phải khác bản trước (UC-25)
+        Optional<ArticleVersion> latest = versions.findFirstByArticleOrderByVersionNumberDesc(article);
+        if (latest.isPresent()) {
+            if (changeSummary == null || changeSummary.isBlank()) {
+                throw new ApplicationException(ErrorCode.ARTICLE_CHANGE_SUMMARY_REQUIRED);
+            }
+            if (sameContent(article, latest.get())) throw new ApplicationException(ErrorCode.ARTICLE_CONTENT_UNCHANGED);
+        }
+
+        // 4. Hợp lệ: chụp version mới (1.0, 1.1...) và chuyển sang chờ Trưởng ban duyệt
+        int nextNumber = latest.map(ArticleVersion::getVersionNumber).orElse(0) + 1;
+        versions.save(articleMapper.toVersion(article, nextNumber, changeSummary));
         article.setStatus(ArticleStatus.DEPARTMENT_REVIEW);
         article.setSubmittedAt(OffsetDateTime.now().truncatedTo(ChronoUnit.SECONDS));
+        // Đã nộp thì xóa dấu "vừa khôi phục": DB chỉ cho có giá trị này khi bài DRAFT / REVISION_REQUIRED (ck_article_restore)
+        article.setRestoredFromVersionId(null);
+    }
+
+    // So bản đang soạn với version đã nộp: tít, tít phụ, sapo, nội dung (ảnh / tư liệu đính kèm không tính)
+    private static boolean sameContent(Article article, ArticleVersion version) {
+        return sameText(article.getTitle(), version.getTitle())
+                && sameText(article.getSubtitle(), version.getSubtitle())
+                && sameText(article.getSapo(), version.getSapo())
+                && sameText(article.getContent(), version.getContent());
+    }
+
+    // null và chuỗi rỗng coi như nhau; bỏ khoảng trắng thừa ở hai đầu
+    private static boolean sameText(String a, String b) {
+        String left = a == null ? "" : a.trim();
+        String right = b == null ? "" : b.trim();
+        return left.equals(right);
     }
 
     private void applyDraft(Article article, ArticleDraftRequestDTO request) {

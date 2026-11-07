@@ -52,6 +52,12 @@ public enum ErrorCode {
     ARTICLE_ASSIGNMENT_NOT_LEAD(1326, "Bạn chỉ được viết bài từ nhiệm vụ được giao cho mình với vai trò viết chính, trên đề tài đã được duyệt.", HttpStatus.FORBIDDEN),
     ARTICLE_SOURCE_NOT_FOUND(1327, "Không tìm thấy ảnh tư liệu của bài viết.", HttpStatus.NOT_FOUND),
     ARTICLE_ASSIGNMENT_REQUIRED(1328, "Bài viết phải được tạo từ một nhiệm vụ được giao. Vui lòng chọn nhiệm vụ để viết bài.", HttpStatus.BAD_REQUEST),
+    // Kiểm tra khi nộp / nộp lại (FR-07, UC-25)
+    ARTICLE_SOURCE_REQUIRED(1329, "Bài cần ít nhất một tư liệu (ảnh hoặc nguồn) trước khi nộp. Hãy lưu nháp rồi thêm tư liệu vào bài.", HttpStatus.BAD_REQUEST),
+    ARTICLE_IMAGE_CAPTION_REQUIRED(1330, "Còn ảnh trong bài chưa có chú thích. Hãy nhập chú thích cho mọi ảnh trước khi nộp.", HttpStatus.BAD_REQUEST),
+    ARTICLE_CHANGE_SUMMARY_REQUIRED(1331, "Khi nộp lại, cần ghi chú đã sửa những gì.", HttpStatus.BAD_REQUEST),
+    ARTICLE_CONTENT_UNCHANGED(1332, "Nội dung chưa thay đổi so với phiên bản đã nộp trước đó. Hãy sửa theo góp ý rồi nộp lại.", HttpStatus.BAD_REQUEST),
+    ARTICLE_VERSION_NOT_FOUND(1333, "Không tìm thấy phiên bản này của bài viết.", HttpStatus.NOT_FOUND),
 
     TASK_NOT_FOUND(1400, "Không tìm thấy nhiệm vụ hoặc bạn không được giao nhiệm vụ này.", HttpStatus.NOT_FOUND),
     TASK_NOT_OPEN(1401, "Nhiệm vụ đã hoàn thành nên không thể thêm tư liệu.", HttpStatus.CONFLICT),

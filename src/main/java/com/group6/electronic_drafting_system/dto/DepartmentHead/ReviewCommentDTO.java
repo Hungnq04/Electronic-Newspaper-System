@@ -30,6 +30,7 @@ public class ReviewCommentDTO {
     private String authorName;         // người viết
     private String timeText;           // thời gian, đã định dạng sẵn
     private boolean resolved;          // true = Lead đã sửa (comment.status = RESOLVED) -> nhãn "Đã sửa" / "Chưa sửa" ở tab "Vòng trước"
+    private String versionLabel;       // góp ý nằm trên phiên bản nào, ví dụ "1.0" -> tab "Vòng trước" ghi rõ "Từ v1.0"
     // Các câu trả lời của góp ý này (mỗi câu cũng là một ReviewCommentDTO). HTML: th:each="r : ${c.replies}"
     private List<ReviewCommentDTO> replies;
 }

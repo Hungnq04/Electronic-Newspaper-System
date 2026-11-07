@@ -23,6 +23,9 @@ public record ArticleEditorDTO(
         Review latestReview, List<Version> versions,
         // Phiên bản vừa bị trả về (chỉ có khi bài đang REVISION_REQUIRED), dùng cho thẻ "Góp ý cần sửa"; null nếu không bị trả về
         Version returnedVersion,
+        // Nhãn phiên bản vừa được khôi phục vào bản đang soạn (vd "1.0"); null nếu chưa khôi phục.
+        // Dùng để điền sẵn ghi chú "Khôi phục từ version 1.0" ở lần nộp lại (UC-24)
+        String restoredFromLabel,
         List<Source> sources, List<TopicMedia> topicMedia) {
 
     // Bản chụp khi nộp kèm các lượt duyệt và góp ý (comment) trên chính phiên bản đó.

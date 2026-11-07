@@ -57,4 +57,7 @@ public interface ArticleRepository extends JpaRepository<Article, Integer> {
 
     @EntityGraph(attributePaths = "lead")
     List<Article> findByTopic_IdIn(Collection<Integer> topicIds);
+
+    // Bài của một Lead trong một đề tài (dùng khi đổi Lead)
+    List<Article> findByTopic_IdAndLead_Id(Integer topicId, Integer leadId);
 }

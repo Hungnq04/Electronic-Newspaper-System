@@ -1,9 +1,15 @@
 package com.group6.electronic_drafting_system.controller;
 
+import com.group6.electronic_drafting_system.dto.DepartmentHead.ChangeLeadFormDTO;
 import com.group6.electronic_drafting_system.dto.DepartmentHead.CommentRequestDTO;
+import com.group6.electronic_drafting_system.dto.DepartmentHead.TopicAssignmentFormDTO;
+import com.group6.electronic_drafting_system.dto.DepartmentHead.TopicAssignmentPageDTO;
 import com.group6.electronic_drafting_system.exception.ApplicationException;
+import com.group6.electronic_drafting_system.exception.ErrorCode;
+import com.group6.electronic_drafting_system.mapper.DepartmentHead.DepartmentHeadTopicMapper;
 import com.group6.electronic_drafting_system.service.DepartmentHeadReviewService;
 import com.group6.electronic_drafting_system.service.DepartmentHeadService;
+import com.group6.electronic_drafting_system.service.DepartmentHeadTopicService;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
@@ -30,16 +36,23 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @Controller
 @RequestMapping("/department-head")
 public class DepartmentHeadController {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(DepartmentHeadController.class);
+    private static final String TOPICS_PATH = "/department-head/topics";
+    // Trang danh sách đề tài cần giao việc. URL /department-head/topics thuộc màn Duyệt đề tài (DepartmentHeadTopicController).
+    private static final String APPROVED_TOPICS_PATH = "/department-head/approved-topics";
     private static final String NEWSREADER_FONT = "https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap";
-    // 2 service controller cần dùng. Khai báo kiểu interface; object thật là DepartmentHeadServiceImpl / DepartmentHeadReviewServiceImpl.
-    private final DepartmentHeadService departmentHeadService;   // dữ liệu màn dashboard
-    private final DepartmentHeadReviewService reviewService;     // màn thẩm định bài viết (workspace)
+    // 3 service controller cần dùng. Khai báo kiểu interface; object thật là ...ServiceImpl tương ứng.
+    private final DepartmentHeadService departmentHeadService;            // dữ liệu màn dashboard
+    private final DepartmentHeadReviewService reviewService;              // màn thẩm định bài viết (workspace)
+    private final DepartmentHeadTopicService departmentHeadTopicService;  // màn đề tài đã duyệt + giao việc (FL-03)
 
-    // Constructor: Spring tự gọi lúc khởi động và truyền 2 service vào (Dependency Injection).
+    // Constructor: Spring tự gọi lúc khởi động và truyền 3 service vào (Dependency Injection).
     // Đây là lý do trong dashboard() bên dưới, biến departmentHeadService đã có sẵn object để gọi.
-    public DepartmentHeadController(DepartmentHeadService departmentHeadService, DepartmentHeadReviewService reviewService) {
+    public DepartmentHeadController(DepartmentHeadService departmentHeadService, DepartmentHeadReviewService reviewService,
+                                    DepartmentHeadTopicService departmentHeadTopicService) {
         this.departmentHeadService = departmentHeadService;
         this.reviewService = reviewService;
+        this.departmentHeadTopicService = departmentHeadTopicService;
     }
 
     // ===== Màn dashboard Trưởng ban: GET /department-head/dashboard =====
@@ -73,6 +86,135 @@ public class DepartmentHeadController {
         // File JS riêng của trang (lọc, tìm kiếm, sắp xếp thẻ trên trình duyệt); layout/app.html in ra thẻ <script>.
         model.addAttribute("pageJs", List.of("/department_head/js/department-head-dashboard.js"));
         // Trả về TÊN template: Spring + Thymeleaf mở templates/layout/app.html, điền dữ liệu trong model, gửi HTML về trình duyệt.
+        return "layout/app";
+    }
+
+    // Danh sách đề tài ACTIVE mà Trưởng phòng đang phụ trách, kèm tình trạng giao việc
+    @GetMapping("/approved-topics")
+    public String topics(Authentication auth, Model model) {
+        model.addAttribute("board", departmentHeadTopicService.getBoard(currentEmail(auth)));
+        model.addAttribute("pageTitle", "Đề tài đã duyệt – Trưởng ban");
+        model.addAttribute("contentView", "department_head/topics");
+        model.addAttribute("contentFragment", "departmentHeadTopicsContent");
+        model.addAttribute("pageCss", List.of("/department_head/css/department-head-topics.css"));
+        model.addAttribute("pageJs", List.of("/department_head/js/department-head-topics.js"));
+        return "layout/app";
+    }
+
+    // Trang giao việc một đề tài (FL-03). Không phụ trách đề tài này thì quay về danh sách kèm thông báo lỗi.
+    @GetMapping("/topics/{topicId}/assignment")
+    public String assignment(@PathVariable Integer topicId, Authentication auth, Model model, RedirectAttributes redirect) {
+        TopicAssignmentPageDTO page;
+        try {
+            page = departmentHeadTopicService.getAssignmentPage(topicId, currentEmail(auth));
+        } catch (ApplicationException ex) {
+            redirect.addFlashAttribute("error", ex.getErrorCode().getMessage());
+            return "redirect:" + APPROVED_TOPICS_PATH;
+        }
+        TopicAssignmentFormDTO form = TopicAssignmentFormDTO.prefill(
+                DepartmentHeadTopicMapper.toInputValue(page.leadDeadline()), page.leadRequirements());
+        return assignmentPage(model, page, form, new ChangeLeadFormDTO());
+    }
+
+    // Xác nhận giao việc. Lỗi kiểm tra thì hiện lại form với dữ liệu đã nhập để người dùng sửa.
+    @PostMapping("/topics/{topicId}/assignment")
+    public String confirmAssignment(@PathVariable Integer topicId, @ModelAttribute TopicAssignmentFormDTO form,
+                                    Authentication auth, Model model, RedirectAttributes redirect) {
+        String email = currentEmail(auth);
+        try {
+            departmentHeadTopicService.confirmAssignment(topicId, form, email);
+            redirect.addFlashAttribute("message", "Đã giao việc cho đề tài #" + topicId + ".");
+            return "redirect:" + APPROVED_TOPICS_PATH;
+        } catch (ApplicationException ex) {
+            model.addAttribute("error", ex.getErrorCode().getMessage());
+        } catch (Exception ex) {
+            log.error("Confirm assignment failed for topic {}", topicId, ex);
+            model.addAttribute("error", ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage());
+        }
+        return showAgain(topicId, email, model, redirect, form, new ChangeLeadFormDTO());
+    }
+
+    // ===== Quản lý nhóm (đề tài đã giao xong) =====
+
+    // Thêm Supporting vào nhóm
+    @PostMapping("/topics/{topicId}/supporters")
+    public String addSupporters(@PathVariable Integer topicId, @ModelAttribute TopicAssignmentFormDTO form,
+                                Authentication auth, Model model, RedirectAttributes redirect) {
+        String email = currentEmail(auth);
+        try {
+            departmentHeadTopicService.addSupporters(topicId, form, email);
+            redirect.addFlashAttribute("message", "Đã thêm phóng viên hỗ trợ vào nhóm.");
+            return "redirect:" + assignmentPath(topicId);
+        } catch (ApplicationException ex) {
+            model.addAttribute("error", ex.getErrorCode().getMessage());
+        } catch (Exception ex) {
+            log.error("Add supporters failed for topic {}", topicId, ex);
+            model.addAttribute("error", ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage());
+        }
+        return showAgain(topicId, email, model, redirect, form, new ChangeLeadFormDTO());
+    }
+
+    // Gỡ một Supporting khỏi nhóm (assignment -> REMOVED)
+    @PostMapping("/topics/{topicId}/supporters/{assignmentId}/remove")
+    public String removeSupporter(@PathVariable Integer topicId, @PathVariable Integer assignmentId,
+                                  Authentication auth, RedirectAttributes redirect) {
+        try {
+            departmentHeadTopicService.removeSupporter(topicId, assignmentId, currentEmail(auth));
+            redirect.addFlashAttribute("message", "Đã gỡ phóng viên khỏi nhóm. Tư liệu họ đã thêm vẫn được giữ.");
+        } catch (ApplicationException ex) {
+            redirect.addFlashAttribute("error", ex.getErrorCode().getMessage());
+        } catch (Exception ex) {
+            log.error("Remove supporter {} failed for topic {}", assignmentId, topicId, ex);
+            redirect.addFlashAttribute("error", ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage());
+        }
+        return "redirect:" + assignmentPath(topicId);
+    }
+
+    // Đổi Lead
+    @PostMapping("/topics/{topicId}/lead")
+    public String changeLead(@PathVariable Integer topicId, @ModelAttribute("leadForm") ChangeLeadFormDTO leadForm,
+                             Authentication auth, Model model, RedirectAttributes redirect) {
+        String email = currentEmail(auth);
+        try {
+            departmentHeadTopicService.changeLead(topicId, leadForm, email);
+            redirect.addFlashAttribute("message", "Đã đổi Lead. Bài nháp / bài cần sửa của Lead cũ đã chuyển sang Lead mới.");
+            return "redirect:" + assignmentPath(topicId);
+        } catch (ApplicationException ex) {
+            model.addAttribute("error", ex.getErrorCode().getMessage());
+        } catch (Exception ex) {
+            log.error("Change lead failed for topic {}", topicId, ex);
+            model.addAttribute("error", ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage());
+        }
+        model.addAttribute("leadFormOpen", true);   // mở sẵn khung "Đổi Lead" để người dùng sửa lỗi
+        return showAgain(topicId, email, model, redirect, new TopicAssignmentFormDTO(), leadForm);
+    }
+
+    // Hiện lại trang (kèm thông báo lỗi đã đặt trong model) với dữ liệu người dùng vừa nhập
+    private String showAgain(Integer topicId, String email, Model model, RedirectAttributes redirect,
+                             TopicAssignmentFormDTO form, ChangeLeadFormDTO leadForm) {
+        try {
+            return assignmentPage(model, departmentHeadTopicService.getAssignmentPage(topicId, email), form, leadForm);
+        } catch (ApplicationException ex) {
+            redirect.addFlashAttribute("error", ex.getErrorCode().getMessage());
+            return "redirect:" + APPROVED_TOPICS_PATH;
+        }
+    }
+
+    private static String assignmentPath(Integer topicId) {
+        return TOPICS_PATH + "/" + topicId + "/assignment";
+    }
+
+    private static String assignmentPage(Model model, TopicAssignmentPageDTO page, TopicAssignmentFormDTO form, ChangeLeadFormDTO leadForm) {
+        model.addAttribute("page", page);
+        model.addAttribute("form", form);
+        model.addAttribute("leadForm", leadForm);
+        model.addAttribute("pageTitle", "Giao việc đề tài – Trưởng ban");
+        model.addAttribute("contentView", "department_head/topic-assignment");
+        model.addAttribute("contentFragment", "departmentHeadAssignmentContent");
+        model.addAttribute("pageCss", List.of("/department_head/css/department-head-topics.css", "/department_head/css/department-head-assignment.css"));
+        model.addAttribute("pageJs", List.of("/department_head/js/department-head-assignment.js"));
+        // Trang giao việc vẫn sáng mục "Đề tài đã duyệt" trên sidebar
+        model.addAttribute("activePath", APPROVED_TOPICS_PATH);
         return "layout/app";
     }
 
@@ -214,6 +356,7 @@ public class DepartmentHeadController {
     // Hàm phụ, được gọi ở dòng đầu của dashboard() (và các màn thẩm định) để lấy email người đang đăng nhập.
     // Đăng nhập mật khẩu: getName() là email. Đăng nhập Google: getName() là mã "sub" của Google, email nằm trong thuộc tính "email"
     private static String currentEmail(Authentication authentication) {
+        if (authentication == null) return null;
         if (authentication.getPrincipal() instanceof OAuth2User google && google.getAttribute("email") instanceof String email) {
             return email.trim();
         }

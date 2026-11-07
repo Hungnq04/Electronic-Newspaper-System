@@ -93,6 +93,24 @@ public enum ErrorCode {
     MEDIA_STORAGE_NOT_CONFIGURED(1503, "Hệ thống chưa cấu hình Cloudinary nên chưa thể tải tệp lên.", HttpStatus.SERVICE_UNAVAILABLE),
     MEDIA_UPLOAD_FAILED(1504, "Tải tệp lên Cloudinary không thành công. Vui lòng thử lại.", HttpStatus.BAD_GATEWAY),
 
+    CURRENT_ACCOUNT_NOT_FOUND(1625, "Không tìm thấy tài khoản đang đăng nhập. Vui lòng đăng nhập lại.", HttpStatus.UNAUTHORIZED),
+
+    TOPIC_NOT_MANAGED(1626, "Không tìm thấy đề tài hoặc bạn không phải Trưởng phòng phụ trách đề tài này.", HttpStatus.FORBIDDEN),
+    ASSIGNMENT_ALREADY_DONE(1627, "Đề tài đã giao việc xong. Dùng phần Quản lý nhóm để thêm / gỡ Supporting hoặc đổi Lead.", HttpStatus.CONFLICT),
+    ASSIGNMENT_LEAD_REQUIRED(1628, "Vui lòng chọn đúng một phóng viên làm Lead.", HttpStatus.BAD_REQUEST),
+    ASSIGNMENT_LEAD_ALREADY_SET(1629, "Đề tài đã có Lead, không thể chọn Lead khác ở đây.", HttpStatus.CONFLICT),
+    ASSIGNMENT_INVALID_REPORTER(1614, "Người được chọn phải là phóng viên đang hoạt động.", HttpStatus.BAD_REQUEST),
+    ASSIGNMENT_DUPLICATE_MEMBER(1615, "Một người không được giữ hai vai trò trong cùng một đề tài.", HttpStatus.BAD_REQUEST),
+    ASSIGNMENT_DEADLINE_REQUIRED(1616, "Vui lòng nhập hạn hoàn thành cho từng người được giao.", HttpStatus.BAD_REQUEST),
+    ASSIGNMENT_DEADLINE_INVALID(1617, "Hạn hoàn thành không hợp lệ: phải là thời điểm trong tương lai.", HttpStatus.BAD_REQUEST),
+    ASSIGNMENT_REQUIREMENTS_REQUIRED(1618, "Vui lòng nhập nhiệm vụ cho từng người được giao.", HttpStatus.BAD_REQUEST),
+    ASSIGNMENT_NOT_FOUND(1619, "Không tìm thấy thành viên này trong đề tài.", HttpStatus.NOT_FOUND),
+    ASSIGNMENT_REMOVE_COMPLETED(1620, "Supporting đã hoàn thành phần việc nên không thể gỡ khỏi nhóm.", HttpStatus.CONFLICT),
+    LEAD_CHANGE_BLOCKED_BY_REVIEW(1621, "Lead hiện tại còn bài đang trong quy trình duyệt. Chờ bài duyệt xong hoặc bị trả về rồi mới đổi Lead.", HttpStatus.CONFLICT),
+    LEAD_CHANGE_SAME_PERSON(1622, "Người được chọn đang là Lead của đề tài.", HttpStatus.BAD_REQUEST),
+    TEAM_NOT_READY(1623, "Đề tài chưa giao việc xong. Hãy hoàn tất giao việc trước.", HttpStatus.CONFLICT),
+    SUPPORTERS_REQUIRED(1624, "Vui lòng chọn ít nhất một phóng viên để thêm vào nhóm.", HttpStatus.BAD_REQUEST),
+
     // TV4 - Topic tòa soạn của Thư ký (FL-02)
     EDITORIAL_TOPIC_ACCESS_DENIED(1800, "Chỉ Thư ký tòa soạn được quản lý Topic cấp tòa soạn.", HttpStatus.FORBIDDEN),
     TOPIC_NOT_FOUND(1801, "Không tìm thấy Topic.", HttpStatus.NOT_FOUND),

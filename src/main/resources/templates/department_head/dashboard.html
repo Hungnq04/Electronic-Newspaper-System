@@ -15,11 +15,7 @@
     searchable         - true: ô tìm nhanh lọc được danh sách (chỉ dashboard); false: ô tìm bị tắt
 -->
 <header th:fragment="dhTopbar(fullName, departmentName, initials, searchable)" class="rp-topbar">
-    <label class="rp-global-search">
-        <svg class="rp-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.7"/><path d="m16 16 4.5 4.5"/></svg>
-        <input id="dh-global-search" type="search" placeholder="Tìm nhanh bản thảo, đề tài, phóng viên…" aria-label="Tìm nhanh bản thảo"
-               th:attr="disabled=${searchable} ? null : 'disabled'">
-    </label>
+    
     <div class="rp-topbar-right">
         <button class="rp-icon-button" type="button" aria-label="Thông báo">
             <svg class="rp-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>

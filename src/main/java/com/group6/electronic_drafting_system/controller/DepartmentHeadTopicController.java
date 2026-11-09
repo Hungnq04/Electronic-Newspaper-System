@@ -28,7 +28,7 @@ public class DepartmentHeadTopicController {
     public DepartmentHeadTopicController(TopicReviewService topicReviewService) {
         this.topicReviewService = topicReviewService;
     }
-
+//dautienduyet
     @GetMapping
     public String workspace(@RequestParam(required = false) Integer topic, Principal principal, Model model) {
         model.addAttribute("ws", topicReviewService.getHeadWorkspace(principal.getName(), topic));

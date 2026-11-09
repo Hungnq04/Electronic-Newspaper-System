@@ -9,27 +9,51 @@
     <th:block th:fragment="reviewWorkspace">
         <h1>Đang thẩm định bài số <span th:text="${articleId}">0</span></h1>
         <a th:href="@{/department-head/dashboard}">Quay lại trang tổng quan</a>
-        <h2 th:text="${version.title}">Tít bài</h2>
-        <h3 th:if="${version.subtitle != null and !#strings.isEmpty(version.subtitle)}" th:text="${version.subtitle}">
-            Tít phụ</h3>
-        <p><i th:text="${version.sapo}">Sapo</i></p>
-        <p th:each="paragraph : ${version.paragraphs}" th:text="${paragraph}">Đoạn nội dung</p>
+
+        <!--Bọc nội dung bài viết trong thẻ <article> để dễ dàng style -->
+        <article id="article-card" style="position: relative;">
+            <h2 data-field="TITLE" data-paragraph="1" th:text="${version.title}">Tít bài</h2>
+            <h3 th:if="${version.subtitle != null and !#strings.isEmpty(version.subtitle)}"
+                th:text="${version.subtitle}" data-field="SUBTITLE" data-paragraph="1">
+                Tít phụ</h3>
+            <p><i data-field="SAPO" data-paragraph="1" th:text="${version.sapo}">Sapo</i></p>
+            <p th:each="paragraph, it : ${version.paragraphs}" data-field="CONTENT" th:attr="data-paragraph=${it.count}"
+                th:text="${paragraph}">Đoạn nội dung</p>
+            <!--form thêm góp ý-->
+            <form id="comment-popover" class="ws-popover" method="post"
+                th:action="@{/department-head/articles/{a}/comments(a=${articleId})}"
+                style="position: absolute; background: white; border: 1px solid #ccc; padding: 8px;" hidden>
+                <input type="hidden" name="anchorField">
+                <input type="hidden" name="anchorParagraph">
+                <input type="hidden" name="anchorStart">
+                <input type="hidden" name="anchorEnd">
+                <p id="popover-quote"></p>
+                <textarea id="popover-text" name="content" rows="3" placeholder="Nội dung góp ý..."></textarea>
+                <button id="popover-cancel" type="button">Hủy</button>
+                <button id="popover-save" type="submit" disabled>Thêm góp ý</button>
+            </form>
+        </article>
+        <!--Hiển thị các góp ý-->
         <h3>Góp ý</h3>
         <p th:if="${#lists.isEmpty(comments)}">Chưa có góp ý nào.</p>
-        <div th:each="comment : ${comments}">
+        <div th:each="comment : ${comments}" class="comment-card"
+            th:attr="data-cid=${comment.id},data-field=${comment.anchorField},data-paragraph=${comment.anchorParagraph},data-start=${comment.anchorStart},data-end=${comment.anchorEnd}">
             <b th:text="${comment.authorName}">Người viết</b>:
+            <i th:if="${comment.quotedText != null}" th:text="|“${comment.quotedText}”|">trích dẫn</i>
             <span th:text="${comment.content}">Nội dung</span>
         </div>
-
+        <!--form để thêm góp ý-->
         <form method="post" th:action="@{/department-head/articles/{id}/comments(id=${articleId})}">
             <textarea name="content" required></textarea>
             <button type="submit">Thêm góp ý chung</button>
         </form>
+        <!--form để duyệt bài-->
         <form method="post" th:action="@{/department-head/articles/{id}/approve(id=${articleId})}">
             <label>Ghi chú (không bắt buộc)</label>
             <textarea name="feedback"></textarea>
             <button type="submit">Duyệt, chuyển Thư ký</button>
         </form>
+        <!--form để yêu cầu sửa bài-->
         <form method="post" th:action="@{/department-head/articles/{id}/request-revision(id=${articleId})}">
             <label>Nhận xét (bắt buộc)</label>
             <textarea name="feedback" required></textarea>

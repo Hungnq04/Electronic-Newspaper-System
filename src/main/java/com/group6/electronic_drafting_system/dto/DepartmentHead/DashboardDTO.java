@@ -3,6 +3,7 @@ import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
 
+//Quy định Dashboard lấy ra những thông tin gì từ database ra
 @Getter 
 @Builder 
 public class DashboardDTO {

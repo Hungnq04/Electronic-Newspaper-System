@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -54,6 +55,7 @@ public class DepartmentHeadController {
         model.addAttribute("contentView", "department_head/workspacereview");
         model.addAttribute("contentFragment", "reviewWorkspace");
         model.addAttribute("comments", departmentHeadReviewService.getComments(email, articleId));
+        model.addAttribute("pageJs", List.of("/department_head/js/workspacereview.js"));
         return "layout/app";
     }
 
@@ -75,9 +77,14 @@ public class DepartmentHeadController {
 
     @PostMapping("/articles/{articleId}/comments")
     public String addComment(@PathVariable Integer articleId,
-            @RequestParam(required = false) String content,
-            Authentication authentication) {
-        departmentHeadReviewService.addComment(currentEmail(authentication), articleId, content);
+                         @RequestParam(required = false) String content,
+                         @RequestParam(required = false) String anchorField,
+                         @RequestParam(required = false) Integer anchorParagraph,
+                         @RequestParam(required = false) Integer anchorStart,
+                         @RequestParam(required = false) Integer anchorEnd,
+                         Authentication authentication) {
+    departmentHeadReviewService.addComment(currentEmail(authentication), articleId, content,
+            anchorField, anchorParagraph, anchorStart, anchorEnd);
         return "redirect:/department-head/articles/" + articleId + "/review";
     }
 

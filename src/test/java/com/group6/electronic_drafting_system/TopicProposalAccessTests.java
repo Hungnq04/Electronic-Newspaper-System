@@ -78,8 +78,9 @@ class TopicProposalAccessTests {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void adminGoesToPublicHome() throws Exception {
-        mvc.perform(get("/dashboard")).andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/"));
+    void adminLandsOnAccountList() throws Exception {
+        // TV4 Iter3: Admin đã có màn quản trị tài khoản
+        mvc.perform(get("/dashboard")).andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/admin/accounts"));
     }
 
     @Test

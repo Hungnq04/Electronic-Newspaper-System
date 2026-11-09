@@ -13,7 +13,8 @@ public class DashboardController {
     private static final Map<String, String> DASHBOARD_BY_ROLE = Map.of(
             "ROLE_REPORTER", "/reporter/topics",
             "ROLE_DEPARTMENT_HEAD", "/department-head/dashboard",
-            "ROLE_EDITORIAL_SECRETARY", "/secretary/final-reviews");
+            "ROLE_EDITORIAL_SECRETARY", "/secretary/final-reviews",
+            "ROLE_ADMIN", "/admin/accounts");
 
     @GetMapping("/dashboard")
     public String dashboard(Authentication auth) {
@@ -23,7 +24,7 @@ public class DashboardController {
                 if (target != null) return "redirect:" + target;
             }
         }
-        // ADMIN chưa có màn riêng: về trang chủ
+        // Không khớp role nào: về trang chủ
         return "redirect:/";
     }
 }

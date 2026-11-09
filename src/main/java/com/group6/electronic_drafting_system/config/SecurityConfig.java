@@ -54,6 +54,8 @@ public class SecurityConfig {
                         .requestMatchers("/reporter/css/**", "/reporter/js/**").permitAll()
                         .requestMatchers("/reporter/**").hasRole("REPORTER")
                         .requestMatchers("/articles/**").hasRole("REPORTER")
+                        // Màn quản trị tài khoản (FR-15); role còn được kiểm tra lại ở service
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .formLogin(form -> form.loginPage("/login").loginProcessingUrl("/process-login").usernameParameter("email").defaultSuccessUrl("/dashboard", true).permitAll())
                 .oauth2Login(oauth -> oauth.loginPage("/login")

@@ -9,7 +9,7 @@
 //   5. So sánh hai phiên bản của bài
 //   6. Đổi tab góp ý, mở / đóng hộp thoại "Duyệt" và "Yêu cầu sửa"
 //
-// Cách ẩn / hiện một phần tử: el.hidden = true (ẩn) hoặc el.hidden = false (hiện).
+// Cách ẩn / hiện một phần tử: element.hidden = true (ẩn) hoặc element.hidden = false (hiện).
 // File được nạp ở cuối trang (layout/app.html) nên mọi phần tử HTML đã có sẵn khi chạy.
 // =====================================================================
 
@@ -29,6 +29,7 @@ function escapeHtml(text) {
 }
 
 // Khung chứa bài viết đang duyệt (tít, sapo, thân bài)
+// Tìm thẻ có id="article-card" và lưu vào biến articleCard.
 const articleCard = byId('article-card');
 
 
@@ -77,18 +78,19 @@ document.querySelectorAll('form[data-confirm]').forEach(function (form) {
 // "Range" là một vùng chữ trên trang, giống vùng bạn bôi đen bằng chuột.
 // ---------------------------------------------------------------------
 
-// Đếm xem từ đầu phần tử el tới điểm (node, offset) có bao nhiêu ký tự
-function offsetIn(el, node, offset) {
-  const range = document.createRange();
-  range.setStart(el, 0);
-  range.setEnd(node, offset);
-  return range.toString().length;
+// Đếm xem từ đầu phần tử element tới điểm (node, offset) có bao nhiêu ký tự
+// (Đếm số ký tự từ đầu phần tử tới một điểm)
+function offsetIn(element, node, offset) {
+  const range = document.createRange();   // tạo một vùng chọn mới (trống)
+  range.setStart(element, 0);             // điểm đầu: đầu thẻ <p>
+  range.setEnd(node, offset);             // điểm cuối: chỗ cần đo
+  return range.toString().length;         // lấy chữ trong vùng đó, đếm độ dài
 }
 
-// Ngược lại với offsetIn: từ vị trí [start, end) trong el, tạo ra Range để tô màu
-function rangeFromOffsets(el, start, end) {
-  // TreeWalker đi lần lượt qua từng mẩu chữ (text node) bên trong el
-  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+// Ngược lại với offsetIn: từ vị trí [start, end) trong element, tạo ra Range để tô màu
+function rangeFromOffsets(element, start, end) {
+  // TreeWalker đi lần lượt qua từng mẩu chữ (text node) bên trong element
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
   const range = document.createRange();
   let position = 0;           // đã đi qua bao nhiêu ký tự
   let startFound = false;
@@ -116,12 +118,14 @@ function anchorElement(field, paragraph) {
 
 // Tô vàng chữ của từng góp ý đã lưu: bọc chữ đó trong thẻ <mark class="ws-mark">
 // (chỉ thẻ góp ý có data-field mới gắn vị trí; góp ý chung thì không có)
+// Với mỗi góp ý có vị trí: tìm đúng đoạn, khoanh đúng chữ, bọc trong <mark>
 document.querySelectorAll('.comment-card[data-field]').forEach(function (card) {
-  const el = anchorElement(card.dataset.field, card.dataset.paragraph);
-  if (!el) return;
-  const range = rangeFromOffsets(el, Number(card.dataset.start), Number(card.dataset.end));
+  // Tít / tít phụ / sapo chỉ có 1 đoạn: góp ý cũ có thể không lưu số đoạn (NULL) thì coi là đoạn 1
+  const element = anchorElement(card.dataset.field, card.dataset.paragraph || '1');
+  if (!element) return;
+  const range = rangeFromOffsets(element, Number(card.dataset.start), Number(card.dataset.end));
   if (!range) return;
-  const mark = document.createElement('mark');
+  const mark = document.createElement('mark');   // thẻ <mark> có nền vàng sẵn
   mark.className = 'ws-mark';
   mark.dataset.cid = card.dataset.cid;        // nhớ thẻ <mark> này thuộc góp ý nào
   try {
@@ -132,10 +136,10 @@ document.querySelectorAll('.comment-card[data-field]').forEach(function (card) {
 });
 
 // Nháy viền vàng để người dùng thấy phần tử vừa được nhảy tới
-function flash(el) {
-  el.classList.remove('ws-flash');
-  void el.offsetWidth;                         // bắt trình duyệt vẽ lại, để hiệu ứng chạy lại từ đầu
-  el.classList.add('ws-flash');
+function flash(element) {
+  element.classList.remove('ws-flash');
+  void element.offsetWidth;                         // bắt trình duyệt vẽ lại, để hiệu ứng chạy lại từ đầu
+  element.classList.add('ws-flash');
 }
 
 // Bấm "Xem vị trí →" ở thẻ góp ý -> cuộn tới chữ được tô vàng trong bài
@@ -167,22 +171,27 @@ articleCard.addEventListener('click', function (event) {
 // 4. Bôi đen chữ -> khung góp ý
 //    Khung góp ý chỉ có khi mình đang được duyệt bài này (không thì popover = null)
 // ---------------------------------------------------------------------
+// Tìm form có id "comment-popover" (các thành phần bên trong nó: popoverText, popoverSave lấy ở dưới, trong if (popover))
 const popover = byId('comment-popover');
 let pendingAnchor = null;                     // vị trí đoạn chữ vừa bôi đen, chờ bấm "Thêm góp ý"
+// Tạo một biến để nhớ vị trí vừa bôi đen. Ban đầu là null (chưa có gì).
+// Chữ "pending" nghĩa là "đang chờ": vị trí này chờ người dùng gõ xong và bấm "Thêm góp ý" mới dùng tới.
 
-// Đóng khung góp ý và xóa chữ đang gõ dở
+// Đóng khung góp ý và xóa chữ đang gõ dở (hàm ẩn khung góp ý)
 function hidePopover() {
   if (!popover) return;
-  popover.hidden = true;
-  pendingAnchor = null;
-  byId('popover-text').value = '';
-  byId('popover-save').disabled = true;
+  popover.hidden = true;                      // ẩn khung góp ý
+  pendingAnchor = null;                       // xóa vị trí đang chờ
+  byId('popover-text').value = '';            // xóa chữ người dùng đã gõ dở trong ô
+  byId('popover-save').disabled = true;       // làm mờ nút "Thêm góp ý" trở lại
 }
 
 // Tìm phần tử có data-field chứa node (node có thể là một mẩu chữ hoặc một thẻ HTML)
+// Hàm anchorOf nhận một node và trả về thẻ cha gần nhất có thuộc tính data-field.
+// Để biết được xem vùng được chọn thuộc phần nào: sapo hay title hay subtitle...
 function anchorOf(node) {
-  const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
-  return el ? el.closest('[data-field]') : null;
+  const element = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+  return element ? element.closest('[data-field]') : null;
 }
 
 if (popover) {
@@ -190,14 +199,21 @@ if (popover) {
   const popoverSave = byId('popover-save');
 
   // Nhả chuột sau khi bôi đen trong bài -> mở khung góp ý ngay dưới chỗ bôi đen
+  // Người dùng nhả chuột trong vùng này thì chạy đoạn code bên trong:
+  // "Khi nhả chuột trong article-card, chạy hàm bên trong." event là thông tin về cú nhả chuột đó (nhả ở đâu, trúng phần tử nào).
   articleCard.addEventListener('mouseup', function (event) {
     if (popover.contains(event.target)) return;          // bấm bên trong khung góp ý thì bỏ qua
     // setTimeout(..., 0): đợi trình duyệt cập nhật xong vùng bôi đen rồi mới đọc
     setTimeout(function () {
-      const selection = window.getSelection();
+      const selection = window.getSelection();           // lấy đối tượng Selection hiện tại
+      // Nếu không có vùng chọn nào, hoặc vùng chọn đang rỗng, thì thoát khỏi hàm luôn
       if (!selection.rangeCount || selection.isCollapsed) return;    // không bôi đen gì
+      // range cho biết vùng chọn bắt đầu ở đâu.
+      // Ví dụ bạn bôi đen chữ "ghe hàng lớn" thì range ghi nhận điểm bắt đầu trước chữ "ghe" và điểm kết thúc sau chữ "lớn"
       const range = selection.getRangeAt(0);
+      // Tìm thẻ cha gần nhất có thuộc tính data-field cho điểm bắt đầu, ý là nguyên cả thẻ <p> chứa chữ vừa bôi đen
       const startAnchor = anchorOf(range.startContainer);
+      // Tìm thẻ cha gần nhất có thuộc tính data-field cho điểm kết thúc, ý là nguyên cả thẻ <p> chứa chữ vừa bôi đen
       const endAnchor = anchorOf(range.endContainer);
       if (!selection.toString().trim() || !startAnchor) return;      // bôi đen khoảng trắng hoặc ngoài chữ bài
       if (startAnchor !== endAnchor) {
@@ -206,13 +222,20 @@ if (popover) {
       }
 
       // Ghi nhớ vị trí để gửi lên server khi bấm "Thêm góp ý"
+      // (lưu thông tin về vị trí vừa bôi đen vào biến pendingAnchor)
       pendingAnchor = {
+        // Lấy giá trị của thuộc tính data-field của thẻ <p> chứa chữ vừa bôi đen
         field: startAnchor.dataset.field,
+        // Lấy giá trị của thuộc tính data-paragraph của thẻ <p> chứa chữ vừa bôi đen
         paragraph: startAnchor.dataset.paragraph,
+        // offsetIn(<p>, mẩu 2, 0) đo từ đầu <p> đến đầu mẩu 2, chữ nằm giữa là "Giá vàng ", dài 9
         start: offsetIn(startAnchor, range.startContainer, range.startOffset),
+        // offsetIn(<p>, mẩu 2, 9) đo từ đầu <p> đến cuối "tăng mạnh", chữ nằm giữa là "Giá vàng tăng mạnh", dài 18
         end: offsetIn(startAnchor, range.endContainer, range.endOffset)
       };
       byId('popover-anchor').textContent = startAnchor.dataset.anchor;
+      // Tìm thẻ <p id="popover-quote"> trong khung và ghi chữ vừa bôi đen vào đó
+      // để người dùng thấy mình đang góp ý cho đoạn chữ nào. textContent là thuộc tính để gán chữ cho một thẻ.
       byId('popover-quote').textContent = '“' + selection.toString() + '”';
 
       // Đặt khung góp ý ngay dưới vùng bôi đen (tọa độ tính theo khung bài viết)
@@ -276,8 +299,8 @@ function readVersion(label) {
   const box = document.querySelector('#version-data > [data-label="' + label + '"]');
   const result = {};
   if (box) {
-    box.querySelectorAll('[data-key]').forEach(function (el) {
-      result[el.dataset.key] = el.textContent.trim();
+    box.querySelectorAll('[data-key]').forEach(function (element) {
+      result[element.dataset.key] = element.textContent.trim();
     });
   }
   return result;
@@ -300,16 +323,16 @@ function tokenize(text) {
 // Dùng thuật toán "dãy con chung dài nhất" (LCS): tìm nhiều từ giống nhau nhất giữa 2 bản,
 // phần còn lại là chữ bị xóa (ở bản cũ) hoặc chữ thêm mới (ở bản mới).
 function diffTokens(oldWords, newWords) {
-  const n = oldWords.length;
-  const m = newWords.length;
+  const oldCount = oldWords.length;   // số từ của bản cũ
+  const newCount = newWords.length;   // số từ của bản mới
 
   // lcs[i][j] = số từ giống nhau nhiều nhất giữa oldWords (tính từ vị trí i) và newWords (tính từ vị trí j)
   const lcs = [];
-  for (let i = 0; i <= n; i++) {
-    lcs.push(new Uint16Array(m + 1));          // mảng số nguyên, mặc định toàn số 0
+  for (let i = 0; i <= oldCount; i++) {
+    lcs.push(new Uint16Array(newCount + 1));          // mảng số nguyên, mặc định toàn số 0
   }
-  for (let i = n - 1; i >= 0; i--) {
-    for (let j = m - 1; j >= 0; j--) {
+  for (let i = oldCount - 1; i >= 0; i--) {
+    for (let j = newCount - 1; j >= 0; j--) {
       if (oldWords[i] === newWords[j]) {
         lcs[i][j] = lcs[i + 1][j + 1] + 1;
       } else {
@@ -322,7 +345,7 @@ function diffTokens(oldWords, newWords) {
   const operations = [];
   let i = 0;
   let j = 0;
-  while (i < n && j < m) {
+  while (i < oldCount && j < newCount) {
     if (oldWords[i] === newWords[j]) {
       operations.push(['eq', oldWords[i]]);
       i++;
@@ -335,11 +358,11 @@ function diffTokens(oldWords, newWords) {
       j++;
     }
   }
-  while (i < n) {                              // còn dư từ ở bản cũ: đều là chữ bị xóa
+  while (i < oldCount) {                              // còn dư từ ở bản cũ: đều là chữ bị xóa
     operations.push(['del', oldWords[i]]);
     i++;
   }
-  while (j < m) {                              // còn dư từ ở bản mới: đều là chữ thêm mới
+  while (j < newCount) {                              // còn dư từ ở bản mới: đều là chữ thêm mới
     operations.push(['ins', newWords[j]]);
     j++;
   }

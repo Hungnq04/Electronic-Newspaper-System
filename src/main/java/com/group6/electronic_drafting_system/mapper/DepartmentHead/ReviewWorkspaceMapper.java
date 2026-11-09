@@ -78,6 +78,8 @@ public class ReviewWorkspaceMapper {
                 .authorName(comment.getCreator().getFullName())
                 .timeText(comment.getCreatedAt() != null ? comment.getCreatedAt().format(TIME) : "")
                 .resolved(comment.getStatus() == CommentStatus.RESOLVED)
+                // Phiên bản chứa góp ý (comment -> lượt duyệt -> version), ví dụ "1.0"
+                .versionLabel(comment.getReview().getVersion().getVersionLabel())
                 .replies(replies.stream().map(reply -> toComment(reply, List.of())).toList())
                 .build();
     }

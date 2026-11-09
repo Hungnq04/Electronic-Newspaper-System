@@ -511,10 +511,23 @@
     titleEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sapoEl.focus(); } });
     window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
 
+    /* ---------- Khôi phục phiên bản: hỏi lại trước khi gửi (form có data-confirm) ---------- */
+    document.querySelectorAll('form.restore-form[data-confirm]').forEach(form => {
+        form.addEventListener('submit', e => {
+            if (!confirm(form.dataset.confirm)) { e.preventDefault(); return; }
+            dirty = false;   // nội dung sẽ được thay bằng bản khôi phục, không hỏi "rời trang?" nữa
+        });
+    });
+
     /* ---------- Nộp bài ---------- */
     $('#articleForm').addEventListener('submit', e => {
         const isSubmit = e.submitter?.value === 'submit' || (!A.isNew && !e.submitter);
-        if (isSubmit && !confirm('Nộp bản thảo cho Trưởng ban duyệt? Sau khi nộp, bài sẽ bị khóa chỉnh sửa.')) { e.preventDefault(); return; }
+        // Nộp lại (bài đã có phiên bản) dùng câu hỏi riêng; ô ghi chú "đã sửa gì" là bắt buộc (thuộc tính required)
+        const isResubmit = e.submitter?.dataset.resubmit === 'true';
+        const question = isResubmit
+            ? 'Nộp lại bài cho Trưởng ban duyệt? Hệ thống sẽ tạo phiên bản mới và khóa chỉnh sửa cho tới khi bài được trả về.'
+            : 'Nộp bản thảo cho Trưởng ban duyệt? Sau khi nộp, bài sẽ bị khóa chỉnh sửa.';
+        if (isSubmit && !confirm(question)) { e.preventDefault(); return; }
         $('#contentInput').value = contentHtml();
         dirty = false;
     });

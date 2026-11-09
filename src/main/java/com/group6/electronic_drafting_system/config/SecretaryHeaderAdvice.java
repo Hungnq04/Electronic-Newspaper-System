@@ -1,5 +1,6 @@
 package com.group6.electronic_drafting_system.config;
 
+import com.group6.electronic_drafting_system.controller.AdminAccountController;
 import com.group6.electronic_drafting_system.controller.EditorialTopicController;
 import com.group6.electronic_drafting_system.controller.FinalReviewController;
 import com.group6.electronic_drafting_system.entity.Account;
@@ -9,9 +10,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
-// Thanh trên cùng (fragment/secretary-topbar) của các màn Thư ký cần tên + chữ viết tắt của người đăng nhập.
+// Thanh trên cùng (fragment/secretary-topbar) của các màn Thư ký và Admin cần tên + chữ viết tắt của người đăng nhập.
 // Chỉ áp dụng cho các controller liệt kê ở assignableTypes, không ảnh hưởng màn của role khác.
-@ControllerAdvice(assignableTypes = {FinalReviewController.class, EditorialTopicController.class})
+@ControllerAdvice(assignableTypes = {FinalReviewController.class, EditorialTopicController.class, AdminAccountController.class})
 public class SecretaryHeaderAdvice {
     private final AccountRepository accountRepository;
 
@@ -26,7 +27,9 @@ public class SecretaryHeaderAdvice {
                 .map(Account::getFullName)
                 .orElse(authentication.getName());
         model.addAttribute("headerName", fullName);
-        model.addAttribute("headerRole", "Thư ký tòa soạn");
+        // Lấy theo quyền của người đăng nhập: màn Admin hiện "Quản trị viên"
+        boolean admin = authentication.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        model.addAttribute("headerRole", admin ? "Quản trị viên" : "Thư ký tòa soạn");
         model.addAttribute("headerInitials", initials(fullName));
     }
 

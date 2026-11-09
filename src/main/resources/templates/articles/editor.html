@@ -4,6 +4,8 @@
 <!--
   Trình soạn thảo bài viết, hiển thị trong layout/app (sidebar chung theo quyền).
   CSS/JS (editor.css, reporter-tasks.css, lucide, editor.js) do ArticleController khai báo qua pageCss / pageJs.
+  Phần góp ý của Trưởng ban / Thư ký (dải "Bài bị trả về", thẻ "Góp ý cần sửa", nội dung phiên bản có tô vàng)
+  nằm ở file riêng reporter/article-feedback.html (+ /reporter/css/article-feedback.css, /reporter/js/article-feedback.js).
 -->
 <th:block th:fragment="articleEditorContent">
 <svg th:replace="~{reporter/tasks :: reporterSprite}"></svg>
@@ -37,6 +39,8 @@
     <div class="flash info" th:unless="${article.editable}">
         Bài viết đang ở trạng thái "<span th:text="${article.statusLabel()}"></span>" nên chỉ có thể xem, không thể chỉnh sửa.
     </div>
+    <!-- Dải báo "Bài bị trả về" (chỉ khi bài đang Cần chỉnh sửa) -->
+    <div th:replace="~{reporter/article-feedback :: returnedBanner(${article})}"></div>
 
     <!-- ===== Thanh công cụ định dạng (kiểu Word) ===== -->
     <div class="toolbar" id="toolbar" th:if="${article.editable}">
@@ -180,6 +184,8 @@
 
         <!-- ===== Cột thông tin bên phải ===== -->
         <aside class="info-col">
+            <!-- Thẻ "Góp ý cần sửa" của Trưởng ban / Thư ký (chỉ khi bài đang Cần chỉnh sửa) -->
+            <section th:replace="~{reporter/article-feedback :: feedbackCard(${article})}"></section>
             <section class="card deadline-card" th:if="${article.deadline != null}">
                 <p class="deadline-head"><span><i data-lucide="clock-3"></i>Hạn nộp bài</span>
                     <strong th:text="${#temporals.format(article.deadline, 'HH:mm')}">17:30</strong></p>
@@ -200,15 +206,24 @@
                 </div>
                 <div class="review-note" th:if="${article.latestReview() != null and article.latestReview().feedback() != null}"
                      th:classappend="${article.latestReview().decision() != null ? article.latestReview().decision().name().toLowerCase() : ''}">
-                    <span class="label">Phản hồi gần nhất · <span th:text="${article.latestReview().reviewerName()}"></span></span>
+                    <span class="label">Phản hồi gần nhất · <span th:text="${article.latestReview().reviewerName()} + ' (' + ${article.latestReview().stageLabel()} + ')'"></span></span>
                     <p th:text="${article.latestReview().feedback()}"></p>
                 </div>
-                <th:block th:if="${article.editable}">
-                    <label class="label" for="changeSummary">Ghi chú cho bản nộp</label>
-                    <textarea id="changeSummary" name="changeSummary" rows="3" class="note-input"
-                              placeholder="Tóm tắt thay đổi / lời nhắn cho Trưởng ban…" th:text="${changeSummary}"></textarea>
-                    <button type="submit" name="action" value="submit" class="btn primary block"><i data-lucide="send"></i>Nộp bản thảo duyệt bài</button>
-                    <p class="hint">Mỗi lần nộp sẽ tạo một phiên bản mới; bài bị khóa chỉnh sửa cho tới khi được trả về.</p>
+                <!-- resubmit = bài đã có phiên bản (đã nộp ít nhất 1 lần) -> lần này là NỘP LẠI, ghi chú bắt buộc (UC-25).
+                     Backend (ArticleServiceImpl.submitVersion) kiểm tra lại, ô required ở đây chỉ để nhắc sớm. -->
+                <th:block th:if="${article.editable}" th:with="resubmit=${!article.versions().isEmpty()}">
+                    <label class="label" for="changeSummary">
+                        <span th:text="${resubmit} ? 'Ghi chú đã sửa gì' : 'Ghi chú cho bản nộp'">Ghi chú cho bản nộp</span>
+                        <span class="required-mark" th:if="${resubmit}">*</span>
+                    </label>
+                    <!-- Vừa khôi phục version cũ thì điền sẵn "Khôi phục từ version X" (Lead có thể ghi thêm) -->
+                    <textarea id="changeSummary" name="changeSummary" rows="3" class="note-input" th:required="${resubmit}"
+                              th:placeholder="${resubmit} ? 'Ví dụ: Sửa số liệu đoạn 2 theo góp ý của Trưởng ban…' : 'Tóm tắt thay đổi / lời nhắn cho Trưởng ban…'"
+                              th:text="${changeSummary != null ? changeSummary : (article.restoredFromLabel() != null ? 'Khôi phục từ version ' + article.restoredFromLabel() : '')}"></textarea>
+                    <button type="submit" name="action" value="submit" class="btn primary block" th:attr="data-resubmit=${resubmit}">
+                        <i data-lucide="send"></i><span th:text="${resubmit} ? 'Nộp lại cho Trưởng ban' : 'Nộp bản thảo duyệt bài'">Nộp bản thảo duyệt bài</span></button>
+                    <p class="hint">Mỗi lần nộp sẽ tạo một phiên bản mới; bài bị khóa chỉnh sửa cho tới khi được trả về.
+                        <th:block th:if="${resubmit}">Bài nộp lại luôn qua Trưởng ban trước, kể cả khi Thư ký là người trả bài.</th:block></p>
                 </th:block>
             </section>
 
@@ -306,6 +321,13 @@
             </div>
         </div>
         <p class="version-meta" th:text="'Nộp bởi ' + ${v.creatorName()} + ' lúc ' + ${#temporals.format(v.createdAt(), 'HH:mm dd/MM/yyyy')}"></p>
+        <!-- Khôi phục (UC-24): chỉ hiện khi bài còn sửa được. Chép nội dung bản này vào bản đang soạn, KHÔNG xóa / sửa version nào.
+             Backend (ArticleServiceImpl.restoreVersion) kiểm tra lại quyền Lead và trạng thái bài. -->
+        <form class="restore-form" method="post" th:if="${article.editable}"
+              th:action="@{/articles/{id}/versions/{versionId}/restore(id=${article.id},versionId=${v.id()})}"
+              th:attr="data-confirm='Khôi phục nội dung phiên bản ' + ${v.label()} + ' vào bản đang soạn? Nội dung đang soạn sẽ bị thay thế; lịch sử phiên bản giữ nguyên.'">
+            <button type="submit" class="btn mini"><i data-lucide="rotate-ccw"></i>Khôi phục bản này vào bản đang soạn</button>
+        </form>
         <div class="field-box" th:if="${v.changeSummary() != null}">
             <span class="label">Ghi chú khi nộp</span>
             <p class="pre-wrap" th:text="${v.changeSummary()}"></p>
@@ -325,11 +347,14 @@
         <section class="version-section" th:unless="${v.comments().isEmpty()}">
             <h4><i data-lucide="messages-square"></i>Góp ý trên bài (<span th:text="${v.comments().size()}">0</span>)</h4>
             <ul class="comment-list">
-                <li th:each="c : ${v.comments()}" th:classappend="${c.isOpen()} ? 'open' : 'resolved'">
+                <!-- data-*: vị trí góp ý, article-feedback.js dùng để tô vàng chữ trong nội dung phiên bản bên dưới -->
+                <li th:each="c : ${v.comments()}" class="fb-old-comment" th:classappend="${c.isOpen()} ? 'open' : 'resolved'"
+                    th:attr="data-comment-id=${c.id()},data-field=${c.anchorField()},data-paragraph=${c.anchorParagraph()},data-start=${c.anchorStart()},data-end=${c.anchorEnd()}">
                     <div class="comment-head">
                         <span class="vtag" th:text="${c.anchorLabel()}"></span>
                         <span class="vtag" th:classappend="${c.isOpen()} ? 'request_revision' : 'approved'"
                               th:text="${c.isOpen()} ? 'Cần xử lý' : 'Đã xử lý'"></span>
+                        <span class="fb-click-hint" th:if="${c.hasAnchor()}">Bấm để xem vị trí</span>
                     </div>
                     <blockquote class="comment-quote" th:if="${c.quotedText() != null}" th:text="${c.quotedText()}"></blockquote>
                     <p class="pre-wrap" th:text="${c.content()}"></p>
@@ -346,13 +371,8 @@
 
         <section class="version-section">
             <h4><i data-lucide="file-text"></i>Nội dung bài tại phiên bản này</h4>
-            <article class="preview">
-                <div class="pv-cat" th:text="${article.category}"></div>
-                <h1 th:text="${v.title()}"></h1>
-                <p class="pv-sub" th:if="${v.subtitle() != null}" th:text="${v.subtitle()}"></p>
-                <p class="pv-sapo" th:text="${v.sapo()}"></p>
-                <div class="prose" th:utext="${v.content()}"></div>
-            </article>
+            <!-- Nội dung chia đoạn giống màn Trưởng ban, chữ được góp ý sẽ được tô vàng -->
+            <article th:replace="~{reporter/article-feedback :: versionBody(${v}, ${article.category})}"></article>
         </section>
     </div>
 </div>

@@ -1,0 +1,146 @@
+/* Trang "Đề tài đã duyệt" của Trưởng phòng. Mọi selector có tiền tố dht- để không ảnh hưởng sidebar / layout chung. */
+.dht-svg-sprite { position:absolute; width:0; height:0; overflow:hidden; }
+.dht-page { --dht-ink:#1d2433; --dht-muted:#6b7385; --dht-line:#e4e8f1; --dht-page:#f4f6fb; --dht-blue:#1f4fb8; --dht-blue-dark:#183f94; --dht-blue-pale:#eaf0ff; --dht-orange:#e8590c; --dht-orange-dark:#c84a07; --dht-red:#c92a2a; --dht-red-pale:#fff0f0; --dht-amber:#b7791f; --dht-amber-pale:#fff7e6; --dht-green:#2b8a3e; --dht-green-pale:#ebfbee; --dht-mono:"JetBrains Mono","SFMono-Regular",Consolas,"Liberation Mono",monospace;
+    color:var(--dht-ink); background:var(--dht-page); min-height:100vh; font-family:Inter,"Segoe UI",Roboto,Arial,sans-serif; font-size:13px; line-height:1.45; }
+.dht-page *, .dht-page *::before, .dht-page *::after { box-sizing:border-box; }
+.dht-page button, .dht-page input, .dht-page select { font:inherit; }
+.dht-page button { cursor:pointer; }
+.dht-page [hidden] { display:none !important; }
+.dht-icon { display:inline-block; width:16px; height:16px; flex:0 0 auto; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; vertical-align:middle; }
+.dht-icon--tiny { width:11px; height:11px; color:#aab1c2; }
+.dht-muted { display:block; color:var(--dht-muted); font-size:11px; }
+.dht-right { text-align:right; }
+
+/* Topbar */
+.dht-topbar { min-height:58px; padding:9px clamp(16px,2.3vw,32px); display:flex; align-items:center; justify-content:space-between; gap:16px; background:#fff; border-bottom:1px solid var(--dht-line); position:sticky; top:0; z-index:5; }
+.dht-breadcrumb { display:flex; flex-wrap:wrap; align-items:center; gap:7px; font-family:var(--dht-mono); font-size:10px; letter-spacing:.06em; color:var(--dht-muted); }
+.dht-breadcrumb > span:first-child { color:var(--dht-orange); font-weight:800; }
+.dht-breadcrumb strong { color:#3a4254; font-weight:700; }
+.dht-account { display:flex; align-items:center; gap:9px; }
+.dht-account-copy { display:flex; flex-direction:column; line-height:1.3; }
+.dht-account-copy strong { font-size:12px; }
+.dht-account-copy small { font-family:var(--dht-mono); font-size:9px; letter-spacing:.06em; text-transform:uppercase; color:var(--dht-orange); font-weight:700; }
+.dht-avatar { width:32px; height:32px; display:grid; place-items:center; flex:0 0 auto; border-radius:50%; color:#fff; background:var(--dht-blue); font-size:11px; font-weight:800; }
+.dht-avatar--sm { width:28px; height:28px; font-size:10px; }
+.dht-avatar--xs { width:26px; height:26px; font-size:9px; box-shadow:0 0 0 2px #fff; }
+.dht-avatar--support { color:var(--dht-blue); background:#dbe4fb; }
+
+/* Nội dung chính */
+.dht-main { width:100%; max-width:1500px; margin:0 auto; padding:20px clamp(16px,2.3vw,32px) 32px; }
+.dht-flash { margin-bottom:14px; padding:10px 14px; border-radius:8px; font-size:12px; font-weight:600; }
+.dht-flash--error { color:var(--dht-red); background:var(--dht-red-pale); border:1px solid #ffd4d4; }
+.dht-flash--ok { color:var(--dht-green); background:var(--dht-green-pale); border:1px solid #c7f0cf; }
+.dht-heading { margin-bottom:18px; }
+.dht-heading h1 { margin:0; color:var(--dht-blue-dark); font-size:clamp(22px,2vw,28px); line-height:1.2; letter-spacing:-.02em; }
+.dht-heading p { margin:6px 0 0; color:var(--dht-muted); font-size:12px; }
+
+/* Nút */
+.dht-page a.dht-button { text-decoration:none; }
+.dht-button { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:36px; padding:7px 13px; border:1px solid transparent; border-radius:7px; font-size:12px; font-weight:700; line-height:1.2; white-space:nowrap; transition:background .15s ease,border-color .15s ease; }
+.dht-button--small { min-height:30px; padding:5px 10px; font-size:11px; }
+.dht-button--small .dht-icon { width:13px; height:13px; }
+.dht-button--primary { color:#fff; background:var(--dht-blue); border-color:var(--dht-blue); }
+.dht-button--primary:hover { background:var(--dht-blue-dark); }
+.dht-button--outline { color:#3a4254; background:#fff; border-color:#d6dbe7; }
+.dht-button--outline:hover { border-color:#b5bdd0; background:#fafbff; }
+.dht-link-button { display:inline-flex; align-items:center; gap:6px; padding:6px 8px; border:0; border-radius:6px; background:transparent; color:#3a4254; font-size:12px; font-weight:600; }
+.dht-link-button:hover { color:var(--dht-blue); background:var(--dht-blue-pale); }
+
+/* Thống kê */
+.dht-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
+.dht-stat { min-width:0; padding:14px 16px 12px; border:1px solid var(--dht-line); border-radius:10px; background:#fff; display:flex; flex-direction:column; gap:4px; }
+.dht-stat-head { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; font-family:var(--dht-mono); font-size:10px; font-weight:700; letter-spacing:.07em; color:var(--dht-muted); }
+.dht-stat-icon { width:30px; height:30px; display:grid; place-items:center; border-radius:7px; color:var(--dht-blue); background:var(--dht-blue-pale); }
+.dht-stat-value { font-size:32px; line-height:1.1; font-weight:800; color:var(--dht-blue); letter-spacing:-.03em; }
+.dht-stat-foot { font-size:11px; color:var(--dht-muted); }
+.dht-stat--danger { border-top:3px solid var(--dht-orange); }
+.dht-stat--danger .dht-stat-head, .dht-stat--danger .dht-stat-value { color:var(--dht-orange); }
+.dht-stat--danger .dht-stat-icon { color:var(--dht-orange); background:#fff1e8; }
+.dht-stat--warning .dht-stat-value { color:var(--dht-amber); }
+.dht-stat--warning .dht-stat-icon { color:var(--dht-amber); background:var(--dht-amber-pale); }
+.dht-stat--success .dht-stat-value { color:var(--dht-green); }
+.dht-stat--success .dht-stat-icon { color:var(--dht-green); background:var(--dht-green-pale); }
+
+/* Bộ lọc */
+.dht-filter-panel { margin-bottom:16px; padding:14px 16px; border:1px solid var(--dht-line); border-radius:10px; background:#fff; display:flex; flex-direction:column; gap:12px; }
+.dht-filter-top { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px; }
+.dht-tabs { display:flex; flex-wrap:wrap; gap:6px; }
+.dht-tab { display:inline-flex; align-items:center; gap:7px; min-height:32px; padding:6px 12px; border:1px solid var(--dht-line); border-radius:7px; background:#f7f8fc; color:#3a4254; font-size:12px; font-weight:600; }
+.dht-tab b { min-width:18px; padding:1px 6px; border-radius:20px; background:#e3e7f1; font-family:var(--dht-mono); font-size:10px; text-align:center; }
+.dht-tab:hover { border-color:#bcc7e2; }
+.dht-tab.is-active { color:#fff; background:var(--dht-blue); border-color:var(--dht-blue); }
+.dht-tab.is-active b { background:rgba(255,255,255,.22); }
+.dht-filter-search { flex:0 1 360px; min-width:220px; height:34px; display:flex; align-items:center; gap:8px; padding:0 10px; border:1px solid var(--dht-line); border-radius:7px; background:#f8f9fc; color:#8d94a6; }
+.dht-filter-search input { width:100%; min-width:0; border:0; outline:0; background:transparent; color:var(--dht-ink); font-size:12px; }
+.dht-filter-search:focus-within { border-color:#a9bdf0; box-shadow:0 0 0 3px rgba(31,79,184,.08); }
+.dht-filter-row { display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px; }
+.dht-select-field { position:relative; display:flex; align-items:center; gap:8px; }
+.dht-select-field > span { display:inline-flex; align-items:center; gap:5px; font-family:var(--dht-mono); font-size:10px; font-weight:700; letter-spacing:.06em; color:var(--dht-muted); }
+.dht-select-field > span .dht-icon { width:13px; height:13px; }
+.dht-select-field select { appearance:none; min-width:170px; height:32px; padding:4px 30px 4px 10px; border:1px solid #d6dbe7; border-radius:6px; outline:0; background:#fff; color:var(--dht-ink); font-size:12px; font-weight:600; }
+.dht-select-field select:focus { border-color:#a9bdf0; box-shadow:0 0 0 3px rgba(31,79,184,.08); }
+.dht-select-chevron { position:absolute; right:9px; width:13px; height:13px; pointer-events:none; color:#7a8296; }
+
+/* Thẻ chứa bảng */
+.dht-card { border:1px solid var(--dht-line); border-radius:10px; background:#fff; overflow:hidden; }
+.dht-card-head { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px; padding:12px 16px; border-bottom:1px solid var(--dht-line); background:#fafbfe; }
+.dht-card-head h2 { display:flex; align-items:center; gap:8px; margin:0; font-size:13px; font-weight:700; }
+.dht-count-pill { padding:2px 8px; border-radius:20px; background:var(--dht-blue-pale); color:var(--dht-blue); font-family:var(--dht-mono); font-size:10px; font-weight:700; }
+.dht-sort-note { font-family:var(--dht-mono); font-size:10px; color:var(--dht-muted); letter-spacing:.04em; }
+
+/* Bảng */
+.dht-table-wrap { overflow-x:auto; }
+.dht-table { width:100%; min-width:1080px; border-collapse:collapse; }
+.dht-table th { padding:10px 14px; border-bottom:1px solid var(--dht-line); text-align:left; font-family:var(--dht-mono); font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--dht-muted); white-space:nowrap; }
+.dht-table td { padding:14px; border-bottom:1px solid #eef1f6; vertical-align:top; }
+.dht-table tbody tr:hover { background:#fafbff; }
+.dht-table tbody tr.is-pending td:first-child { box-shadow:inset 3px 0 0 var(--dht-amber); }
+.dht-col-topic { width:31%; }
+.dht-col-proposer { width:16%; }
+.dht-col-lead { width:14%; }
+.dht-col-team { width:13%; }
+.dht-col-deadline { width:12%; }
+.dht-col-state { width:9%; }
+.dht-col-actions { width:5%; text-align:right; }
+.dht-tags { display:flex; flex-wrap:wrap; align-items:center; gap:5px; }
+.dht-code { padding:2px 6px; border-radius:4px; background:var(--dht-blue-pale); color:var(--dht-blue); font-family:var(--dht-mono); font-size:10px; font-weight:700; }
+.dht-category { padding:2px 7px; border-radius:4px; background:#f1f3f8; color:#4a5265; font-size:11px; }
+.dht-priority { display:inline-block; padding:2px 7px; border-radius:4px; font-family:var(--dht-mono); font-size:9.5px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; }
+.dht-priority--urgent { color:#fff; background:var(--dht-red); }
+.dht-priority--high { color:var(--dht-orange-dark); background:#ffe8d9; }
+.dht-priority--normal { color:var(--dht-blue); background:var(--dht-blue-pale); }
+.dht-priority--low { color:#5d6577; background:#eef0f5; }
+.dht-topic-title { display:block; margin:7px 0 4px; font-size:14px; font-weight:700; line-height:1.35; color:var(--dht-blue-dark); }
+.dht-topic-desc { margin:0; color:#4a5265; font-size:12px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.dht-col-proposer strong { display:block; font-size:12px; }
+.dht-approved { display:inline-flex; align-items:center; gap:4px; margin-top:5px; font-family:var(--dht-mono); font-size:10.5px; color:var(--dht-green); }
+.dht-approved .dht-icon { width:13px; height:13px; }
+.dht-person { display:flex; align-items:center; gap:8px; }
+.dht-person strong { display:block; font-size:12px; }
+.dht-role { display:inline-block; margin-top:2px; padding:1px 6px; border-radius:4px; background:var(--dht-blue-dark); color:#fff; font-family:var(--dht-mono); font-size:9px; font-weight:800; letter-spacing:.06em; }
+.dht-avatars { display:flex; margin-bottom:5px; }
+.dht-avatars .dht-avatar + .dht-avatar { margin-left:-6px; }
+.dht-team-note { font-size:11px; font-weight:600; color:#3a4254; }
+.dht-deadline { display:inline-flex; align-items:center; gap:5px; font-family:var(--dht-mono); font-size:11px; color:#3a4254; }
+.dht-deadline .dht-icon { width:13px; height:13px; }
+.dht-deadline.is-overdue { color:var(--dht-red); }
+.dht-deadline-tag { display:inline-block; margin-top:5px; padding:2px 7px; border-radius:4px; background:var(--dht-blue-pale); color:var(--dht-blue); font-size:10.5px; font-weight:700; }
+.dht-deadline-tag.is-overdue { background:var(--dht-red-pale); color:var(--dht-red); }
+.dht-state { display:inline-flex; align-items:center; gap:6px; padding:4px 9px; border-radius:20px; font-size:11px; font-weight:700; white-space:nowrap; }
+.dht-state i { width:7px; height:7px; border-radius:50%; background:currentColor; }
+.dht-state--no_lead { color:var(--dht-orange-dark); background:#fff1e8; }
+.dht-state--lead_pending { color:var(--dht-amber); background:var(--dht-amber-pale); }
+.dht-state--assigned { color:var(--dht-green); background:var(--dht-green-pale); }
+
+/* Không có dữ liệu */
+.dht-empty { display:flex; flex-direction:column; align-items:center; gap:6px; padding:40px 16px; text-align:center; color:var(--dht-muted); }
+.dht-empty .dht-icon { width:30px; height:30px; color:#aab1c2; }
+.dht-empty strong { color:#3a4254; font-size:14px; }
+
+@media (max-width: 1100px) {
+    .dht-stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 640px) {
+    .dht-stats { grid-template-columns:1fr; }
+    .dht-account-copy { display:none; }
+}

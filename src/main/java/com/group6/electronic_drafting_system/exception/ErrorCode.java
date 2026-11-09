@@ -52,6 +52,12 @@ public enum ErrorCode {
     ARTICLE_ASSIGNMENT_NOT_LEAD(1326, "Bạn chỉ được viết bài từ nhiệm vụ được giao cho mình với vai trò viết chính, trên đề tài đã được duyệt.", HttpStatus.FORBIDDEN),
     ARTICLE_SOURCE_NOT_FOUND(1327, "Không tìm thấy ảnh tư liệu của bài viết.", HttpStatus.NOT_FOUND),
     ARTICLE_ASSIGNMENT_REQUIRED(1328, "Bài viết phải được tạo từ một nhiệm vụ được giao. Vui lòng chọn nhiệm vụ để viết bài.", HttpStatus.BAD_REQUEST),
+    // Kiểm tra khi nộp / nộp lại (FR-07, UC-25)
+    ARTICLE_SOURCE_REQUIRED(1329, "Bài cần ít nhất một tư liệu (ảnh hoặc nguồn) trước khi nộp. Hãy lưu nháp rồi thêm tư liệu vào bài.", HttpStatus.BAD_REQUEST),
+    ARTICLE_IMAGE_CAPTION_REQUIRED(1330, "Còn ảnh trong bài chưa có chú thích. Hãy nhập chú thích cho mọi ảnh trước khi nộp.", HttpStatus.BAD_REQUEST),
+    ARTICLE_CHANGE_SUMMARY_REQUIRED(1331, "Khi nộp lại, cần ghi chú đã sửa những gì.", HttpStatus.BAD_REQUEST),
+    ARTICLE_CONTENT_UNCHANGED(1332, "Nội dung chưa thay đổi so với phiên bản đã nộp trước đó. Hãy sửa theo góp ý rồi nộp lại.", HttpStatus.BAD_REQUEST),
+    ARTICLE_VERSION_NOT_FOUND(1333, "Không tìm thấy phiên bản này của bài viết.", HttpStatus.NOT_FOUND),
 
     TASK_NOT_FOUND(1400, "Không tìm thấy nhiệm vụ hoặc bạn không được giao nhiệm vụ này.", HttpStatus.NOT_FOUND),
     TASK_NOT_OPEN(1401, "Nhiệm vụ đã hoàn thành nên không thể thêm tư liệu.", HttpStatus.CONFLICT),
@@ -79,11 +85,37 @@ public enum ErrorCode {
     ACCOUNT_ROLE_NOT_ALLOWED(1703, "Chỉ được cấp vai trò Phóng viên, Trưởng ban hoặc Thư ký tòa soạn.", HttpStatus.BAD_REQUEST),
     ACCOUNT_DEPARTMENT_REQUIRED(1704, "Phóng viên và Trưởng ban phải được gán một phòng ban.", HttpStatus.BAD_REQUEST),
 
+    // TV4 - Quản trị tài khoản của Admin (FR-15)
+    ADMIN_FORBIDDEN(1810, "Chỉ Quản trị viên đang hoạt động mới được quản lý tài khoản.", HttpStatus.FORBIDDEN),
+    ADMIN_ACCOUNT_PROTECTED(1811, "Không được khóa hoặc đổi vai trò của tài khoản Quản trị viên.", HttpStatus.FORBIDDEN),
+    ADMIN_ACCOUNT_STATUS_INVALID(1812, "Thao tác không phù hợp với trạng thái hiện tại của tài khoản. Vui lòng tải lại trang.", HttpStatus.CONFLICT),
+    ADMIN_LOCK_HAS_ASSIGNMENT(1813, "Tài khoản đang phụ trách Topic chưa xong. Hãy nhờ Thư ký / Trưởng phòng giao lại cho người khác trước khi khóa.", HttpStatus.CONFLICT),
+    ADMIN_CHANGE_HAS_HISTORY(1814, "Tài khoản đã tham gia biên tập nên không đổi được vai trò hay phòng ban (để giữ đúng lịch sử). Nếu cần vai trò khác, hãy dùng một tài khoản mới.", HttpStatus.CONFLICT),
+    ADMIN_NOTHING_CHANGED(1815, "Vai trò và phòng ban không thay đổi.", HttpStatus.BAD_REQUEST),
+
     MEDIA_FILE_REQUIRED(1500, "Vui lòng chọn ảnh hoặc video để tải lên.", HttpStatus.BAD_REQUEST),
     MEDIA_TYPE_NOT_SUPPORTED(1501, "Chỉ hỗ trợ ảnh JPG, PNG, WebP, GIF và video MP4, WebM, MOV.", HttpStatus.BAD_REQUEST),
     MEDIA_TOO_LARGE(1502, "Tệp quá lớn: ảnh tối đa 10MB, video tối đa 100MB.", HttpStatus.PAYLOAD_TOO_LARGE),
     MEDIA_STORAGE_NOT_CONFIGURED(1503, "Hệ thống chưa cấu hình Cloudinary nên chưa thể tải tệp lên.", HttpStatus.SERVICE_UNAVAILABLE),
     MEDIA_UPLOAD_FAILED(1504, "Tải tệp lên Cloudinary không thành công. Vui lòng thử lại.", HttpStatus.BAD_GATEWAY),
+
+    CURRENT_ACCOUNT_NOT_FOUND(1625, "Không tìm thấy tài khoản đang đăng nhập. Vui lòng đăng nhập lại.", HttpStatus.UNAUTHORIZED),
+
+    TOPIC_NOT_MANAGED(1626, "Không tìm thấy đề tài hoặc bạn không phải Trưởng phòng phụ trách đề tài này.", HttpStatus.FORBIDDEN),
+    ASSIGNMENT_ALREADY_DONE(1627, "Đề tài đã giao việc xong. Dùng phần Quản lý nhóm để thêm / gỡ Supporting hoặc đổi Lead.", HttpStatus.CONFLICT),
+    ASSIGNMENT_LEAD_REQUIRED(1628, "Vui lòng chọn đúng một phóng viên làm Lead.", HttpStatus.BAD_REQUEST),
+    ASSIGNMENT_LEAD_ALREADY_SET(1629, "Đề tài đã có Lead, không thể chọn Lead khác ở đây.", HttpStatus.CONFLICT),
+    ASSIGNMENT_INVALID_REPORTER(1614, "Người được chọn phải là phóng viên đang hoạt động.", HttpStatus.BAD_REQUEST),
+    ASSIGNMENT_DUPLICATE_MEMBER(1615, "Một người không được giữ hai vai trò trong cùng một đề tài.", HttpStatus.BAD_REQUEST),
+    ASSIGNMENT_DEADLINE_REQUIRED(1616, "Vui lòng nhập hạn hoàn thành cho từng người được giao.", HttpStatus.BAD_REQUEST),
+    ASSIGNMENT_DEADLINE_INVALID(1617, "Hạn hoàn thành không hợp lệ: phải là thời điểm trong tương lai.", HttpStatus.BAD_REQUEST),
+    ASSIGNMENT_REQUIREMENTS_REQUIRED(1618, "Vui lòng nhập nhiệm vụ cho từng người được giao.", HttpStatus.BAD_REQUEST),
+    ASSIGNMENT_NOT_FOUND(1619, "Không tìm thấy thành viên này trong đề tài.", HttpStatus.NOT_FOUND),
+    ASSIGNMENT_REMOVE_COMPLETED(1620, "Supporting đã hoàn thành phần việc nên không thể gỡ khỏi nhóm.", HttpStatus.CONFLICT),
+    LEAD_CHANGE_BLOCKED_BY_REVIEW(1621, "Lead hiện tại còn bài đang trong quy trình duyệt. Chờ bài duyệt xong hoặc bị trả về rồi mới đổi Lead.", HttpStatus.CONFLICT),
+    LEAD_CHANGE_SAME_PERSON(1622, "Người được chọn đang là Lead của đề tài.", HttpStatus.BAD_REQUEST),
+    TEAM_NOT_READY(1623, "Đề tài chưa giao việc xong. Hãy hoàn tất giao việc trước.", HttpStatus.CONFLICT),
+    SUPPORTERS_REQUIRED(1624, "Vui lòng chọn ít nhất một phóng viên để thêm vào nhóm.", HttpStatus.BAD_REQUEST),
 
     // TV4 - Topic tòa soạn của Thư ký (FL-02)
     EDITORIAL_TOPIC_ACCESS_DENIED(1800, "Chỉ Thư ký tòa soạn được quản lý Topic cấp tòa soạn.", HttpStatus.FORBIDDEN),

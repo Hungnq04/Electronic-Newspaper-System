@@ -15,7 +15,11 @@ public class SidebarService {
             case DEPARTMENT_HEAD -> List.of(
                     new SidebarGroup("THẨM ĐỊNH NỘI DUNG", List.of(
                             new SidebarItem("Duyệt bản thảo", "/department-head/dashboard", "clipboard-check", null),
-                            new SidebarItem("Duyệt đề tài", "/department-head/topics", "file-text", null))));
+                            new SidebarItem("Duyệt đề tài", "/department-head/topics", "file-text", null),
+                            // Màn "Lịch sử duyệt" (UC-35): các lượt mình đã duyệt -> DepartmentHeadController.reviewHistory()
+                            new SidebarItem("Lịch sử duyệt", "/department-head/review-history", "clipboard-check", null))),
+                    new SidebarGroup("PHÂN CÔNG", List.of(
+                            new SidebarItem("Đề tài đã duyệt", "/department-head/approved-topics", "file-text", null))));
             case REPORTER -> List.of(
                     new SidebarGroup("TÁC NGHIỆP", List.of(
                             new SidebarItem("Danh sách đề tài", "/reporter/topics", "file-text", null),
@@ -32,7 +36,9 @@ public class SidebarService {
                             new SidebarItem("Chờ xuất bản", "/secretary/publications", "file-text", null),
                             // FL-07 Iter3 (Vanh): bài đã hẹn giờ đăng (icon null = icon đồng hồ mặc định)
                             new SidebarItem("Đã hẹn giờ", "/secretary/scheduled-publications", null, null))));
-            case ADMIN -> List.of();
+            case ADMIN -> List.of(
+                    new SidebarGroup("QUẢN TRỊ", List.of(
+                            new SidebarItem("Tài khoản", "/admin/accounts", "users", null))));
         };
     }
 }

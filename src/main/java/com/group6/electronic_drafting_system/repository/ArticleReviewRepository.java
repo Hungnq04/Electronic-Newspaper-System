@@ -37,6 +37,14 @@ public interface ArticleReviewRepository extends JpaRepository<ArticleReview, In
     long countDecisionsSince(@Param("stage") ReviewStage stage, @Param("decision") ArticleReviewDecision decision,
                              @Param("from") OffsetDateTime from, @Param("reviewerId") Integer reviewerId);
 
+    // Màn "Lịch sử duyệt" (UC-35): mọi lượt duyệt ĐÃ CHỐT (decision khác NULL) của MỘT người ở MỘT cấp, mới nhất trước.
+    // "join fetch" = lấy luôn version, bài và đề tài trong CÙNG câu SQL, để khi hiển thị không phải hỏi DB thêm từng dòng.
+    // Gọi từ DepartmentHeadServiceImpl.getReviewHistory(): reviewerId = Trưởng ban đang đăng nhập, stage = DEPARTMENT.
+    @Query("select r from ArticleReview r join fetch r.version v join fetch v.article a join fetch a.topic "
+            + "where r.reviewer.id = :reviewerId and r.reviewStage = :stage and r.decision is not null "
+            + "order by r.reviewedAt desc, r.id desc")
+    List<ArticleReview> findDecidedByReviewer(@Param("reviewerId") Integer reviewerId, @Param("stage") ReviewStage stage);
+
     // Lượt duyệt đang mở (decision = NULL) của một cấp trên một version; DB chỉ cho phép tối đa 1 dòng (uq_review_open)
     @Query("select r from ArticleReview r join fetch r.reviewer where r.version.id = :versionId "
             + "and r.reviewStage = :stage and r.decision is null")

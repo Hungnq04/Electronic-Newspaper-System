@@ -74,7 +74,9 @@
                     </p>
                 </div>
                 <div class="rp-heading-actions">
-                    <button class="rp-button rp-button--outline" type="button" data-dh-action="open-log"><svg class="rp-icon"><use href="#dh-icon-clock"></use></svg>Nhật ký duyệt</button>
+                    <!-- Mở màn "Lịch sử duyệt" (UC-35) -> DepartmentHeadController.reviewHistory().
+                         KHÔNG gắn data-dh-action: department-head-dashboard.js chặn (preventDefault) mọi link có thuộc tính đó. -->
+                    <a class="rp-button rp-button--outline" th:href="@{/department-head/review-history}"><svg class="rp-icon"><use href="#dh-icon-clock"></use></svg>Nhật ký duyệt</a>
                 </div>
             </div>
 

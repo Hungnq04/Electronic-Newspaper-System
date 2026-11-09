@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "cms-core",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "C:\\Users\\user\\OneDrive\\Documents\\GitHub\\ElectronicDraftingSystem\\mvnw.cmd", "-f", "C:\\Users\\user\\OneDrive\\Documents\\GitHub\\ElectronicDraftingSystem\\pom.xml", "spring-boot:run"],
+      "port": 8080
+    }
+  ]
+}

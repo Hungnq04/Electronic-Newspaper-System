@@ -89,6 +89,28 @@ public class DepartmentHeadController {
         return "layout/app";
     }
 
+    // ===== Màn "Lịch sử duyệt" (UC-35): GET /department-head/review-history =====
+    // AI ĐƯA REQUEST TỚI ĐÂY?
+    //   - Nút "Nhật ký duyệt" trên dashboard (department_head/dashboard.html, link th:href="@{/department-head/review-history}")
+    //   - Mục "Lịch sử duyệt" ở menu trái (SidebarService)
+    // Chỉ XEM: không có nút ghi dữ liệu. Bấm "Xem bài" ở một dòng sẽ mở màn thẩm định (reviewWorkspace bên dưới) ở chế độ chỉ xem.
+    @GetMapping("/review-history")
+    public String reviewHistory(Authentication authentication, Model model) {
+        // 1. currentEmail(...) lấy email người đăng nhập
+        // 2. departmentHeadService.getReviewHistory(email) -> DepartmentHeadServiceImpl.getReviewHistory():
+        //    lấy các lượt mình đã duyệt + đếm góp ý, trả về ReviewHistoryPageDTO
+        // 3. Bỏ DTO vào model với TÊN "history" -> review-history.html đọc bằng ${history.items}, ${history.totalCount}...
+        model.addAttribute("history", departmentHeadService.getReviewHistory(currentEmail(authentication)));
+        model.addAttribute("pageTitle", "Lịch sử duyệt – Trưởng ban");
+        // layout/app.html chèn fragment "reviewHistoryContent" của templates/department_head/review-history.html vào giữa trang
+        model.addAttribute("contentView", "department_head/review-history");
+        model.addAttribute("contentFragment", "reviewHistoryContent");
+        // Dùng chung giao diện rp- của màn /reporter/tasks + vài dòng CSS riêng; JS lọc bảng ngay trên trình duyệt
+        model.addAttribute("pageCss", List.of("/reporter/css/reporter-tasks.css", "/department_head/css/department-head-review-history.css"));
+        model.addAttribute("pageJs", List.of("/department_head/js/department-head-review-history.js"));
+        return "layout/app";
+    }
+
     // Danh sách đề tài ACTIVE mà Trưởng phòng đang phụ trách, kèm tình trạng giao việc
     @GetMapping("/approved-topics")
     public String topics(Authentication auth, Model model) {

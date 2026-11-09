@@ -8,7 +8,7 @@ import lombok.Getter;
 // TẠO Ở ĐÂU: ReviewWorkspaceMapper.toSource(articleSource, bodyUrls) (mapper/DepartmentHead/ReviewWorkspaceMapper.java dòng 86),
 //            được DepartmentHeadReviewServiceImpl.openWorkspace() (BƯỚC 4) gọi cho từng tư liệu.
 // NẰM TRONG: ReviewWorkspaceDTO.sources (danh sách) và ReviewWorkspaceDTO.featuredImage (ảnh đại diện)
-// HTML ĐỌC:  khung "Tư liệu đính kèm": th:each="s : ${w.sources}" -> ${s.title}, ${s.url}...
+// HTML ĐỌC:  khung "Tư liệu đính kèm": th:each="s : ${workspace.sources}" -> ${s.title}, ${s.url}...
 //
 // @AllArgsConstructor: constructor nhận đủ 7 field THEO ĐÚNG THỨ TỰ khai báo bên dưới.
 @Getter

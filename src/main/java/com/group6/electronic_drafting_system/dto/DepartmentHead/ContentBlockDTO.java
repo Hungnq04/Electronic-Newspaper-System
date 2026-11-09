@@ -9,7 +9,7 @@ import lombok.Getter;
 //            cắt nội dung HTML của version thành từng khối.
 // NẰM TRONG: VersionViewDTO.blocks
 // HTML ĐỌC:  workspacereview.html, khối id="article-body":
-//            th:each="b : ${w.current.blocks}" th:switch="${b.kind.name()}" -> th:case 'TEXT' / 'IMAGE' / 'VIDEO' / 'TABLE'
+//            th:each="b : ${workspace.current.blocks}" th:switch="${b.kind.name()}" -> th:case 'TEXT' / 'IMAGE' / 'VIDEO' / 'TABLE'
 @Getter
 @Builder
 public class ContentBlockDTO {

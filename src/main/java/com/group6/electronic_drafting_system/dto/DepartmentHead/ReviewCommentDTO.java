@@ -9,7 +9,7 @@ import lombok.Getter;
 // TẠO Ở ĐÂU: ReviewWorkspaceMapper.toComment(comment, replies) (mapper/DepartmentHead/ReviewWorkspaceMapper.java dòng 68),
 //            được DepartmentHeadReviewServiceImpl.rootComments() gọi cho từng góp ý gốc.
 // NẰM TRONG: ReviewWorkspaceDTO.comments (vòng này) và ReviewWorkspaceDTO.previousComments (vòng trước)
-// HTML ĐỌC:  th:each="c : ${w.comments}" (tab "Vòng này") và th:each="c : ${w.previousComments}" (tab "Vòng trước")
+// HTML ĐỌC:  th:each="c : ${workspace.comments}" (tab "Vòng này") và th:each="c : ${workspace.previousComments}" (tab "Vòng trước")
 //
 // DTO dùng để HIỂN THỊ góp ý. Còn dữ liệu form GỬI LÊN khi thêm góp ý là CommentRequestDTO (file khác).
 @Getter

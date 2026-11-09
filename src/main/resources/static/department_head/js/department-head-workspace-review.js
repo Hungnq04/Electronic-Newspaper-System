@@ -9,7 +9,7 @@
 //   5. So sánh hai phiên bản của bài
 //   6. Đổi tab góp ý, mở / đóng hộp thoại "Duyệt" và "Yêu cầu sửa"
 //
-// Cách ẩn / hiện một phần tử: el.hidden = true (ẩn) hoặc el.hidden = false (hiện).
+// Cách ẩn / hiện một phần tử: element.hidden = true (ẩn) hoặc element.hidden = false (hiện).
 // File được nạp ở cuối trang (layout/app.html) nên mọi phần tử HTML đã có sẵn khi chạy.
 // =====================================================================
 
@@ -77,18 +77,18 @@ document.querySelectorAll('form[data-confirm]').forEach(function (form) {
 // "Range" là một vùng chữ trên trang, giống vùng bạn bôi đen bằng chuột.
 // ---------------------------------------------------------------------
 
-// Đếm xem từ đầu phần tử el tới điểm (node, offset) có bao nhiêu ký tự
-function offsetIn(el, node, offset) {
+// Đếm xem từ đầu phần tử element tới điểm (node, offset) có bao nhiêu ký tự
+function offsetIn(element, node, offset) {
   const range = document.createRange();
-  range.setStart(el, 0);
+  range.setStart(element, 0);
   range.setEnd(node, offset);
   return range.toString().length;
 }
 
-// Ngược lại với offsetIn: từ vị trí [start, end) trong el, tạo ra Range để tô màu
-function rangeFromOffsets(el, start, end) {
-  // TreeWalker đi lần lượt qua từng mẩu chữ (text node) bên trong el
-  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+// Ngược lại với offsetIn: từ vị trí [start, end) trong element, tạo ra Range để tô màu
+function rangeFromOffsets(element, start, end) {
+  // TreeWalker đi lần lượt qua từng mẩu chữ (text node) bên trong element
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
   const range = document.createRange();
   let position = 0;           // đã đi qua bao nhiêu ký tự
   let startFound = false;
@@ -118,9 +118,9 @@ function anchorElement(field, paragraph) {
 // (chỉ thẻ góp ý có data-field mới gắn vị trí; góp ý chung thì không có)
 document.querySelectorAll('.comment-card[data-field]').forEach(function (card) {
   // Tít / tít phụ / sapo chỉ có 1 đoạn: góp ý cũ có thể không lưu số đoạn (NULL) thì coi là đoạn 1
-  const el = anchorElement(card.dataset.field, card.dataset.paragraph || '1');
-  if (!el) return;
-  const range = rangeFromOffsets(el, Number(card.dataset.start), Number(card.dataset.end));
+  const element = anchorElement(card.dataset.field, card.dataset.paragraph || '1');
+  if (!element) return;
+  const range = rangeFromOffsets(element, Number(card.dataset.start), Number(card.dataset.end));
   if (!range) return;
   const mark = document.createElement('mark');
   mark.className = 'ws-mark';
@@ -133,10 +133,10 @@ document.querySelectorAll('.comment-card[data-field]').forEach(function (card) {
 });
 
 // Nháy viền vàng để người dùng thấy phần tử vừa được nhảy tới
-function flash(el) {
-  el.classList.remove('ws-flash');
-  void el.offsetWidth;                         // bắt trình duyệt vẽ lại, để hiệu ứng chạy lại từ đầu
-  el.classList.add('ws-flash');
+function flash(element) {
+  element.classList.remove('ws-flash');
+  void element.offsetWidth;                         // bắt trình duyệt vẽ lại, để hiệu ứng chạy lại từ đầu
+  element.classList.add('ws-flash');
 }
 
 // Bấm "Xem vị trí →" ở thẻ góp ý -> cuộn tới chữ được tô vàng trong bài
@@ -182,8 +182,8 @@ function hidePopover() {
 
 // Tìm phần tử có data-field chứa node (node có thể là một mẩu chữ hoặc một thẻ HTML)
 function anchorOf(node) {
-  const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
-  return el ? el.closest('[data-field]') : null;
+  const element = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+  return element ? element.closest('[data-field]') : null;
 }
 
 if (popover) {
@@ -277,8 +277,8 @@ function readVersion(label) {
   const box = document.querySelector('#version-data > [data-label="' + label + '"]');
   const result = {};
   if (box) {
-    box.querySelectorAll('[data-key]').forEach(function (el) {
-      result[el.dataset.key] = el.textContent.trim();
+    box.querySelectorAll('[data-key]').forEach(function (element) {
+      result[element.dataset.key] = element.textContent.trim();
     });
   }
   return result;
@@ -301,16 +301,16 @@ function tokenize(text) {
 // Dùng thuật toán "dãy con chung dài nhất" (LCS): tìm nhiều từ giống nhau nhất giữa 2 bản,
 // phần còn lại là chữ bị xóa (ở bản cũ) hoặc chữ thêm mới (ở bản mới).
 function diffTokens(oldWords, newWords) {
-  const n = oldWords.length;
-  const m = newWords.length;
+  const oldCount = oldWords.length;   // số từ của bản cũ
+  const newCount = newWords.length;   // số từ của bản mới
 
   // lcs[i][j] = số từ giống nhau nhiều nhất giữa oldWords (tính từ vị trí i) và newWords (tính từ vị trí j)
   const lcs = [];
-  for (let i = 0; i <= n; i++) {
-    lcs.push(new Uint16Array(m + 1));          // mảng số nguyên, mặc định toàn số 0
+  for (let i = 0; i <= oldCount; i++) {
+    lcs.push(new Uint16Array(newCount + 1));          // mảng số nguyên, mặc định toàn số 0
   }
-  for (let i = n - 1; i >= 0; i--) {
-    for (let j = m - 1; j >= 0; j--) {
+  for (let i = oldCount - 1; i >= 0; i--) {
+    for (let j = newCount - 1; j >= 0; j--) {
       if (oldWords[i] === newWords[j]) {
         lcs[i][j] = lcs[i + 1][j + 1] + 1;
       } else {
@@ -323,7 +323,7 @@ function diffTokens(oldWords, newWords) {
   const operations = [];
   let i = 0;
   let j = 0;
-  while (i < n && j < m) {
+  while (i < oldCount && j < newCount) {
     if (oldWords[i] === newWords[j]) {
       operations.push(['eq', oldWords[i]]);
       i++;
@@ -336,11 +336,11 @@ function diffTokens(oldWords, newWords) {
       j++;
     }
   }
-  while (i < n) {                              // còn dư từ ở bản cũ: đều là chữ bị xóa
+  while (i < oldCount) {                              // còn dư từ ở bản cũ: đều là chữ bị xóa
     operations.push(['del', oldWords[i]]);
     i++;
   }
-  while (j < m) {                              // còn dư từ ở bản mới: đều là chữ thêm mới
+  while (j < newCount) {                              // còn dư từ ở bản mới: đều là chữ thêm mới
     operations.push(['ins', newWords[j]]);
     j++;
   }

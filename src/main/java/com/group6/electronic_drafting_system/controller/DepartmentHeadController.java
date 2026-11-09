@@ -43,15 +43,15 @@ public class DepartmentHeadController {
     private static final String NEWSREADER_FONT = "https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap";
     // 3 service controller cần dùng. Khai báo kiểu interface; object thật là ...ServiceImpl tương ứng.
     private final DepartmentHeadService departmentHeadService;            // dữ liệu màn dashboard
-    private final DepartmentHeadReviewService reviewService;              // màn thẩm định bài viết (workspace)
+    private final DepartmentHeadReviewService departmentHeadReviewService; // màn thẩm định bài viết (workspace)
     private final DepartmentHeadTopicService departmentHeadTopicService;  // màn đề tài đã duyệt + giao việc (FL-03)
 
     // Constructor: Spring tự gọi lúc khởi động và truyền 3 service vào (Dependency Injection).
     // Đây là lý do trong dashboard() bên dưới, biến departmentHeadService đã có sẵn object để gọi.
-    public DepartmentHeadController(DepartmentHeadService departmentHeadService, DepartmentHeadReviewService reviewService,
+    public DepartmentHeadController(DepartmentHeadService departmentHeadService, DepartmentHeadReviewService departmentHeadReviewService,
                                     DepartmentHeadTopicService departmentHeadTopicService) {
         this.departmentHeadService = departmentHeadService;
-        this.reviewService = reviewService;
+        this.departmentHeadReviewService = departmentHeadReviewService;
         this.departmentHeadTopicService = departmentHeadTopicService;
     }
 
@@ -226,12 +226,12 @@ public class DepartmentHeadController {
     // (object thật: service/impl/DepartmentHeadReviewServiceImpl.java).
     //
     //   URL                                                        Method              Gọi service
-    //   GET  /department-head/articles/{id}/review                 reviewWorkspace()   reviewService.openWorkspace()
-    //   POST /department-head/articles/{id}/comments               addComment()        reviewService.addComment()
-    //   POST /department-head/articles/{id}/comments/{c}/delete    deleteComment()     reviewService.deleteComment()
-    //   POST /department-head/articles/{id}/comments/{c}/resolve   resolveComment()    reviewService.setPreviousCommentResolved()
-    //   POST /department-head/articles/{id}/approve                approve()           reviewService.approve()
-    //   POST /department-head/articles/{id}/request-revision       requestRevision()   reviewService.requestRevision()
+    //   GET  /department-head/articles/{id}/review                 reviewWorkspace()   departmentHeadReviewService.openWorkspace()
+    //   POST /department-head/articles/{id}/comments               addComment()        departmentHeadReviewService.addComment()
+    //   POST /department-head/articles/{id}/comments/{c}/delete    deleteComment()     departmentHeadReviewService.deleteComment()
+    //   POST /department-head/articles/{id}/comments/{c}/resolve   resolveComment()    departmentHeadReviewService.setPreviousCommentResolved()
+    //   POST /department-head/articles/{id}/approve                approve()           departmentHeadReviewService.approve()
+    //   POST /department-head/articles/{id}/request-revision       requestRevision()   departmentHeadReviewService.requestRevision()
     //
     // CÁCH CÁC NÚT HOẠT ĐỘNG (kiểu "POST rồi redirect về GET"):
     //   1. Trong workspacereview.html, mỗi nút nằm trong một <form method="post" th:action="@{/department-head/articles/...}">
@@ -249,11 +249,11 @@ public class DepartmentHeadController {
     public String reviewWorkspace(@PathVariable Integer articleId, Authentication authentication, Model model) {
         // Đọc từ trong ra ngoài:
         //   1. currentEmail(authentication): email người đăng nhập (hàm phụ cuối file)
-        //   2. reviewService.openWorkspace(email, articleId) -> DepartmentHeadReviewServiceImpl.openWorkspace():
+        //   2. departmentHeadReviewService.openWorkspace(email, articleId) -> DepartmentHeadReviewServiceImpl.openWorkspace():
         //      kiểm tra quyền, mở lượt duyệt nếu cần, gom dữ liệu, trả về ReviewWorkspaceDTO
         //      (nếu không có quyền / không thấy bài -> ném ApplicationException -> handleError() bên dưới trả lỗi 403/404)
-        //   3. Bỏ DTO vào model với TÊN "workspace" -> workspacereview.html đọc bằng ${workspace...} (trong file gọi tắt là "w")
-        model.addAttribute("workspace", reviewService.openWorkspace(currentEmail(authentication), articleId));
+        //   3. Bỏ DTO vào model với TÊN "workspace" -> workspacereview.html đọc bằng ${workspace...} 
+        model.addAttribute("workspace", departmentHeadReviewService.openWorkspace(currentEmail(authentication), articleId));
         model.addAttribute("pageTitle", "Thẩm định bản thảo – Trưởng ban");
         // layout/app.html chèn fragment "reviewWorkspaceContent" (workspacereview.html dòng có th:fragment) vào giữa trang
         model.addAttribute("contentView", "department_head/workspacereview");
@@ -276,13 +276,13 @@ public class DepartmentHeadController {
     //   (input name="content" -> setContent(...), name="anchorField" -> setAnchorField(...)...).
     // RedirectAttributes flash: "túi" chứa thông báo sống qua đúng 1 lần redirect (dùng cho toast).
     @PostMapping("/articles/{articleId}/comments")
-    public String addComment(@PathVariable Integer articleId, @ModelAttribute CommentRequestDTO request,
+    public String addComment(@PathVariable Integer articleId, @ModelAttribute CommentRequestDTO commentRequest,
                              Authentication authentication, RedirectAttributes flash) {
         // runAndReturn: chạy đoạn "() -> ..." (gọi service), thành công thì toast "Đã lưu góp ý.", lỗi thì toast lỗi,
         // rồi redirect về trang thẩm định.
-        // "() -> reviewService.addComment(...)" là lambda = một đoạn code được ĐƯA cho runAndReturn để nó tự chạy bên trong try.
+        // "() -> departmentHeadReviewService.addComment(...)" là lambda = một đoạn code được ĐƯA cho runAndReturn để nó tự chạy bên trong try.
         return runAndReturn(articleId, flash, "Đã lưu góp ý.",
-                () -> reviewService.addComment(currentEmail(authentication), articleId, request));
+                () -> departmentHeadReviewService.addComment(currentEmail(authentication), articleId, commentRequest));
     }
 
     // ----- Nút "Xóa" trên một thẻ góp ý của vòng này -----
@@ -292,7 +292,7 @@ public class DepartmentHeadController {
     public String deleteComment(@PathVariable Integer articleId, @PathVariable Integer commentId,
                                 Authentication authentication, RedirectAttributes flash) {
         return runAndReturn(articleId, flash, "Đã xóa góp ý.",
-                () -> reviewService.deleteComment(currentEmail(authentication), articleId, commentId));
+                () -> departmentHeadReviewService.deleteComment(currentEmail(authentication), articleId, commentId));
     }
 
     // ----- Nút "Đã sửa" / "Chưa sửa" trên góp ý của VÒNG TRƯỚC (tab "Vòng trước") -----
@@ -302,7 +302,7 @@ public class DepartmentHeadController {
     public String resolveComment(@PathVariable Integer articleId, @PathVariable Integer commentId,
                                  @RequestParam boolean resolved, Authentication authentication, RedirectAttributes flash) {
         return runAndReturn(articleId, flash, resolved ? "Đã đánh dấu: Lead đã sửa." : "Đã đánh dấu: Lead chưa sửa.",
-                () -> reviewService.setPreviousCommentResolved(currentEmail(authentication), articleId, commentId, resolved));
+                () -> departmentHeadReviewService.setPreviousCommentResolved(currentEmail(authentication), articleId, commentId, resolved));
     }
 
     // ----- Nút "Xác nhận duyệt" trong hộp thoại "Duyệt bài cấp phòng?" (id="modal-approve") -----
@@ -312,7 +312,7 @@ public class DepartmentHeadController {
     public String approve(@PathVariable Integer articleId, @RequestParam(required = false) String feedback,
                           Authentication authentication, RedirectAttributes flash) {
         return runAndReturn(articleId, flash, "Đã duyệt cấp phòng. Bài chuyển sang Thư ký tòa soạn.",
-                () -> reviewService.approve(currentEmail(authentication), articleId, feedback));
+                () -> departmentHeadReviewService.approve(currentEmail(authentication), articleId, feedback));
     }
 
     // ----- Nút "Gửi trả bài" trong hộp thoại "Yêu cầu sửa bài" (id="modal-revise") -----
@@ -323,7 +323,7 @@ public class DepartmentHeadController {
     public String requestRevision(@PathVariable Integer articleId, @RequestParam(required = false) String feedback,
                                   Authentication authentication, RedirectAttributes flash) {
         return runAndReturn(articleId, flash, "Đã trả bài cho Lead chỉnh sửa.",
-                () -> reviewService.requestRevision(currentEmail(authentication), articleId, feedback));
+                () -> departmentHeadReviewService.requestRevision(currentEmail(authentication), articleId, feedback));
     }
 
     // Lỗi khi MỞ trang (không có quyền, không tìm thấy bài...): trả đúng mã HTTP của ErrorCode (403, 404...)

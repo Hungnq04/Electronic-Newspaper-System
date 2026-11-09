@@ -12,10 +12,11 @@ import lombok.Setter;
 //        - Form ẩn id="comment-form": 5 ô <input type="hidden" name="anchorField|anchorParagraph|anchorStart|anchorEnd|content">.
 //          JS (popoverSave trong department-head-workspace-review.js) điền vị trí vừa bôi đen + nội dung rồi gửi.
 //        - Form "Góp ý chung" (class ws-general-form): chỉ có <textarea name="content">, các ô vị trí để trống.
-//   2. DepartmentHeadController.addComment(@ModelAttribute CommentRequestDTO request):
+//   2. DepartmentHeadController.addComment(@ModelAttribute CommentRequestDTO commentRequest):
 //        Spring tạo object này rồi đổ dữ liệu form vào THEO TÊN: name="content" -> setContent(...), ...
 //        (@Setter của Lombok sinh sẵn các hàm setXxx cho Spring dùng). Vì vậy tên field phải trùng name của ô input.
-//   3. DepartmentHeadReviewServiceImpl.addComment() đọc bằng request.getContent(), request.getAnchorField()...
+//        Ở luồng tập code, bạn nhận 5 ô này bằng 5 @RequestParam riêng; ở đây gom vào 1 DTO cho gọn, kết quả như nhau.
+//   3. DepartmentHeadReviewServiceImpl.addComment() đọc bằng commentRequest.getContent(), commentRequest.getAnchorField()...
 //      và KIỂM TRA LẠI vị trí có hợp lệ không (không tin dữ liệu trình duyệt gửi lên).
 @Getter
 @Setter

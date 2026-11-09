@@ -7,7 +7,7 @@ import com.group6.electronic_drafting_system.dto.DepartmentHead.ReviewWorkspaceD
 //
 // Đây là INTERFACE = "menu": chỉ liệt kê có những việc gì, không có code bên trong.
 // Code thật nằm ở service/impl/DepartmentHeadReviewServiceImpl.java (class có "implements DepartmentHeadReviewService").
-// DepartmentHeadController khai báo biến kiểu interface này (reviewService); Spring đưa object Impl vào lúc khởi động.
+// DepartmentHeadController khai báo biến kiểu interface này (departmentHeadReviewService); Spring đưa object Impl vào lúc khởi động.
 //
 // Mọi method đều nhận email người đăng nhập để service TỰ kiểm tra quyền lại từ đầu (không tin giao diện).
 public interface DepartmentHeadReviewService {
@@ -16,7 +16,7 @@ public interface DepartmentHeadReviewService {
     ReviewWorkspaceDTO openWorkspace(String email, Integer articleId);
 
     // Thêm một góp ý (gắn vị trí trong bài, hoặc góp ý chung). Gọi từ: DepartmentHeadController.addComment()
-    void addComment(String email, Integer articleId, CommentRequestDTO request);
+    void addComment(String email, Integer articleId, CommentRequestDTO commentRequest);
 
     // Xóa góp ý của chính mình trong lượt duyệt đang mở. Gọi từ: DepartmentHeadController.deleteComment()
     void deleteComment(String email, Integer articleId, Integer commentId);

@@ -4,7 +4,7 @@
 <!--
   Màn thẩm định bài viết của Trưởng ban (FL-05), hiển thị trong layout chung layout/app.html (sidebar + nội dung).
 
-  Dữ liệu: ${workspace} (ReviewWorkspaceDTO) do DepartmentHeadController truyền vào, trong file này gọi tắt là "w".
+  Dữ liệu: ${workspace} (ReviewWorkspaceDTO) do DepartmentHeadController truyền vào, đọc bằng ${workspace.tenField}.
   Sau mỗi thao tác, controller gửi kèm flash "toast" (thành công) hoặc "toastError" (lỗi) để hiện thông báo nhỏ.
   Mọi thao tác (góp ý, xóa, đánh dấu đã sửa, duyệt, trả bài) đều là form POST; backend kiểm tra quyền lại từ đầu.
 
@@ -20,14 +20,15 @@
      -> DepartmentHeadReviewServiceImpl.openWorkspace()  (kiểm tra quyền, mở lượt duyệt, gom dữ liệu)
      -> trả về ReviewWorkspaceDTO -> model.addAttribute("workspace", ...)
      -> layout/app.html chèn fragment "reviewWorkspaceContent" của file này vào giữa trang
-     -> file này đọc ${w.xxx}. Field nào nghĩa là gì: xem dto/DepartmentHead/ReviewWorkspaceDTO.java
+     -> file này đọc ${workspace.xxx}. Field nào nghĩa là gì: xem dto/DepartmentHead/ReviewWorkspaceDTO.java
 
   CÁC HỘP DỮ LIỆU (DTO) DÙNG TRONG FILE:
-    w                      = ReviewWorkspaceDTO   (cả trang)
-    w.current / w.previous = VersionViewDTO       (bản đang duyệt / bản liền trước)
-    b (trong th:each)      = ContentBlockDTO      (một khối thân bài: đoạn chữ, ảnh, video, bảng)
-    s (trong th:each)      = SourceItemDTO        (một tư liệu)
-    c, r (trong th:each)   = ReviewCommentDTO     (một góp ý / một câu trả lời)
+    workspace                = ReviewWorkspaceDTO   (cả trang)
+    workspace.current / workspace.previous = VersionViewDTO       (bản đang duyệt / bản liền trước)
+    block (trong th:each)    = ContentBlockDTO      (một khối thân bài: đoạn chữ, ảnh, video, bảng)
+    source (trong th:each)   = SourceItemDTO        (một tư liệu)
+    comment, reply (th:each) = ReviewCommentDTO     (một góp ý / một câu trả lời của Lead)
+    version (trong th:each)  = VersionViewDTO       (một phiên bản, dùng cho ô chọn và so sánh)
 
   CÁC NÚT -> METHOD XỬ LÝ (tất cả là form POST, xử lý xong redirect lại trang này kèm toast):
     Bôi đen chữ + "Thêm góp ý"   -> form ẩn #comment-form      -> DepartmentHeadController.addComment()      -> service.addComment()
@@ -42,11 +43,10 @@
 <!-- th:fragment="reviewWorkspaceContent": đặt tên cho khối này để layout/app.html chèn vào
      (controller: model.addAttribute("contentFragment", "reviewWorkspaceContent")).
      th:with tạo biến dùng trong khối:
-       w        = ${workspace}, viết tắt cho gọn
        openPrev = số góp ý vòng trước Lead CHƯA sửa (dùng trong hộp thoại Duyệt / Yêu cầu sửa).
                   Cú pháp .?[!resolved] = lọc danh sách, giữ phần tử có resolved = false; #lists.size đếm số phần tử. -->
 <th:block th:fragment="reviewWorkspaceContent"
-          th:with="w=${workspace}, openPrev=${#lists.size(workspace.previousComments.?[!resolved])}">
+          th:with="openPrev=${#lists.size(workspace.previousComments.?[!resolved])}">
 
     <!-- Bộ icon SVG của màn này. Cách dùng: <svg class="rp-icon"><use href="#ws-icon-ten"></use></svg> -->
     <svg class="rp-svg-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
@@ -72,7 +72,7 @@
     <section class="rp-page ws-page" aria-label="Thẩm định bản thảo">
         <!-- Thanh trên cùng: dùng chung với dashboard Trưởng ban (fragment dhTopbar trong dashboard.html).
              Màn này không có danh sách để lọc nên tắt ô tìm nhanh (tham số cuối = false). -->
-        <header th:replace="~{department_head/dashboard :: dhTopbar(${w.reviewerName}, ${w.departmentName}, ${w.reviewerInitials}, false)}"></header>
+        <header th:replace="~{department_head/dashboard :: dhTopbar(${workspace.reviewerName}, ${workspace.departmentName}, ${workspace.reviewerInitials}, false)}"></header>
 
         <main class="ws-main">
             <!-- ===== 1. Đường dẫn: quay lại danh sách bài chờ duyệt ===== -->
@@ -81,34 +81,34 @@
                 <span>/</span>
                 <span>Bài chờ duyệt</span>
                 <span>/</span>
-                <strong th:text="|Bài #${w.code}|">Bài #BT-1</strong>
+                <strong th:text="|Bài #${workspace.code}|">Bài #BT-1</strong>
             </nav>
 
             <!-- ===== 2. Thanh trạng thái: trạng thái, mã, topic, chuyên mục, phiên bản + nút so sánh phiên bản =====
-                 Dữ liệu: w.statusText, w.code, w.topicTitle, w.category (service điền ở BƯỚC 5 của openWorkspace),
-                 w.current.label (VersionViewDTO). -->
+                 Dữ liệu: workspace.statusText, workspace.code, workspace.topicTitle, workspace.category (service điền ở BƯỚC 5 của openWorkspace),
+                 workspace.current.label (VersionViewDTO). -->
 
             <div class="ws-status-bar">
                 <div class="ws-status-info">
-                    <span class="ws-chip-yellow"><svg class="rp-icon"><use href="#ws-icon-review"></use></svg><span th:text="${w.statusText}">Chờ Trưởng phòng duyệt</span></span>
-                    <span class="ws-mono">Mã: <strong th:text="|#${w.code}|">#BT-1</strong></span>
+                    <span class="ws-chip-yellow"><svg class="rp-icon"><use href="#ws-icon-review"></use></svg><span th:text="${workspace.statusText}">Chờ Trưởng phòng duyệt</span></span>
+                    <span class="ws-mono">Mã: <strong th:text="|#${workspace.code}|">#BT-1</strong></span>
                     <span class="ws-sep">|</span>
-                    <span>Topic: <strong class="ws-topic" th:text="${w.topicTitle}">Topic</strong></span>
+                    <span>Topic: <strong class="ws-topic" th:text="${workspace.topicTitle}">Topic</strong></span>
                     <span class="ws-sep">|</span>
-                    <span>Chuyên mục: <strong th:text="${w.category}">Kinh tế</strong></span>
+                    <span>Chuyên mục: <strong th:text="${workspace.category}">Kinh tế</strong></span>
                     <span class="ws-sep">|</span>
-                    <span>Phiên bản: <strong th:text="|v${w.current.label}|">v1.0</strong></span>
+                    <span>Phiên bản: <strong th:text="|v${workspace.current.label}|">v1.0</strong></span>
                 </div>
                 <!-- So sánh chỉ có khi bài đã có từ 2 phiên bản trở lên -->
-                <!-- Ô chọn "So với": lặp mọi version (w.versions) trừ bản đang duyệt; mặc định chọn bản liền trước.
+                <!-- Ô chọn "So với": lặp mọi version (workspace.versions) trừ bản đang duyệt; mặc định chọn bản liền trước.
                      Nút "So sánh phiên bản" (id="btn-compare") KHÔNG gửi lên server: JS ẩn bài viết, hiện #compare-card
                      và dựng bảng so sánh từ khối ẩn #version-data (phần 3 bên dưới). -->
-                <div class="ws-compare-tools" th:if="${w.previous != null}">
+                <div class="ws-compare-tools" th:if="${workspace.previous != null}">
                     <label for="compare-base">So với</label>
                     <select id="compare-base">
-                        <option th:each="v : ${w.versions}" th:if="${v.versionId != w.current.versionId}"
-                                th:value="${v.label}" th:text="|v${v.label} (${v.createdAtText})|"
-                                th:selected="${v.versionId == w.previous.versionId}">v1.0</option>
+                        <option th:each="version : ${workspace.versions}" th:if="${version.versionId != workspace.current.versionId}"
+                                th:value="${version.label}" th:text="|v${version.label} (${version.createdAtText})|"
+                                th:selected="${version.versionId == workspace.previous.versionId}">v1.0</option>
                     </select>
                     <button id="btn-compare" class="ws-btn ws-btn--white" type="button">
                         <svg class="rp-icon ws-icon-maroon"><use href="#ws-icon-compare"></use></svg><span id="btn-compare-label">So sánh phiên bản</span>
@@ -125,7 +125,7 @@
                     <!-- Bản đang duyệt (phiên bản mới nhất).
                          data-field / data-paragraph = vị trí lưu vào comment.anchor_field / anchor_paragraph khi góp ý.
                          Phần tử có data-field chỉ chứa chữ của bài, KHÔNG thêm thẻ con khác vào, vì JS đếm vị trí từng ký tự trong đó.
-                         Dữ liệu: w.current (VersionViewDTO) = version mới nhất, service lấy ở BƯỚC 2 của openWorkspace.
+                         Dữ liệu: workspace.current (VersionViewDTO) = version mới nhất, service lấy ở BƯỚC 2 của openWorkspace.
 
                          CÁCH GÓP Ý GẮN VỊ TRÍ HOẠT ĐỘNG:
                            1. Bôi đen chữ trong một phần tử có data-field (tít, tít phụ, sapo, đoạn thân bài)
@@ -137,29 +137,29 @@
                     <article id="article-card" class="ws-article">
                         <div class="ws-article-meta">
                             <span class="ws-tag-yellow"
-                                  th:text="${w.previous != null} ? |Bản nộp lại (v${w.current.label})| : |Bản nộp đầu (v${w.current.label})|">Bản nộp (v1.0)</span>
-                            <span class="ws-mono" th:text="|Gửi duyệt: ${w.current.createdAtText}|">Gửi duyệt: 08:35</span>
-                            <span class="ws-hint" th:if="${w.reviewable}"><svg class="rp-icon"><use href="#ws-icon-info"></use></svg>Bôi đen một đoạn để góp ý</span>
+                                  th:text="${workspace.previous != null} ? |Bản nộp lại (v${workspace.current.label})| : |Bản nộp đầu (v${workspace.current.label})|">Bản nộp (v1.0)</span>
+                            <span class="ws-mono" th:text="|Gửi duyệt: ${workspace.current.createdAtText}|">Gửi duyệt: 08:35</span>
+                            <span class="ws-hint" th:if="${workspace.reviewable}"><svg class="rp-icon"><use href="#ws-icon-info"></use></svg>Bôi đen một đoạn để góp ý</span>
                         </div>
 
-                        <h1 class="ws-title" data-field="TITLE" data-paragraph="1" data-anchor="Tít" th:text="${w.current.title}">Tít bài</h1>
-                        <p class="ws-subtitle" th:if="${w.current.subtitle != null and !#strings.isEmpty(w.current.subtitle)}"
-                           data-field="SUBTITLE" data-paragraph="1" data-anchor="Tít phụ" th:text="${w.current.subtitle}">Tít phụ</p>
+                        <h1 class="ws-title" data-field="TITLE" data-paragraph="1" data-anchor="Tít" th:text="${workspace.current.title}">Tít bài</h1>
+                        <p class="ws-subtitle" th:if="${workspace.current.subtitle != null and !#strings.isEmpty(workspace.current.subtitle)}"
+                           data-field="SUBTITLE" data-paragraph="1" data-anchor="Tít phụ" th:text="${workspace.current.subtitle}">Tít phụ</p>
 
                         <!-- Người viết (Lead, Supporting) + số từ, số ảnh
-                             Dữ liệu: w.leadName, w.leadInitials, w.supportingNames, w.wordCount, w.imageCount (service BƯỚC 4-5). -->
+                             Dữ liệu: workspace.leadName, workspace.leadInitials, workspace.supportingNames, workspace.wordCount, workspace.imageCount (service BƯỚC 4-5). -->
                         <div class="ws-byline">
                             <div class="ws-author">
-                                <span class="ws-author-avatar" th:text="${w.leadInitials}">MQ</span>
+                                <span class="ws-author-avatar" th:text="${workspace.leadInitials}">MQ</span>
                                 <div>
-                                    <strong th:text="${w.leadName}">Lead</strong> <small>• Lead Reporter</small>
-                                    <span class="ws-supporting" th:if="${!#strings.isEmpty(w.supportingNames)}">Supporting: <b th:text="${w.supportingNames}">Supporting</b></span>
+                                    <strong th:text="${workspace.leadName}">Lead</strong> <small>• Lead Reporter</small>
+                                    <span class="ws-supporting" th:if="${!#strings.isEmpty(workspace.supportingNames)}">Supporting: <b th:text="${workspace.supportingNames}">Supporting</b></span>
                                 </div>
                             </div>
                             <div class="ws-article-stats">
-                                <svg class="rp-icon"><use href="#ws-icon-text"></use></svg><b th:text="${w.wordCount}">0 từ</b>
+                                <svg class="rp-icon"><use href="#ws-icon-text"></use></svg><b th:text="${workspace.wordCount}">0 từ</b>
                                 <span class="ws-dot-sep">•</span>
-                                <svg class="rp-icon"><use href="#ws-icon-image"></use></svg><b th:text="|${w.imageCount} ảnh|">0 ảnh</b>
+                                <svg class="rp-icon"><use href="#ws-icon-image"></use></svg><b th:text="|${workspace.imageCount} ảnh|">0 ảnh</b>
                             </div>
                         </div>
 
@@ -168,42 +168,42 @@
                         <!-- Sapo: nhãn "Sapo" nằm ngoài thẻ <p> có data-field để không bị tính vào vị trí ký tự -->
                         <div class="ws-sapo">
                             <span class="ws-sapo-label">Sapo</span>
-                            <p class="ws-sapo-text" data-field="SAPO" data-paragraph="1" data-anchor="Sapo" th:text="${w.current.sapo}">Sapo</p>
+                            <p class="ws-sapo-text" data-field="SAPO" data-paragraph="1" data-anchor="Sapo" th:text="${workspace.current.sapo}">Sapo</p>
                         </div>
 
                         <!-- Ảnh đại diện (article_source.is_featured), giống ảnh cover phóng viên thấy trong trình soạn thảo -->
-                        <figure th:if="${w.featuredImage != null}" class="ws-cover">
-                            <img th:src="${w.featuredImage.url}" th:alt="${w.featuredImage.caption ?: w.featuredImage.title}" alt="">
-                            <figcaption><span class="ws-cover-badge">Ảnh đại diện</span><span th:text="${w.featuredImage.caption ?: w.featuredImage.title}">Chú thích</span></figcaption>
+                        <figure th:if="${workspace.featuredImage != null}" class="ws-cover">
+                            <img th:src="${workspace.featuredImage.url}" th:alt="${workspace.featuredImage.caption ?: workspace.featuredImage.title}" alt="">
+                            <figcaption><span class="ws-cover-badge">Ảnh đại diện</span><span th:text="${workspace.featuredImage.caption ?: workspace.featuredImage.title}">Chú thích</span></figcaption>
                         </figure>
 
                         <!-- Thân bài theo đúng thứ tự phóng viên sắp xếp (ContentBlockDTO: đoạn chữ, ảnh, video, bảng).
                              Chỉ khối chữ có data-field / data-paragraph nên chỉ bôi đen chữ mới góp ý được; ảnh, video, bảng thì không.
-                             th:each lặp từng khối b trong w.current.blocks (do ReviewWorkspaceMapper.blocks() cắt sẵn).
-                             th:switch / th:case giống switch trong Java: tùy b.kind là TEXT / IMAGE / VIDEO / TABLE mà in ra thẻ khác nhau.
+                             th:each lặp từng khối b trong workspace.current.blocks (do ReviewWorkspaceMapper.blocks() cắt sẵn).
+                             th:switch / th:case giống switch trong Java: tùy block.kind là TEXT / IMAGE / VIDEO / TABLE mà in ra thẻ khác nhau.
                              th:utext in nguyên HTML (giữ in đậm, nghiêng); an toàn vì mapper đã lọc bỏ thẻ nguy hiểm. -->
                         <div id="article-body" class="ws-body">
-                            <th:block th:each="b : ${w.current.blocks}" th:switch="${b.kind.name()}">
-                                <div th:case="'TEXT'" class="ws-text" th:classappend="|ws-${b.tag}|"
-                                     data-field="CONTENT" th:attr="data-paragraph=${b.paragraph},data-anchor=|Đoạn ${b.paragraph}|" th:utext="${b.html}">Đoạn nội dung</div>
+                            <th:block th:each="block : ${workspace.current.blocks}" th:switch="${block.kind.name()}">
+                                <div th:case="'TEXT'" class="ws-text" th:classappend="|ws-${block.tag}|"
+                                     data-field="CONTENT" th:attr="data-paragraph=${block.paragraph},data-anchor=|Đoạn ${block.paragraph}|" th:utext="${block.html}">Đoạn nội dung</div>
                                 <figure th:case="'IMAGE'" class="ws-figure">
-                                    <img th:src="${b.url}" th:alt="${b.caption}" alt="" loading="lazy">
-                                    <figcaption th:if="${b.caption != null}" th:text="${b.caption}">Chú thích ảnh</figcaption>
+                                    <img th:src="${block.url}" th:alt="${block.caption}" alt="" loading="lazy">
+                                    <figcaption th:if="${block.caption != null}" th:text="${block.caption}">Chú thích ảnh</figcaption>
                                 </figure>
                                 <figure th:case="'VIDEO'" class="ws-figure">
-                                    <video th:src="${b.url}" controls preload="metadata" playsinline></video>
-                                    <figcaption th:if="${b.caption != null}" th:text="${b.caption}">Chú thích video</figcaption>
+                                    <video th:src="${block.url}" controls preload="metadata" playsinline></video>
+                                    <figcaption th:if="${block.caption != null}" th:text="${block.caption}">Chú thích video</figcaption>
                                 </figure>
-                                <div th:case="'TABLE'" class="ws-table" th:utext="${b.html}">Bảng</div>
+                                <div th:case="'TABLE'" class="ws-table" th:utext="${block.html}">Bảng</div>
                             </th:block>
                         </div>
 
                         <!-- Khung góp ý: hiện ra khi bôi đen chữ trong bài (chỉ có khi mình đang được duyệt bài này).
                              JS đặt khung ngay dưới chỗ bôi đen.
-                             th:if="${w.reviewable}": không được thao tác (chỉ xem) thì khung này KHÔNG được in ra HTML luôn.
+                             th:if="${workspace.reviewable}": không được thao tác (chỉ xem) thì khung này KHÔNG được in ra HTML luôn.
                              Khung này không phải form: nút "Thêm góp ý" (id="popover-save") do JS xử lý, JS chép dữ liệu
                              sang form ẩn #comment-form rồi mới gửi lên server. -->
-                        <div th:if="${w.reviewable}" id="comment-popover" class="ws-popover" hidden>
+                        <div th:if="${workspace.reviewable}" id="comment-popover" class="ws-popover" hidden>
                             <div class="ws-popover-head">
                                 <div class="ws-popover-title">
                                     <span class="ws-popover-icon"><svg class="rp-icon"><use href="#ws-icon-comment"></use></svg></span>
@@ -230,7 +230,7 @@
 
                     <!-- Màn so sánh phiên bản: ẩn sẵn, bấm "So sánh phiên bản" thì JS hiện ra thay chỗ bài viết.
                          Nội dung so sánh do JS dựng từ khối #version-data bên dưới. -->
-                    <article id="compare-card" class="ws-compare" th:if="${w.previous != null}" hidden>
+                    <article id="compare-card" class="ws-compare" th:if="${workspace.previous != null}" hidden>
                         <div class="ws-compare-head">
                             <div>
                                 <h2>So sánh phiên bản</h2>
@@ -242,14 +242,14 @@
                                 <label><input id="compare-only-changed" type="checkbox"> Chỉ hiện đoạn thay đổi</label>
                             </div>
                         </div>
-                        <div class="ws-change-note" th:if="${w.current.changeSummary != null}">
-                            <b th:text="|Ghi chú của Lead khi nộp v${w.current.label}:|">Ghi chú của Lead:</b>
-                            <span th:text="|“${w.current.changeSummary}”|">“…”</span>
+                        <div class="ws-change-note" th:if="${workspace.current.changeSummary != null}">
+                            <b th:text="|Ghi chú của Lead khi nộp v${workspace.current.label}:|">Ghi chú của Lead:</b>
+                            <span th:text="|“${workspace.current.changeSummary}”|">“…”</span>
                         </div>
                         <div class="ws-compare-columns">
                             <span></span>
                             <span id="compare-head-old">bản trước</span>
-                            <span class="ws-compare-current" th:text="|v${w.current.label} · đang duyệt|">đang duyệt</span>
+                            <span class="ws-compare-current" th:text="|v${workspace.current.label} · đang duyệt|">đang duyệt</span>
                         </div>
                         <div id="compare-rows"></div>
                         <p class="ws-compare-lock"><svg class="rp-icon"><use href="#ws-icon-lock"></use></svg>Chế độ so sánh chỉ để xem. Quay lại bản đang duyệt để góp ý.</p>
@@ -257,38 +257,38 @@
 
                     <!-- Dữ liệu chữ của từng phiên bản cho phần so sánh (luôn ẩn).
                          Mỗi <span data-key> là một "ô" để so: Tít, Tít phụ, Sapo, Đoạn 1, Đoạn 2...
-                         Dữ liệu: w.versions (mọi VersionViewDTO), v.paragraphs (chữ từng đoạn).
+                         Dữ liệu: workspace.versions (mọi VersionViewDTO), version.paragraphs (chữ từng đoạn).
                          it.count = số thứ tự vòng lặp, đếm từ 1 (biến "it" do th:each tạo).
                          Người dùng không thấy khối này; JS (readVersion / renderCompare) đọc nó để so sánh, không cần hỏi lại server. -->
                     <div id="version-data" hidden>
-                        <div th:each="v : ${w.versions}" th:attr="data-label=${v.label},data-time=${v.createdAtText}">
-                            <span data-key="Tít" th:text="${v.title}"></span>
-                            <span data-key="Tít phụ" th:text="${v.subtitle}"></span>
-                            <span data-key="Sapo" th:text="${v.sapo}"></span>
-                            <span th:each="paragraph, it : ${v.paragraphs}" th:attr="data-key=|Đoạn ${it.count}|" th:text="${paragraph}"></span>
+                        <div th:each="version : ${workspace.versions}" th:attr="data-label=${version.label},data-time=${version.createdAtText}">
+                            <span data-key="Tít" th:text="${version.title}"></span>
+                            <span data-key="Tít phụ" th:text="${version.subtitle}"></span>
+                            <span data-key="Sapo" th:text="${version.sapo}"></span>
+                            <span th:each="paragraph, it : ${version.paragraphs}" th:attr="data-key=|Đoạn ${it.count}|" th:text="${paragraph}"></span>
                         </div>
                     </div>
 
                     <!-- Tư liệu đính kèm bài (article_source). Ảnh / video đã chèn trong bài được đánh dấu "Có trong bài"
-                         Dữ liệu: w.sources (danh sách SourceItemDTO), service lấy ở BƯỚC 4 của openWorkspace
+                         Dữ liệu: workspace.sources (danh sách SourceItemDTO), service lấy ở BƯỚC 4 của openWorkspace
                          (ArticleRepository.findSources + ReviewWorkspaceMapper.toSource). -->
 
                     <section class="rp-card">
                         <div class="rp-card-head">
                             <h2><svg class="rp-icon ws-icon-maroon"><use href="#ws-icon-media"></use></svg>Tư liệu đính kèm
-                                <span class="rp-count-pill" th:text="|${#lists.size(w.sources)} tệp|">0 tệp</span></h2>
+                                <span class="rp-count-pill" th:text="|${#lists.size(workspace.sources)} tệp|">0 tệp</span></h2>
                         </div>
-                        <p class="ws-empty-note" th:if="${#lists.isEmpty(w.sources)}">Bài chưa gắn tư liệu nào.</p>
-                        <div class="ws-sources" th:unless="${#lists.isEmpty(w.sources)}">
-                            <a class="ws-source" th:each="s : ${w.sources}" th:href="${s.url}" target="_blank" rel="noopener">
+                        <p class="ws-empty-note" th:if="${#lists.isEmpty(workspace.sources)}">Bài chưa gắn tư liệu nào.</p>
+                        <div class="ws-sources" th:unless="${#lists.isEmpty(workspace.sources)}">
+                            <a class="ws-source" th:each="source : ${workspace.sources}" th:href="${source.url}" target="_blank" rel="noopener">
                                 <span class="ws-source-thumb">
-                                    <img th:if="${s.image and s.url != null}" th:src="${s.url}" th:alt="${s.caption}" alt="">
-                                    <svg th:unless="${s.image and s.url != null}" class="rp-icon"><use href="#ws-icon-file"></use></svg>
+                                    <img th:if="${source.image and source.url != null}" th:src="${source.url}" th:alt="${source.caption}" alt="">
+                                    <svg th:unless="${source.image and source.url != null}" class="rp-icon"><use href="#ws-icon-file"></use></svg>
                                 </span>
-                                <strong th:text="${s.title}">Tên tư liệu</strong>
-                                <small th:text="${s.featured} ? 'Ảnh đại diện' : (${s.caption} ?: ${s.typeLabel})">Loại</small>
-                                <span th:unless="${s.featured}" class="ws-source-tag" th:classappend="${s.inBody} ? 'is-in-body'"
-                                      th:text="${s.inBody} ? 'Có trong bài' : 'Chưa dùng trong bài'">Có trong bài</span>
+                                <strong th:text="${source.title}">Tên tư liệu</strong>
+                                <small th:text="${source.featured} ? 'Ảnh đại diện' : (${source.caption} ?: ${source.typeLabel})">Loại</small>
+                                <span th:unless="${source.featured}" class="ws-source-tag" th:classappend="${source.inBody} ? 'is-in-body'"
+                                      th:text="${source.inBody} ? 'Có trong bài' : 'Chưa dùng trong bài'">Có trong bài</span>
                             </a>
                         </div>
                     </section>
@@ -298,43 +298,43 @@
                 <aside class="ws-side">
                     <section class="rp-card">
                         <div class="rp-card-head">
-                            <h2>Góp ý <span class="rp-count-pill" th:text="${#lists.size(w.comments)}">0</span></h2>
+                            <h2>Góp ý <span class="rp-count-pill" th:text="${#lists.size(workspace.comments)}">0</span></h2>
                         </div>
 
                         <!-- Hai tab: góp ý vòng này / vòng trước. JS đổi tab bằng class is-active -->
                         <div class="ws-tabs" role="tablist">
                             <button class="ws-tab tab-btn is-active" data-tab="now" type="button" role="tab" aria-selected="true"
-                                    th:text="|Vòng này (${#lists.size(w.comments)})|">Vòng này</button>
-                            <button th:if="${w.previous != null}" class="ws-tab tab-btn" data-tab="prev" type="button" role="tab" aria-selected="false"
-                                    th:text="|Vòng trước · v${w.previous.label} (${#lists.size(w.previousComments)})|">Vòng trước</button>
+                                    th:text="|Vòng này (${#lists.size(workspace.comments)})|">Vòng này</button>
+                            <button th:if="${workspace.previous != null}" class="ws-tab tab-btn" data-tab="prev" type="button" role="tab" aria-selected="false"
+                                    th:text="|Vòng trước · v${workspace.previous.label} (${#lists.size(workspace.previousComments)})|">Vòng trước</button>
                         </div>
 
                         <!-- Tab "Vòng này": góp ý trên phiên bản đang duyệt
-                             Dữ liệu: w.comments (danh sách ReviewCommentDTO), service tạo bằng rootComments(current). -->
+                             Dữ liệu: workspace.comments (danh sách ReviewCommentDTO), service tạo bằng rootComments(current). -->
                         <div id="tab-now" class="ws-tab-panel">
-                            <p class="ws-note">Góp ý trên <b th:text="|v${w.current.label}|">v1.0</b>. Lead chỉ thấy sau khi bạn bấm <b>Yêu cầu sửa</b> hoặc <b>Duyệt</b>.</p>
-                            <p class="ws-note" th:if="${#lists.isEmpty(w.comments)}"><i>Chưa có góp ý nào.</i></p>
+                            <p class="ws-note">Góp ý trên <b th:text="|v${workspace.current.label}|">v1.0</b>. Lead chỉ thấy sau khi bạn bấm <b>Yêu cầu sửa</b> hoặc <b>Duyệt</b>.</p>
+                            <p class="ws-note" th:if="${#lists.isEmpty(workspace.comments)}"><i>Chưa có góp ý nào.</i></p>
 
                             <!-- Một thẻ góp ý. data-field / data-paragraph / data-start / data-end: JS dùng để tô vàng đúng chữ được góp ý.
                                  Góp ý chung (không gắn vị trí) thì không có data-field. -->
-                            <div class="ws-comment comment-card" th:each="c : ${w.comments}"
-                                 th:attr="data-cid=${c.id},data-field=${c.anchorField},data-paragraph=${c.anchorParagraph},data-start=${c.anchorStart},data-end=${c.anchorEnd}">
+                            <div class="ws-comment comment-card" th:each="comment : ${workspace.comments}"
+                                 th:attr="data-cid=${comment.id},data-field=${comment.anchorField},data-paragraph=${comment.anchorParagraph},data-start=${comment.anchorStart},data-end=${comment.anchorEnd}">
                                 <div class="ws-comment-top">
-                                    <b th:text="${c.anchorLabel}">Đoạn 2</b>
-                                    <span class="ws-mono" th:text="${c.timeText}">08:42</span>
+                                    <b th:text="${comment.anchorLabel}">Đoạn 2</b>
+                                    <span class="ws-mono" th:text="${comment.timeText}">08:42</span>
                                 </div>
-                                <p class="ws-quote" th:if="${c.quotedText != null}" th:text="|“${c.quotedText}”|">“trích dẫn”</p>
-                                <p class="ws-comment-text" th:text="${c.content}">Nội dung góp ý</p>
-                                <div class="ws-reply" th:each="r : ${c.replies}"><b th:text="|${r.authorName}:|">Lead:</b> <span th:text="${r.content}">trả lời</span></div>
+                                <p class="ws-quote" th:if="${comment.quotedText != null}" th:text="|“${comment.quotedText}”|">“trích dẫn”</p>
+                                <p class="ws-comment-text" th:text="${comment.content}">Nội dung góp ý</p>
+                                <div class="ws-reply" th:each="reply : ${comment.replies}"><b th:text="|${reply.authorName}:|">Lead:</b> <span th:text="${reply.content}">trả lời</span></div>
                                 <div class="ws-comment-foot">
-                                    <button th:if="${c.anchorField != null}" data-goto class="ws-link" type="button">Xem vị trí →</button>
-                                    <span th:unless="${c.anchorField != null}"></span>
+                                    <button th:if="${comment.anchorField != null}" data-goto class="ws-link" type="button">Xem vị trí →</button>
+                                    <span th:unless="${comment.anchorField != null}"></span>
                                     <!-- data-confirm: JS hỏi lại "Xóa góp ý này?" trước khi gửi form
                                          Gửi: POST /department-head/articles/{a}/comments/{c}/delete
                                          -> DepartmentHeadController.deleteComment() -> service.deleteComment() -->
 
-                                    <form th:if="${w.reviewable}" method="post" data-confirm="Xóa góp ý này?"
-                                          th:action="@{/department-head/articles/{a}/comments/{c}/delete(a=${w.articleId},c=${c.id})}">
+                                    <form th:if="${workspace.reviewable}" method="post" data-confirm="Xóa góp ý này?"
+                                          th:action="@{/department-head/articles/{a}/comments/{c}/delete(a=${workspace.articleId},c=${comment.id})}">
                                         <button class="ws-link ws-link--muted" type="submit">Xóa</button>
                                     </form>
                                 </div>
@@ -345,8 +345,8 @@
                                  -> DepartmentHeadController.addComment() (Spring đổ vào CommentRequestDTO.content, anchorField để trống)
                                  -> service.addComment() lưu góp ý không có vị trí. -->
 
-                            <form th:if="${w.reviewable}" class="ws-general-form" method="post"
-                                  th:action="@{/department-head/articles/{a}/comments(a=${w.articleId})}">
+                            <form th:if="${workspace.reviewable}" class="ws-general-form" method="post"
+                                  th:action="@{/department-head/articles/{a}/comments(a=${workspace.articleId})}">
                                 <label for="general-comment">Góp ý chung</label>
                                 <textarea id="general-comment" class="ws-textarea" name="content" rows="2" required placeholder="Nhận xét cho cả bài..."></textarea>
                                 <button type="submit" class="ws-btn ws-btn--grey ws-btn--small">Thêm góp ý chung</button>
@@ -355,31 +355,31 @@
 
                         <!-- Tab "Vòng trước": góp ý trên phiên bản liền trước + góp ý CHƯA SỬA của các phiên bản cũ hơn.
                              Trưởng ban xác nhận Lead đã sửa hay chưa (comment.status: RESOLVED = đã sửa, OPEN = chưa sửa).
-                             Ẩn sẵn, bấm tab thì JS hiện ra. Dữ liệu: w.previousComments (service tạo bằng earlierComments()).
+                             Ẩn sẵn, bấm tab thì JS hiện ra. Dữ liệu: workspace.previousComments (service tạo bằng earlierComments()).
                              Nút "Đã sửa" / "Chưa sửa": POST .../comments/{c}/resolve?resolved=true|false
                              -> DepartmentHeadController.resolveComment() -> service.setPreviousCommentResolved() -->
 
-                        <div th:if="${w.previous != null}" id="tab-prev" class="ws-tab-panel" hidden>
-                            <p class="ws-note">Góp ý trên <b th:text="|v${w.previous.label}|">v1.0</b> và góp ý chưa sửa của các phiên bản cũ hơn. Kiểm tra bản mới rồi đánh dấu đã sửa hay chưa.</p>
-                            <p class="ws-note" th:if="${#lists.isEmpty(w.previousComments)}"><i>Vòng trước không có góp ý.</i></p>
-                            <div class="ws-comment ws-comment--prev" th:each="c : ${w.previousComments}" th:classappend="${c.resolved} ? 'is-resolved'">
+                        <div th:if="${workspace.previous != null}" id="tab-prev" class="ws-tab-panel" hidden>
+                            <p class="ws-note">Góp ý trên <b th:text="|v${workspace.previous.label}|">v1.0</b> và góp ý chưa sửa của các phiên bản cũ hơn. Kiểm tra bản mới rồi đánh dấu đã sửa hay chưa.</p>
+                            <p class="ws-note" th:if="${#lists.isEmpty(workspace.previousComments)}"><i>Vòng trước không có góp ý.</i></p>
+                            <div class="ws-comment ws-comment--prev" th:each="comment : ${workspace.previousComments}" th:classappend="${comment.resolved} ? 'is-resolved'">
                                 <div class="ws-comment-top">
-                                    <b th:text="${c.anchorLabel}">Đoạn 1</b>
+                                    <b th:text="${comment.anchorLabel}">Đoạn 1</b>
                                     <!-- Góp ý từ phiên bản cũ hơn bản liền trước: ghi rõ phiên bản để khỏi nhầm -->
-                                    <span class="ws-badge" th:if="${c.versionLabel != null and c.versionLabel != w.previous.label}"
-                                          th:text="|Từ v${c.versionLabel}|">Từ v1.0</span>
-                                    <span th:if="${c.resolved}" class="ws-badge ws-badge--done">Đã sửa</span>
-                                    <span th:unless="${c.resolved}" class="ws-badge ws-badge--open">Chưa sửa</span>
+                                    <span class="ws-badge" th:if="${comment.versionLabel != null and comment.versionLabel != workspace.previous.label}"
+                                          th:text="|Từ v${comment.versionLabel}|">Từ v1.0</span>
+                                    <span th:if="${comment.resolved}" class="ws-badge ws-badge--done">Đã sửa</span>
+                                    <span th:unless="${comment.resolved}" class="ws-badge ws-badge--open">Chưa sửa</span>
                                 </div>
-                                <p class="ws-quote" th:if="${c.quotedText != null}" th:text="|“${c.quotedText}”|">“trích dẫn”</p>
-                                <p class="ws-comment-text" th:text="${c.content}">Nội dung góp ý</p>
-                                <span class="ws-comment-author" th:text="|${c.authorName} · ${c.timeText}|">Người góp ý</span>
-                                <div class="ws-reply" th:each="r : ${c.replies}"><b th:text="|${r.authorName}:|">Lead:</b> <span th:text="${r.content}">Đã sửa.</span></div>
-                                <div class="ws-resolve-buttons" th:if="${w.reviewable}">
-                                    <form method="post" th:action="@{/department-head/articles/{a}/comments/{c}/resolve(a=${w.articleId},c=${c.id},resolved=true)}">
+                                <p class="ws-quote" th:if="${comment.quotedText != null}" th:text="|“${comment.quotedText}”|">“trích dẫn”</p>
+                                <p class="ws-comment-text" th:text="${comment.content}">Nội dung góp ý</p>
+                                <span class="ws-comment-author" th:text="|${comment.authorName} · ${comment.timeText}|">Người góp ý</span>
+                                <div class="ws-reply" th:each="reply : ${comment.replies}"><b th:text="|${reply.authorName}:|">Lead:</b> <span th:text="${reply.content}">Đã sửa.</span></div>
+                                <div class="ws-resolve-buttons" th:if="${workspace.reviewable}">
+                                    <form method="post" th:action="@{/department-head/articles/{a}/comments/{c}/resolve(a=${workspace.articleId},c=${comment.id},resolved=true)}">
                                         <button class="ws-btn ws-btn--green ws-btn--small" type="submit"><svg class="rp-icon"><use href="#ws-icon-check"></use></svg>Đã sửa</button>
                                     </form>
-                                    <form method="post" th:action="@{/department-head/articles/{a}/comments/{c}/resolve(a=${w.articleId},c=${c.id},resolved=false)}">
+                                    <form method="post" th:action="@{/department-head/articles/{a}/comments/{c}/resolve(a=${workspace.articleId},c=${comment.id},resolved=false)}">
                                         <button class="ws-btn ws-btn--grey ws-btn--small" type="submit">Chưa sửa</button>
                                     </form>
                                 </div>
@@ -391,9 +391,9 @@
                     <section class="rp-card">
                         <div class="rp-card-head"><h2>Thông tin bài</h2></div>
                         <dl class="rp-article-meta">
-                            <div><dt>Phiên bản đang duyệt</dt><dd th:text="|v${w.current.label} · ${w.current.createdAtText}|">v1.0 · 08:35</dd></div>
-                            <div th:if="${w.current.changeSummary != null}">
-                                <dt>Ghi chú của Lead khi nộp</dt><dd class="ws-change-summary" th:text="|“${w.current.changeSummary}”|">“…”</dd>
+                            <div><dt>Phiên bản đang duyệt</dt><dd th:text="|v${workspace.current.label} · ${workspace.current.createdAtText}|">v1.0 · 08:35</dd></div>
+                            <div th:if="${workspace.current.changeSummary != null}">
+                                <dt>Ghi chú của Lead khi nộp</dt><dd class="ws-change-summary" th:text="|“${workspace.current.changeSummary}”|">“…”</dd>
                             </div>
                         </dl>
                     </section>
@@ -406,17 +406,17 @@
             <div class="ws-action-inner">
                 <div class="ws-action-state">
                     <!-- Chấm đỏ nhấp nháy = đang duyệt; chấm xanh = chỉ xem -->
-                    <span class="ws-status-dot" th:classappend="${w.reviewable} ? 'is-live' : 'is-done'"></span>
-                    <span th:if="${w.reviewable}">Đang duyệt bài <b th:text="|#${w.code}|">#BT-1</b> · <span th:text="|v${w.current.label}|">v1.0</span></span>
-                    <span th:unless="${w.reviewable}" th:text="|${w.statusText} · chỉ xem, không thao tác được|">Chỉ xem</span>
+                    <span class="ws-status-dot" th:classappend="${workspace.reviewable} ? 'is-live' : 'is-done'"></span>
+                    <span th:if="${workspace.reviewable}">Đang duyệt bài <b th:text="|#${workspace.code}|">#BT-1</b> · <span th:text="|v${workspace.current.label}|">v1.0</span></span>
+                    <span th:unless="${workspace.reviewable}" th:text="|${workspace.statusText} · chỉ xem, không thao tác được|">Chỉ xem</span>
                 </div>
-                <!-- 3 nút chỉ có khi được thao tác (w.reviewable = true).
+                <!-- 3 nút chỉ có khi được thao tác (workspace.reviewable = true).
                      "Để sau" là link thường, quay về dashboard (lượt duyệt vẫn mở, lần sau vào tiếp).
                      "Yêu cầu sửa" / "Duyệt" là type="button": KHÔNG gửi gì, chỉ để JS mở hộp thoại tương ứng ở phần 6. -->
-                <div class="ws-action-buttons" th:if="${w.reviewable}">
+                <div class="ws-action-buttons" th:if="${workspace.reviewable}">
                     <a class="ws-btn ws-btn--grey" th:href="@{/department-head/dashboard}"><svg class="rp-icon ws-icon-muted"><use href="#ws-icon-clock"></use></svg>Để sau</a>
                     <button id="btn-revise" class="ws-btn ws-btn--yellow" type="button">
-                        <svg class="rp-icon"><use href="#ws-icon-replay"></use></svg>Yêu cầu sửa<span class="ws-count-circle" th:text="${#lists.size(w.comments)}">0</span>
+                        <svg class="rp-icon"><use href="#ws-icon-replay"></use></svg>Yêu cầu sửa<span class="ws-count-circle" th:text="${#lists.size(workspace.comments)}">0</span>
                     </button>
                     <button id="btn-approve" class="ws-btn ws-btn--maroon ws-btn--large" type="button">
                         <svg class="rp-icon"><use href="#ws-icon-approve"></use></svg>Duyệt, chuyển Thư ký
@@ -432,16 +432,16 @@
              -> DepartmentHeadController.requestRevision() -> service.requestRevision():
                 bài DEPARTMENT_REVIEW -> REVISION_REQUIRED (trả về Lead), lượt duyệt chốt REQUEST_REVISION.
              required trên textarea + JS tắt nút khi chưa gõ chỉ là tiện lợi; service vẫn kiểm tra lại "có nhận xét chưa". -->
-        <div th:if="${w.reviewable}" id="modal-revise" class="ws-modal-backdrop" hidden>
-            <form class="ws-modal" method="post" th:action="@{/department-head/articles/{a}/request-revision(a=${w.articleId})}">
+        <div th:if="${workspace.reviewable}" id="modal-revise" class="ws-modal-backdrop" hidden>
+            <form class="ws-modal" method="post" th:action="@{/department-head/articles/{a}/request-revision(a=${workspace.articleId})}">
                 <h3>Yêu cầu sửa bài</h3>
                 <label for="revise-feedback">Nhận xét chung <span class="ws-required">*</span></label>
                 <textarea id="revise-feedback" class="ws-textarea" name="feedback" rows="4" required placeholder="Tóm tắt những gì Lead cần sửa..."></textarea>
-                <p class="ws-modal-subtitle">Kèm theo <span th:text="${#lists.size(w.comments)}">0</span> góp ý trong bài<span th:if="${openPrev > 0}" th:text="| và ${openPrev} góp ý vòng trước chưa sửa|"></span>:</p>
+                <p class="ws-modal-subtitle">Kèm theo <span th:text="${#lists.size(workspace.comments)}">0</span> góp ý trong bài<span th:if="${openPrev > 0}" th:text="| và ${openPrev} góp ý vòng trước chưa sửa|"></span>:</p>
                 <ul class="ws-modal-list">
-                    <li th:each="c : ${w.comments}"><b th:text="${c.anchorLabel}">Đoạn 1</b> – <span th:text="${c.content}">nội dung</span></li>
-                    <li th:each="c : ${w.previousComments}" th:if="${!c.resolved}"><b>Vòng trước, chưa sửa</b> – <span th:text="${c.content}">nội dung</span></li>
-                    <li th:if="${#lists.isEmpty(w.comments) and openPrev == 0}" class="is-empty">Không có góp ý trong bài, chỉ gửi nhận xét chung.</li>
+                    <li th:each="comment : ${workspace.comments}"><b th:text="${comment.anchorLabel}">Đoạn 1</b> – <span th:text="${comment.content}">nội dung</span></li>
+                    <li th:each="comment : ${workspace.previousComments}" th:if="${!comment.resolved}"><b>Vòng trước, chưa sửa</b> – <span th:text="${comment.content}">nội dung</span></li>
+                    <li th:if="${#lists.isEmpty(workspace.comments) and openPrev == 0}" class="is-empty">Không có góp ý trong bài, chỉ gửi nhận xét chung.</li>
                 </ul>
                 <div class="ws-modal-actions">
                     <button data-close class="ws-btn ws-btn--grey" type="button">Hủy</button>
@@ -456,14 +456,14 @@
              -> DepartmentHeadController.approve() -> service.approve():
                 bài DEPARTMENT_REVIEW -> DEPARTMENT_APPROVED, lượt duyệt chốt APPROVED. -->
 
-        <div th:if="${w.reviewable}" id="modal-approve" class="ws-modal-backdrop" hidden>
-            <form class="ws-modal ws-modal--small" method="post" th:action="@{/department-head/articles/{a}/approve(a=${w.articleId})}">
+        <div th:if="${workspace.reviewable}" id="modal-approve" class="ws-modal-backdrop" hidden>
+            <form class="ws-modal ws-modal--small" method="post" th:action="@{/department-head/articles/{a}/approve(a=${workspace.articleId})}">
                 <h3>Duyệt bài cấp phòng?</h3>
-                <p>Bài <span th:text="|v${w.current.label}|">v1.0</span> sẽ chuyển sang Thư ký tòa soạn duyệt cuối.</p>
+                <p>Bài <span th:text="|v${workspace.current.label}|">v1.0</span> sẽ chuyển sang Thư ký tòa soạn duyệt cuối.</p>
                 <!-- Cảnh báo khi vẫn còn góp ý chưa xử lý -->
-                <div class="ws-warning" th:if="${openPrev > 0 or !#lists.isEmpty(w.comments)}">
+                <div class="ws-warning" th:if="${openPrev > 0 or !#lists.isEmpty(workspace.comments)}">
                     <svg class="rp-icon"><use href="#ws-icon-warning"></use></svg>
-                    <span th:text="|Còn ${openPrev} góp ý vòng trước chưa xác nhận đã sửa và ${#lists.size(w.comments)} góp ý ở vòng này. Vẫn duyệt?|">Cảnh báo</span>
+                    <span th:text="|Còn ${openPrev} góp ý vòng trước chưa xác nhận đã sửa và ${#lists.size(workspace.comments)} góp ý ở vòng này. Vẫn duyệt?|">Cảnh báo</span>
                 </div>
                 <label for="approve-feedback">Ghi chú (không bắt buộc)</label>
                 <textarea id="approve-feedback" class="ws-textarea" name="feedback" rows="2"></textarea>
@@ -479,7 +479,7 @@
                anchorField -> setAnchorField, anchorParagraph -> setAnchorParagraph, ..., content -> setContent
              Gửi: POST /department-head/articles/{a}/comments -> DepartmentHeadController.addComment() -> service.addComment() -->
 
-        <form th:if="${w.reviewable}" id="comment-form" method="post" th:action="@{/department-head/articles/{a}/comments(a=${w.articleId})}" hidden>
+        <form th:if="${workspace.reviewable}" id="comment-form" method="post" th:action="@{/department-head/articles/{a}/comments(a=${workspace.articleId})}" hidden>
             <input type="hidden" name="anchorField">
             <input type="hidden" name="anchorParagraph">
             <input type="hidden" name="anchorStart">

@@ -10,6 +10,7 @@ import com.group6.electronic_drafting_system.entity.Article;
 import com.group6.electronic_drafting_system.entity.ArticleReview;
 import com.group6.electronic_drafting_system.entity.ArticleVersion;
 import com.group6.electronic_drafting_system.entity.Comment;
+import com.group6.electronic_drafting_system.entity.Department;
 import com.group6.electronic_drafting_system.entity.enums.AnchorField;
 import com.group6.electronic_drafting_system.entity.enums.ArticleReviewDecision;
 import com.group6.electronic_drafting_system.entity.enums.ArticleStatus;
@@ -43,6 +44,12 @@ import org.springframework.transaction.annotation.Transactional;
 //
 // AI GỌI? DepartmentHeadController (6 method: reviewWorkspace, addComment, deleteComment, resolveComment, approve, requestRevision).
 //
+// QUY TẮC QUYỀN (cách A, giống luồng tập code):
+//   XEM bài   (checkCanReview): Topic thuộc PHÒNG mình HOẶC được GIAO cho mình; và mình không phải Lead của bài (BR-34)
+//   THAO TÁC  (myOpenReview)  : góp ý / xóa / đánh dấu / duyệt / trả bài thì PHẢI được giao (rule R09 trong DB),
+//                               không phải Lead, và bài đang DEPARTMENT_REVIEW
+//   Người cùng phòng nhưng không được giao: chỉ xem, không có nút thao tác (reviewable = false).
+//
 // BẢN ĐỒ CÁC BẢNG LIÊN QUAN (để dễ hình dung):
 //   article          : bài viết (status: DEPARTMENT_REVIEW, REVISION_REQUIRED...)
 //   article_version  : mỗi lần Lead nộp bài là 1 version (1.0, 1.1, 1.2...). Version KHÔNG được sửa / xóa.
@@ -54,7 +61,7 @@ import org.springframework.transaction.annotation.Transactional;
 //   accounts     -> repository/AccountRepository.java         : findByEmailIgnoreCase (dòng 12)
 //   articles     -> repository/ArticleRepository.java         : findWithLeadAndTopic (dòng 34), findSources (dòng 38)
 //   versions     -> repository/ArticleVersionRepository.java  : findByArticleIdOrderByVersionNumberAsc (dòng 17)
-//   reviews      -> repository/ArticleReviewRepository.java   : findOpenReview (dòng 43), save (có sẵn của JpaRepository)
+//   articleReviews -> repository/ArticleReviewRepository.java : findOpenReview (dòng 43), save (có sẵn của JpaRepository)
 //   comments     -> repository/CommentRepository.java         : findByVersion (dòng 19), findWithReview (dòng 22), save, delete
 //   assignments  -> repository/AssignmentRepository.java      : isActiveOnTopic (dòng 38), findActiveByTopicAndRole (dòng 43)
 //   mapper       -> mapper/DepartmentHead/ReviewWorkspaceMapper.java:
@@ -72,7 +79,7 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
     private final AccountRepository accounts;            // bảng account
     private final ArticleRepository articles;            // bảng article (+ article_source)
     private final ArticleVersionRepository versions;     // bảng article_version
-    private final ArticleReviewRepository reviews;       // bảng article_review
+    private final ArticleReviewRepository articleReviews; // bảng article_review
     private final CommentRepository comments;            // bảng comment
     private final AssignmentRepository assignments;      // bảng assignment (ai phụ trách Topic nào)
     private final ReviewWorkspaceMapper mapper;          // đổi version / comment / source thành DTO hiển thị
@@ -80,13 +87,13 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
 
     // Constructor: Spring tự gọi lúc khởi động và truyền 8 object vào.
     public DepartmentHeadReviewServiceImpl(AccountRepository accounts, ArticleRepository articles,
-                                           ArticleVersionRepository versions, ArticleReviewRepository reviews,
+                                           ArticleVersionRepository versions, ArticleReviewRepository articleReviews,
                                            CommentRepository comments, AssignmentRepository assignments,
                                            ReviewWorkspaceMapper mapper, DraftEntryMapper entryMapper) {
         this.accounts = accounts;
         this.articles = articles;
         this.versions = versions;
-        this.reviews = reviews;
+        this.articleReviews = articleReviews;
         this.comments = comments;
         this.assignments = assignments;
         this.mapper = mapper;
@@ -95,18 +102,19 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
 
     // =====================================================================================================
     // MỞ TRANG THẨM ĐỊNH. Gọi từ DepartmentHeadController.reviewWorkspace().
-    // Trả về ReviewWorkspaceDTO -> controller bỏ vào model tên "workspace" -> workspacereview.html đọc ${w...}.
+    // Trả về ReviewWorkspaceDTO -> controller bỏ vào model tên "workspace" -> workspacereview.html đọc ${workspace...}.
     // =====================================================================================================
     // Không readOnly: lần đầu mở bài sẽ tạo lượt duyệt (article_review, decision = NULL) - CLAUDE.md mục 7 "Review"
     @Override
     @Transactional
     public ReviewWorkspaceDTO openWorkspace(String email, Integer articleId) {
-        // ===== BƯỚC 1: kiểm tra quyền =====
+        // ===== BƯỚC 1: kiểm tra quyền XEM =====
         // currentHead (phần "Kiểm tra quyền" bên dưới): tìm tài khoản theo email, không có thì báo lỗi.
         Account head = currentHead(email);
-        // articleOfHead: tìm bài + kiểm tra mình đang là DEPARTMENT_HEAD của Topic bài đó, và mình không phải Lead của bài.
-        // Sai quyền -> ném lỗi ARTICLE_REVIEW_FORBIDDEN -> controller (handleError) trả trang lỗi 403.
-        Article article = articleOfHead(head, articleId);
+        // findArticle: tìm bài, không có thì lỗi 404.
+        Article article = findArticle(articleId);
+        // checkCanReview: cùng phòng HOẶC được giao, và không phải Lead. Sai quyền -> lỗi 403 (controller handleError).
+        checkCanReview(head, article);
 
         // ===== BƯỚC 2: lấy các version của bài =====
         // SQL -> ArticleVersionRepository.findByArticleIdOrderByVersionNumberAsc: mọi version, xếp tăng dần [v1.0, v1.1, v1.2...]
@@ -118,19 +126,23 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
         // previous = version LIỀN TRƯỚC (phần tử áp chót); null nếu bài mới có 1 version (lần nộp đầu)
         ArticleVersion previous = allVersions.size() > 1 ? allVersions.get(allVersions.size() - 2) : null;
 
-        // ===== BƯỚC 3: mở lượt duyệt (article_review) nếu cần, quyết định "được thao tác hay chỉ xem" =====
-        // Chỉ bài đang DEPARTMENT_REVIEW mới mở lượt duyệt; bài đã duyệt / đã trả thì chỉ xem
+        // ===== BƯỚC 3: mở lượt duyệt (article_review) nếu đủ điều kiện, quyết định "được thao tác hay chỉ xem" =====
+        // Chỉ mở lượt duyệt khi CẢ HAI đúng:
+        //   - bài đang DEPARTMENT_REVIEW (bài đã duyệt / đã trả thì chỉ xem)
+        //   - mình được GIAO Topic này (người cùng phòng nhưng không được giao thì chỉ xem; tạo lượt duyệt cho họ sẽ vi phạm R09)
+        boolean assignedToMe = assignments.isActiveOnTopic(
+                article.getTopic().getId(), head.getId(), AssignmentRole.DEPARTMENT_HEAD);
         boolean reviewable = false;
-        if (article.getStatus() == ArticleStatus.DEPARTMENT_REVIEW) {
-            // SQL -> ArticleReviewRepository.findOpenReview: tìm lượt duyệt cấp DEPARTMENT đang mở (decision = NULL) trên version này.
-            // orElseGet: chưa có thì tạo mới (newDepartmentReview, phần "Hàm phụ") rồi reviews.save(...) = INSERT vào article_review.
+        if (article.getStatus() == ArticleStatus.DEPARTMENT_REVIEW && assignedToMe) {
+            // Tìm lượt duyệt cấp DEPARTMENT đang mở (decision = NULL) trên bản này. Có rồi thì dùng lại,
+            // chưa có thì tạo mới (newDepartmentReview, phần "Hàm phụ") rồi save = INSERT vào article_review.
             // Nhờ vậy mở lại trang nhiều lần (F5) KHÔNG tạo thêm lượt duyệt mới.
-            ArticleReview open = reviews.findOpenReview(current.getId(), ReviewStage.DEPARTMENT)
-                    .orElseGet(() -> reviews.save(newDepartmentReview(current, head)));
+            ArticleReview openReview = articleReviews.findOpenReview(current.getId(), ReviewStage.DEPARTMENT)
+                    .orElseGet(() -> articleReviews.save(newDepartmentReview(current, head)));
             // Được thao tác (góp ý / duyệt / trả bài) chỉ khi lượt duyệt đang mở là CỦA MÌNH.
-            reviewable = open.getReviewer().getId().equals(head.getId());
+            reviewable = openReview.getReviewer().getId().equals(head.getId());
         }
-        // reviewable = false -> trong HTML, các khối th:if="${w.reviewable}" bị ẩn (khung góp ý, nút Duyệt, nút Yêu cầu sửa...)
+        // reviewable = false -> trong HTML, các khối th:if="${workspace.reviewable}" bị ẩn (khung góp ý, nút Duyệt, nút Yêu cầu sửa...)
 
         // ===== BƯỚC 4: chuẩn bị nội dung bài và tư liệu =====
         // Thân bài theo bố cục phóng viên; link ảnh / video trong bài dùng để đánh dấu tư liệu "Có trong bài"
@@ -153,7 +165,7 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
                 .stream().map(s -> s.getAccount().getFullName()).collect(Collectors.joining(", "));
 
         // ===== BƯỚC 5: đóng gói vào ReviewWorkspaceDTO (xem từng field trong dto/DepartmentHead/ReviewWorkspaceDTO.java) =====
-        // Mỗi .tenField(...) điền vào field cùng tên; HTML đọc bằng ${w.tenField}.
+        // Mỗi .tenField(...) điền vào field cùng tên; HTML đọc bằng ${workspace.tenField}.
         return ReviewWorkspaceDTO.builder()
                 .articleId(article.getId())                                   // dùng để ghép URL các form POST
                 .code("BT-" + article.getId())                                // mã hiển thị, ví dụ "BT-15"
@@ -185,12 +197,12 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
     // =====================================================================================================
     @Override
     @Transactional
-    public void addComment(String email, Integer articleId, CommentRequestDTO request) {
-        // Kiểm tra quyền: đúng Trưởng ban của Topic + đang có lượt duyệt mở của chính mình (myOpenReview).
+    public void addComment(String email, Integer articleId, CommentRequestDTO commentRequest) {
+        // Kiểm tra quyền: được giao Topic + đang có lượt duyệt mở của chính mình (myOpenReview).
         Account head = currentHead(email);
-        ArticleReview review = myOpenReview(head, articleOfHead(head, articleId));
+        ArticleReview review = myOpenReview(head, findArticle(articleId));
         // Nội dung góp ý (ô "Nội dung góp ý" / "Góp ý chung"). trim() bỏ khoảng trắng hai đầu; rỗng thì báo lỗi.
-        String content = request.getContent() == null ? "" : request.getContent().trim();
+        String content = commentRequest.getContent() == null ? "" : commentRequest.getContent().trim();
         if (content.isEmpty()) throw new ApplicationException(ErrorCode.COMMENT_INVALID);
 
         // Tạo object Comment mới (chưa lưu) và điền thông tin.
@@ -201,23 +213,25 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
 
         // Góp ý gắn vị trí: kiểm tra vị trí có thật trong version đang duyệt, quoted_text lấy từ DB (không tin chữ gửi lên)
         // anchorField để trống = góp ý chung -> bỏ qua cả khối if này.
-        if (request.getAnchorField() != null && !request.getAnchorField().isBlank()) {
+        if (commentRequest.getAnchorField() != null && !commentRequest.getAnchorField().isBlank()) {
             // "CONTENT" (chữ) -> AnchorField.CONTENT (enum); chữ lạ thì báo lỗi (hàm phụ parseAnchorField)
-            AnchorField field = parseAnchorField(request.getAnchorField());
-            int paragraph = request.getAnchorParagraph() == null ? 0 : request.getAnchorParagraph();
+            AnchorField field = parseAnchorField(commentRequest.getAnchorField());
+            int paragraph = commentRequest.getAnchorParagraph() == null ? 0 : commentRequest.getAnchorParagraph();
             // mapper.anchorText (ReviewWorkspaceMapper dòng 212): lấy chữ THẬT của đúng ô đó (tít / sapo / đoạn số mấy) trong version
             String text = mapper.anchorText(review.getVersion(), field, paragraph);
-            Integer start = request.getAnchorStart(), end = request.getAnchorEnd();
-            // Vị trí ký tự phải hợp lệ: 0 <= start < end <= độ dài đoạn. Sai thì báo lỗi.
-            if (text == null || start == null || end == null || start < 0 || end <= start || end > text.length()) {
+            Integer anchorStart = commentRequest.getAnchorStart();
+            Integer anchorEnd = commentRequest.getAnchorEnd();
+            // Vị trí ký tự phải hợp lệ: 0 <= anchorStart < anchorEnd <= độ dài đoạn. Sai thì báo lỗi.
+            if (text == null || anchorStart == null || anchorEnd == null
+                    || anchorStart < 0 || anchorEnd <= anchorStart || anchorEnd > text.length()) {
                 throw new ApplicationException(ErrorCode.COMMENT_INVALID);
             }
             comment.setAnchorField(field);
             comment.setAnchorParagraph(paragraph);
-            comment.setAnchorStart(start);
-            comment.setAnchorEnd(end);
+            comment.setAnchorStart(anchorStart);
+            comment.setAnchorEnd(anchorEnd);
             // Cắt đúng đoạn chữ được bôi đen từ nội dung trong DB (không dùng chữ trình duyệt gửi lên).
-            comment.setQuotedText(text.substring(start, end));
+            comment.setQuotedText(text.substring(anchorStart, anchorEnd));
         }
         // SQL: INSERT vào bảng comment
         comments.save(comment);
@@ -230,7 +244,7 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
     @Transactional
     public void deleteComment(String email, Integer articleId, Integer commentId) {
         Account head = currentHead(email);
-        ArticleReview review = myOpenReview(head, articleOfHead(head, articleId));
+        ArticleReview review = myOpenReview(head, findArticle(articleId));
         // SQL -> CommentRepository.findWithReview: tìm góp ý theo id (lấy kèm lượt duyệt của nó)
         Comment comment = comments.findWithReview(commentId)
                 .orElseThrow(() -> new ApplicationException(ErrorCode.COMMENT_NOT_FOUND));
@@ -253,7 +267,7 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
     @Transactional
     public void setPreviousCommentResolved(String email, Integer articleId, Integer commentId, boolean resolved) {
         Account head = currentHead(email);
-        ArticleReview review = myOpenReview(head, articleOfHead(head, articleId));
+        ArticleReview review = myOpenReview(head, findArticle(articleId));
         Comment comment = comments.findWithReview(commentId)
                 .orElseThrow(() -> new ApplicationException(ErrorCode.COMMENT_NOT_FOUND));
         // Góp ý phải thuộc một version CŨ của chính bài này (vòng trước)
@@ -278,8 +292,8 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
     @Transactional
     public void approve(String email, Integer articleId, String feedback) {
         Account head = currentHead(email);
-        Article article = articleOfHead(head, articleId);
-        // myOpenReview cũng kiểm tra bài phải đang DEPARTMENT_REVIEW; nếu không thì báo lỗi.
+        Article article = findArticle(articleId);
+        // myOpenReview: kiểm tra được giao, không phải Lead, bài đang DEPARTMENT_REVIEW; rồi trả về lượt duyệt của mình.
         ArticleReview review = myOpenReview(head, article);
         // Ghi chú không bắt buộc: để trống thì lưu null.
         String note = feedback == null || feedback.isBlank() ? null : feedback.trim();
@@ -300,7 +314,7 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
         // Kiểm tra nhận xét TRƯỚC: thiếu thì báo lỗi ngay (controller hiện toast lỗi), không cần hỏi DB.
         if (feedback == null || feedback.isBlank()) throw new ApplicationException(ErrorCode.REVIEW_FEEDBACK_REQUIRED);
         Account head = currentHead(email);
-        Article article = articleOfHead(head, articleId);
+        Article article = findArticle(articleId);
         ArticleReview review = myOpenReview(head, article);
         // Chốt lượt duyệt: decision = REQUEST_REVISION
         closeReview(review, ArticleReviewDecision.REQUEST_REVISION, feedback.trim());
@@ -319,34 +333,56 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
                 .orElseThrow(() -> new ApplicationException(ErrorCode.AUTH_ACCOUNT_NOT_REGISTERED));
     }
 
-    // Trưởng phòng chỉ được xem / duyệt bài thuộc Topic mà mình đang có assignment DEPARTMENT_HEAD (R09),
-    // và không được duyệt bài do chính mình phụ trách (BR-34)
-    private Article articleOfHead(Account head, Integer articleId) {
-        // SQL -> ArticleRepository.findWithLeadAndTopic: lấy bài kèm Lead và Topic. Không có -> lỗi 404.
-        Article article = articles.findWithLeadAndTopic(articleId)
+    // Tìm bài kèm Lead và Topic. Không có -> lỗi 404.
+    private Article findArticle(Integer articleId) {
+        return articles.findWithLeadAndTopic(articleId)
                 .orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_NOT_FOUND));
-        // SQL -> AssignmentRepository.isActiveOnTopic: mình có assignment DEPARTMENT_HEAD (chưa REMOVED) trên Topic này không?
-        boolean isHeadOfTopic = assignments.isActiveOnTopic(article.getTopic().getId(), head.getId(), AssignmentRole.DEPARTMENT_HEAD);
-        // Không phụ trách Topic, HOẶC chính mình là Lead của bài -> lỗi 403
-        if (!isHeadOfTopic || article.getLead().getId().equals(head.getId())) {
-            throw new ApplicationException(ErrorCode.ARTICLE_REVIEW_FORBIDDEN);
-        }
-        return article;
     }
 
-    // Lượt duyệt đang mở trên version mới nhất, và phải là của người đang thao tác
+    // Quyền XEM bài (cách A): Topic thuộc phòng mình HOẶC được giao cho mình; và mình không phải Lead (BR-34).
+    // Dùng cho openWorkspace (mở trang). Sai quyền -> lỗi 403.
+    private void checkCanReview(Account head, Article article) {
+        // Câu hỏi 1: Topic của bài có được GIAO cho tôi không? (bảng assignment)
+        boolean assignedToMe = assignments.isActiveOnTopic(
+                article.getTopic().getId(), head.getId(), AssignmentRole.DEPARTMENT_HEAD);
+
+        // Câu hỏi 2: Topic có thuộc PHÒNG của tôi không? (cột topic.department_id)
+        // Kiểm tra null trước: Topic do Thư ký tạo không có phòng ban; Trưởng phòng có thể chưa được gán phòng.
+        Department headDepartment = head.getDepartment();
+        Department topicDepartment = article.getTopic().getDepartment();
+        boolean sameDepartment = headDepartment != null && topicDepartment != null
+                && headDepartment.getId().equals(topicDepartment.getId());
+
+        // Câu hỏi 3: tôi có phải Lead của bài không? Người duyệt không được duyệt bài mình phụ trách.
+        boolean isLead = article.getLead().getId().equals(head.getId());
+
+        // Không được giao VÀ không cùng phòng, HOẶC là Lead -> lỗi 403
+        if ((!assignedToMe && !sameDepartment) || isLead) {
+            throw new ApplicationException(ErrorCode.ARTICLE_REVIEW_FORBIDDEN);
+        }
+    }
+
+    // Quyền THAO TÁC + lượt duyệt đang mở trên version mới nhất, phải là của người đang thao tác.
     // Dùng cho mọi thao tác GHI (góp ý, xóa, đánh dấu, duyệt, trả bài).
     private ArticleReview myOpenReview(Account head, Article article) {
+        // Thao tác thì PHẢI được giao (rule R09), cùng phòng thôi là chưa đủ; và không phải Lead (BR-34)
+        boolean assignedToMe = assignments.isActiveOnTopic(
+                article.getTopic().getId(), head.getId(), AssignmentRole.DEPARTMENT_HEAD);
+        boolean isLead = article.getLead().getId().equals(head.getId());
+        if (!assignedToMe || isLead) {
+            throw new ApplicationException(ErrorCode.ARTICLE_REVIEW_FORBIDDEN);
+        }
         // Bài phải đang chờ Trưởng phòng duyệt
         if (article.getStatus() != ArticleStatus.DEPARTMENT_REVIEW) {
             throw new ApplicationException(ErrorCode.ARTICLE_NOT_IN_DEPARTMENT_REVIEW);
         }
+        // Lấy version mới nhất (phần tử cuối danh sách)
         List<ArticleVersion> allVersions = versions.findByArticleIdOrderByVersionNumberAsc(article.getId());
         if (allVersions.isEmpty()) throw new ApplicationException(ErrorCode.ARTICLE_NOT_SUBMITTED);
         ArticleVersion current = allVersions.get(allVersions.size() - 1);
         // Tìm lượt duyệt đang mở; chưa có thì tạo (giống BƯỚC 3 của openWorkspace)
-        ArticleReview review = reviews.findOpenReview(current.getId(), ReviewStage.DEPARTMENT)
-                .orElseGet(() -> reviews.save(newDepartmentReview(current, head)));
+        ArticleReview review = articleReviews.findOpenReview(current.getId(), ReviewStage.DEPARTMENT)
+                .orElseGet(() -> articleReviews.save(newDepartmentReview(current, head)));
         // Lượt duyệt đang mở là của người khác -> không được thao tác
         if (!review.getReviewer().getId().equals(head.getId())) {
             throw new ApplicationException(ErrorCode.ARTICLE_REVIEW_TAKEN);
@@ -356,7 +392,7 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
 
     // ---------- Hàm phụ ----------
 
-    // Tạo object lượt duyệt cấp DEPARTMENT mới (chưa lưu; nơi gọi sẽ reviews.save). decision để trống = "đang duyệt".
+    // Tạo object lượt duyệt cấp DEPARTMENT mới (chưa lưu; nơi gọi sẽ articleReviews.save). decision để trống = "đang duyệt".
     private static ArticleReview newDepartmentReview(ArticleVersion version, Account head) {
         ArticleReview review = new ArticleReview();
         review.setVersion(version);
@@ -424,7 +460,7 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
         return text.isEmpty() ? 0 : text.split("\\s+").length;
     }
 
-    // Đổi trạng thái bài (enum) thành chữ tiếng Việt cho thanh trạng thái (${w.statusText}).
+    // Đổi trạng thái bài (enum) thành chữ tiếng Việt cho thanh trạng thái (${workspace.statusText}).
     private static String statusText(ArticleStatus status) {
         return switch (status) {
             case DRAFT -> "Bản nháp";

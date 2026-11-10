@@ -185,7 +185,7 @@ public class ArticleServiceImpl implements ArticleService {
     public String restoreVersion(Integer articleId, Integer versionId, String email) {
         // Kiểm tra quyền: phải là Lead đang hoạt động của bài và bài đang sửa được (DRAFT / REVISION_REQUIRED)
         Article article = editableArticle(articleId, email);
-        // Version phải thuộc đúng bài này (rule R22): tìm trong danh sách version của bài, không tin id gửi lên
+        //versions.findByArticle_IdOrderByVersionNumberDesc(articleId): lấy chỉ các version của bài này
         ArticleVersion version = versions.findByArticle_IdOrderByVersionNumberDesc(articleId).stream()
                 .filter(v -> v.getId().equals(versionId))
                 .findFirst()
@@ -422,7 +422,7 @@ public class ArticleServiceImpl implements ArticleService {
         if (request.getTitle() == null || request.getTitle().isBlank()) throw new ApplicationException(ErrorCode.ARTICLE_TITLE_REQUIRED);
         if (request.getCategory() == null || request.getCategory().isBlank()) throw new ApplicationException(ErrorCode.ARTICLE_CATEGORY_REQUIRED);
     }
-
+    //
     private Article editableArticle(Integer articleId, String email) {
         Account me = currentAccount(email);
         Article article = articles.findById(articleId).orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_NOT_FOUND));

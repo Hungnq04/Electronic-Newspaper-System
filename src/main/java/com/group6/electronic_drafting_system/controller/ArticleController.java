@@ -127,9 +127,11 @@ public class ArticleController {
     @PostMapping("/{id}/versions/{versionId}/restore")
     public String restoreVersion(@PathVariable Integer id, @PathVariable Integer versionId, Authentication auth, RedirectAttributes redirect) {
         try {
-            String label = articleService.restoreVersion(id, versionId, currentEmail(auth));
+            String label = articleService.restoreVersion(id, versionId, currentEmail(auth)); 
+            //Gắn thông báo thành công dưới dạng flash attribute
             redirect.addFlashAttribute("message", "Đã khôi phục nội dung phiên bản " + label
                     + " vào bản đang soạn. Lịch sử phiên bản giữ nguyên; phiên bản mới sẽ được tạo khi bạn nộp lại.");
+            // Bắt lõi 
         } catch (ApplicationException ex) {
             redirect.addFlashAttribute("error", ex.getErrorCode().getMessage());
         } catch (Exception ex) {

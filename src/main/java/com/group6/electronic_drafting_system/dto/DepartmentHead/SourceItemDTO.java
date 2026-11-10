@@ -8,13 +8,13 @@ import lombok.Getter;
 // TẠO Ở ĐÂU: ReviewWorkspaceMapper.toSource(articleSource, bodyUrls) (mapper/DepartmentHead/ReviewWorkspaceMapper.java dòng 86),
 //            được DepartmentHeadReviewServiceImpl.openWorkspace() (BƯỚC 4) gọi cho từng tư liệu.
 // NẰM TRONG: ReviewWorkspaceDTO.sources (danh sách) và ReviewWorkspaceDTO.featuredImage (ảnh đại diện)
-// HTML ĐỌC:  khung "Tư liệu đính kèm": th:each="s : ${workspace.sources}" -> ${s.title}, ${s.url}...
+// HTML ĐỌC:  khung "Tư liệu đính kèm": th:each="source : ${workspace.sources}" -> ${source.title}, ${source.url}...
 //
 // @AllArgsConstructor: constructor nhận đủ 7 field THEO ĐÚNG THỨ TỰ khai báo bên dưới.
 @Getter
 @AllArgsConstructor
 public class SourceItemDTO {
-    private String title;       // tên tư liệu -> ${s.title}
+    private String title;       // tên tư liệu -> ${source.title}
     private String typeLabel;   // loại bằng chữ (Ảnh, Tài liệu, Website...) -> hiện khi không có caption
     private String url;         // link Cloudinary / website; bấm thẻ tư liệu sẽ mở link này ở tab mới
     private boolean image;      // true = tư liệu là ảnh -> hiện ảnh thu nhỏ; false -> hiện icon file. Service dùng để đếm imageCount

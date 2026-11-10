@@ -46,12 +46,12 @@ public class ReviewWorkspaceDTO {
     private List<VersionViewDTO> versions;   // mọi version -> ô chọn "So với" và khối ẩn #version-data cho JS so sánh
 
     // ----- Tư liệu -----
-    private List<SourceItemDTO> sources;     // khung "Tư liệu đính kèm": th:each="s : ${workspace.sources}"
+    private List<SourceItemDTO> sources;     // khung "Tư liệu đính kèm": th:each="source : ${workspace.sources}"
     // Ảnh đại diện của bài (article_source.is_featured), null nếu chưa chọn
     private SourceItemDTO featuredImage;     // khung ảnh cover dưới sapo: th:if="${workspace.featuredImage != null}"
 
     // ----- Góp ý -----
     // Góp ý của lượt duyệt trên version đang duyệt / góp ý trên version liền trước
-    private List<ReviewCommentDTO> comments;          // tab "Vòng này": th:each="c : ${workspace.comments}"
-    private List<ReviewCommentDTO> previousComments;  // tab "Vòng trước": th:each="c : ${workspace.previousComments}"
+    private List<ReviewCommentDTO> comments;          // tab "Vòng này": th:each="comment : ${workspace.comments}"
+    private List<ReviewCommentDTO> previousComments;  // tab "Vòng trước": th:each="comment : ${workspace.previousComments}"
 }

@@ -64,7 +64,8 @@ public class DepartmentHeadController {
         model.addAttribute("pageTitle", "Đề tài đã duyệt – Trưởng ban");
         model.addAttribute("contentView", "department_head/topics");
         model.addAttribute("contentFragment", "departmentHeadTopicsContent");
-        model.addAttribute("pageCss", List.of("/department_head/css/department-head-topics.css"));
+        // Dùng chung giao diện rp- (reporter-tasks.css) như Dashboard; department-head-topics.css chỉ giữ vài chi tiết riêng
+        model.addAttribute("pageCss", List.of("/reporter/css/reporter-tasks.css", "/department_head/css/department-head-topics.css"));
         model.addAttribute("pageJs", List.of("/department_head/js/department-head-topics.js"));
         return "layout/app";
     }
@@ -179,7 +180,8 @@ public class DepartmentHeadController {
         model.addAttribute("pageTitle", "Giao việc đề tài – Trưởng ban");
         model.addAttribute("contentView", "department_head/topic-assignment");
         model.addAttribute("contentFragment", "departmentHeadAssignmentContent");
-        model.addAttribute("pageCss", List.of("/department_head/css/department-head-topics.css", "/department_head/css/department-head-assignment.css"));
+        // Thứ tự nạp: giao diện chung rp- -> chi tiết dht- -> chi tiết riêng của trang giao việc (dha-)
+        model.addAttribute("pageCss", List.of("/reporter/css/reporter-tasks.css", "/department_head/css/department-head-topics.css", "/department_head/css/department-head-assignment.css"));
         model.addAttribute("pageJs", List.of("/department_head/js/department-head-assignment.js"));
         // Trang giao việc vẫn sáng mục "Đề tài đã duyệt" trên sidebar
         model.addAttribute("activePath", APPROVED_TOPICS_PATH);

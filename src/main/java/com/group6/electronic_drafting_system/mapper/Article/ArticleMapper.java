@@ -33,25 +33,33 @@ public class ArticleMapper {
 
     public AssignedTopicDTO toAssignedTopicDTO(Assignment assignment, long articleCount) {
         Topic topic = assignment.getTopic();
-        return new AssignedTopicDTO(assignment.getId(), topic.getId(), topic.getTitle(), topic.getCategory(), assignment.getDeadline(), articleCount);
+        return new AssignedTopicDTO(assignment.getId(), topic.getId(), topic.getTitle(), topic.getCategory(),
+                assignment.getDeadline(), articleCount);
     }
 
-    // reviews / comments: lượt duyệt và comment gốc (kèm trả lời) thuộc riêng phiên bản này
-    // view: nội dung phiên bản đã chia đoạn (ReviewWorkspaceMapper.toVersionView) để tô vàng góp ý
+    // reviews / comments: lượt duyệt và comment gốc (kèm trả lời) thuộc riêng phiên
+    // bản này
+    // view: nội dung phiên bản đã chia đoạn (ReviewWorkspaceMapper.toVersionView)
+    // để tô vàng góp ý
     public ArticleEditorDTO.Version toVersionItem(ArticleVersion version, List<ArticleEditorDTO.VersionReview> reviews,
-                                                  List<ArticleEditorDTO.VersionComment> comments, VersionViewDTO view) {
-        return new ArticleEditorDTO.Version(version.getId(), version.getVersionNumber(), version.getVersionLabel(), version.getTitle(),
+            List<ArticleEditorDTO.VersionComment> comments, VersionViewDTO view) {
+        return new ArticleEditorDTO.Version(version.getId(), version.getVersionNumber(), version.getVersionLabel(),
+                version.getTitle(),
                 version.getSubtitle(), version.getSapo(), version.getContent(),
-                version.getChangeSummary(), version.getCreator().getFullName(), version.getCreatedAt(), reviews, comments, view);
+                version.getChangeSummary(), version.getCreator().getFullName(), version.getCreatedAt(), reviews,
+                comments, view);
     }
 
     public ArticleEditorDTO.VersionReview toVersionReview(ArticleReview review) {
-        return new ArticleEditorDTO.VersionReview(review.getReviewer().getFullName(), stageLabel(review.getReviewStage()),
+        return new ArticleEditorDTO.VersionReview(review.getReviewer().getFullName(),
+                stageLabel(review.getReviewStage()),
                 review.getReviewStage(), review.getDecision(), review.getFeedback(), review.getReviewedAt());
     }
 
-    // Kèm vị trí góp ý (field, đoạn, ký tự bắt đầu / kết thúc) và cấp của người góp ý (Trưởng ban / Thư ký)
-    public ArticleEditorDTO.VersionComment toVersionComment(Comment comment, List<ArticleEditorDTO.VersionComment> replies) {
+    // Kèm vị trí góp ý (field, đoạn, ký tự bắt đầu / kết thúc) và cấp của người góp
+    // ý (Trưởng ban / Thư ký)
+    public ArticleEditorDTO.VersionComment toVersionComment(Comment comment,
+            List<ArticleEditorDTO.VersionComment> replies) {
         ReviewStage stage = comment.getReview().getReviewStage();
         return new ArticleEditorDTO.VersionComment(comment.getId(), anchorLabel(comment), comment.getAnchorField(),
                 comment.getAnchorParagraph(), comment.getAnchorStart(), comment.getAnchorEnd(),
@@ -63,16 +71,22 @@ public class ArticleMapper {
     // null nếu tư liệu không phải ảnh / video
     public ArticleEditorDTO.TopicMedia toTopicMedia(TopicSource topicSource) {
         Source source = topicSource.getSource();
-        boolean video = source.getSourceType() != SourceType.IMAGE && MediaStorageService.isVideoUrl(source.getFileUrl());
-        boolean image = source.getSourceType() == SourceType.IMAGE && source.getFileUrl() != null && !source.getFileUrl().isBlank();
-        if (!image && !video) return null;
-        return new ArticleEditorDTO.TopicMedia(source.getId(), source.getTitle(), source.getFileUrl(), video, trimToNull(topicSource.getNote()),
+        boolean video = source.getSourceType() != SourceType.IMAGE
+                && MediaStorageService.isVideoUrl(source.getFileUrl());
+        boolean image = source.getSourceType() == SourceType.IMAGE && source.getFileUrl() != null
+                && !source.getFileUrl().isBlank();
+        if (!image && !video)
+            return null;
+        return new ArticleEditorDTO.TopicMedia(source.getId(), source.getTitle(), source.getFileUrl(), video,
+                trimToNull(topicSource.getNote()),
                 source.getAddedBy() == null ? null : source.getAddedBy().getFullName());
     }
 
     public ArticleEditorDTO.Source toSourceItem(ArticleSource articleSource) {
-        return new ArticleEditorDTO.Source(articleSource.getId(), articleSource.getSource().getTitle(), articleSource.getSource().getSourceType(),
-                articleSource.getSource().getFileUrl(), articleSource.getCaption(), articleSource.getNote(), Boolean.TRUE.equals(articleSource.getFeatured()));
+        return new ArticleEditorDTO.Source(articleSource.getId(), articleSource.getSource().getTitle(),
+                articleSource.getSource().getSourceType(),
+                articleSource.getSource().getFileUrl(), articleSource.getCaption(), articleSource.getNote(),
+                Boolean.TRUE.equals(articleSource.getFeatured()));
     }
 
     public ArticleEditorDTO.Review toReviewItem(ArticleReview review) {
@@ -80,30 +94,43 @@ public class ArticleMapper {
                 review.getDecision(), review.getFeedback(), review.getReviewedAt());
     }
 
-    // assignment: nhiệm vụ viết chính hiện hành của người dùng trên đề tài (null nếu đã bị gỡ)
+    // assignment: nhiệm vụ viết chính hiện hành của người dùng trên đề tài (null
+    // nếu đã bị gỡ)
     public ArticleEditorDTO toEditorDTO(Article article, boolean editable, Assignment assignment, String reviewerName,
-                                        ArticleEditorDTO.Review latestReview, List<ArticleEditorDTO.Version> versions,
-                                        ArticleEditorDTO.Version returnedVersion,
-                                        List<ArticleEditorDTO.Source> sources, List<ArticleEditorDTO.TopicMedia> topicMedia) {
+            ArticleEditorDTO.Review latestReview, List<ArticleEditorDTO.Version> versions,
+            ArticleEditorDTO.Version returnedVersion,
+            // Nhãn version vừa khôi phục vào bản đang soạn (vd "1.0"); null nếu chưa khôi
+            // phục
+            String restoredFromLabel,
+            List<ArticleEditorDTO.Source> sources, List<ArticleEditorDTO.TopicMedia> topicMedia) {
         Topic topic = article.getTopic();
         Account lead = article.getLead();
-        return new ArticleEditorDTO(article.getId(), article.getTitle(), article.getSubtitle(), article.getSapo(), article.getContent(),
-                article.getCategory(), article.getStatus(), editable, article.getCreatedAt(), article.getUpdatedAt(), article.getSubmittedAt(),
-                assignment == null ? null : assignment.getId(), topic.getId(), topic.getTitle(), topic.getCategory(), topic.getPriority(), topic.getExpectedDate(),
-                lead.getFullName(), departmentName(lead), reviewerName, assignment == null ? null : assignment.getDeadline(),
-                latestReview, versions, returnedVersion, sources, topicMedia);
+        return new ArticleEditorDTO(article.getId(), article.getTitle(), article.getSubtitle(), article.getSapo(),
+                article.getContent(),
+                article.getCategory(), article.getStatus(), editable, article.getCreatedAt(), article.getUpdatedAt(),
+                article.getSubmittedAt(),
+                assignment == null ? null : assignment.getId(), topic.getId(), topic.getTitle(), topic.getCategory(),
+                topic.getPriority(), topic.getExpectedDate(),
+                lead.getFullName(), departmentName(lead), reviewerName,
+                assignment == null ? null : assignment.getDeadline(),
+                latestReview, versions, returnedVersion, restoredFromLabel, sources, topicMedia);
     }
 
-    // Trang "Viết bài mới": chưa có bản ghi article, lấy dữ liệu từ form (khi nhập lỗi) và đề tài của nhiệm vụ
-    public ArticleEditorDTO toNewEditorDTO(ArticleDraftRequestDTO form, Assignment assignment, Account lead, String reviewerName,
-                                           List<ArticleEditorDTO.TopicMedia> topicMedia) {
+    // Trang "Viết bài mới": chưa có bản ghi article, lấy dữ liệu từ form (khi nhập
+    // lỗi) và đề tài của nhiệm vụ
+    public ArticleEditorDTO toNewEditorDTO(ArticleDraftRequestDTO form, Assignment assignment, Account lead,
+            String reviewerName,
+            List<ArticleEditorDTO.TopicMedia> topicMedia) {
         Topic topic = assignment.getTopic();
         String title = form.getTitle() != null ? form.getTitle() : topic.getTitle();
         String category = form.getCategory() != null ? form.getCategory() : topic.getCategory();
-        return new ArticleEditorDTO(null, title, form.getSubtitle(), form.getSapo(), form.getContent() == null ? "" : form.getContent(),
+        return new ArticleEditorDTO(null, title, form.getSubtitle(), form.getSapo(),
+                form.getContent() == null ? "" : form.getContent(),
                 category, ArticleStatus.DRAFT, true, null, null, null,
-                assignment.getId(), topic.getId(), topic.getTitle(), topic.getCategory(), topic.getPriority(), topic.getExpectedDate(),
-                lead.getFullName(), departmentName(lead), reviewerName, assignment.getDeadline(), null, List.of(), null, List.of(), topicMedia);
+                assignment.getId(), topic.getId(), topic.getTitle(), topic.getCategory(), topic.getPriority(),
+                topic.getExpectedDate(),
+                lead.getFullName(), departmentName(lead), reviewerName, assignment.getDeadline(), null, List.of(), null,
+                null, List.of(), topicMedia);
     }
 
     public Article toEntity(ArticleDraftRequestDTO request, Topic topic, Account lead) {
@@ -114,7 +141,8 @@ public class ArticleMapper {
         return article;
     }
 
-    // Chép dữ liệu soạn thảo vào entity (đã chuẩn hóa khoảng trắng / độ dài cột); content được service lọc HTML sau đó
+    // Chép dữ liệu soạn thảo vào entity (đã chuẩn hóa khoảng trắng / độ dài cột);
+    // content được service lọc HTML sau đó
     public void updateEntity(ArticleDraftRequestDTO request, Article article) {
         article.setTitle(truncate(trimToNull(request.getTitle()), 255));
         article.setSubtitle(truncate(trimToNull(request.getSubtitle()), 255));
@@ -143,7 +171,8 @@ public class ArticleMapper {
 
     private static String anchorLabel(Comment comment) {
         AnchorField field = comment.getAnchorField();
-        if (field == null) return "Góp ý chung";
+        if (field == null)
+            return "Góp ý chung";
         return switch (field) {
             case TITLE -> "Tiêu đề";
             case SUBTITLE -> "Tiêu đề phụ";
@@ -157,7 +186,8 @@ public class ArticleMapper {
     }
 
     private static String trimToNull(String value) {
-        if (value == null) return null;
+        if (value == null)
+            return null;
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }

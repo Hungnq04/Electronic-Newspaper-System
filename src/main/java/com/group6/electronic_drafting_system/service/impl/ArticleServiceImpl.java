@@ -58,9 +58,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class ArticleServiceImpl implements ArticleService {
-    // Chỉ sửa được khi bài còn ở tay phóng viên
+    // “Tạo một danh sách chứa đúng 2 trạng thái được phép sửa bài: DRAFT (Bản thảo) và REVISION_REQUIRED (Bị trả về cần sửa).
     private static final Set<ArticleStatus> EDITABLE = EnumSet.of(ArticleStatus.DRAFT, ArticleStatus.REVISION_REQUIRED);
-    // Thẻ / thuộc tính trình soạn thảo được phép sinh ra; mọi thứ khác (script, on*, javascript:) bị loại bỏ
+    // Thẻ / thuộc tính trình soạn thảo được phép sinh ra; mọi thứ khác (script,
+    // on*, javascript:) bị loại bỏ
     private static final Safelist CONTENT_SAFELIST = Safelist.relaxed()
             .addTags("figure", "figcaption", "hr", "mark", "s", "span")
             .addAttributes(":all", "style")
@@ -86,14 +87,16 @@ public class ArticleServiceImpl implements ArticleService {
     private final SourceRepository sourceRepository;
     private final MediaStorageService mediaStorage;
     private final TopicSourceRepository topicSources;
-    // Dùng chung cách chia nội dung thành từng đoạn với màn Trưởng ban (vị trí góp ý tính theo cách chia này)
+    // Dùng chung cách chia nội dung thành từng đoạn với màn Trưởng ban (vị trí góp
+    // ý tính theo cách chia này)
     private final ReviewWorkspaceMapper versionViewMapper;
 
-    public ArticleServiceImpl(ArticleRepository articles, ArticleVersionRepository versions, ArticleSourceRepository articleSources,
-                              ArticleReviewRepository reviews, CommentRepository comments, AssignmentRepository assignments,
-                              AccountRepository accounts, ArticleMapper articleMapper,
-                              SourceRepository sourceRepository, MediaStorageService mediaStorage, TopicSourceRepository topicSources,
-                              ReviewWorkspaceMapper versionViewMapper) {
+    public ArticleServiceImpl(ArticleRepository articles, ArticleVersionRepository versions,
+            ArticleSourceRepository articleSources,
+            ArticleReviewRepository reviews, CommentRepository comments, AssignmentRepository assignments,
+            AccountRepository accounts, ArticleMapper articleMapper,
+            SourceRepository sourceRepository, MediaStorageService mediaStorage, TopicSourceRepository topicSources,
+            ReviewWorkspaceMapper versionViewMapper) {
         this.articles = articles;
         this.versions = versions;
         this.articleSources = articleSources;
@@ -113,10 +116,12 @@ public class ArticleServiceImpl implements ArticleService {
     public ArticleListPageDTO getListPage(String email) {
         Account me = currentAccount(email);
         List<Article> mine = articles.findByLead_IdOrderByUpdatedAtDesc(me.getId());
-        Map<Integer, Long> countByTopic = mine.stream().collect(Collectors.groupingBy(a -> a.getTopic().getId(), Collectors.counting()));
-        // BR-01: một đề tài có nhiều bài, nên nhiệm vụ viết chính đã có bài vẫn được viết thêm
+        Map<Integer, Long> countByTopic = mine.stream()
+                .collect(Collectors.groupingBy(a -> a.getTopic().getId(), Collectors.counting()));
+        // BR-01: một đề tài có nhiều bài, nên nhiệm vụ viết chính đã có bài vẫn được
+        // viết thêm
         List<AssignedTopicDTO> writable = assignments.findByAccount_IdAndAssignmentRoleAndStatusAndTopic_Status(
-                        me.getId(), AssignmentRole.LEAD, AssignmentStatus.ASSIGNED, TopicStatus.ACTIVE).stream()
+                me.getId(), AssignmentRole.LEAD, AssignmentStatus.ASSIGNED, TopicStatus.ACTIVE).stream()
                 .map(a -> articleMapper.toAssignedTopicDTO(a, countByTopic.getOrDefault(a.getTopic().getId(), 0L)))
                 .toList();
         String department = me.getDepartment() == null ? null : me.getDepartment().getDepartmentName();
@@ -143,7 +148,8 @@ public class ArticleServiceImpl implements ArticleService {
         Article article = articleMapper.toEntity(request, assignment.getTopic(), me);
         article.setContent(sanitize(article.getContent()));
         article = articles.save(article);
-        if (submit) submitVersion(article, request.getChangeSummary());
+        if (submit)
+            submitVersion(article, request.getChangeSummary());
         return article.getId();
     }
 
@@ -151,24 +157,104 @@ public class ArticleServiceImpl implements ArticleService {
     @Transactional(readOnly = true)
     public ArticleEditorDTO getEditor(Integer articleId, String email) {
         Account me = currentAccount(email);
-        Article article = articles.findWithTopicAndLeadById(articleId).orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_NOT_FOUND));
-        if (!article.getLead().getId().equals(me.getId())) throw new ApplicationException(ErrorCode.ARTICLE_FORBIDDEN);
+        Article article = articles.findWithTopicAndLeadById(articleId)
+                .orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_NOT_FOUND));
+        if (!article.getLead().getId().equals(me.getId()))
+            throw new ApplicationException(ErrorCode.ARTICLE_FORBIDDEN);
 
         Integer topicId = article.getTopic().getId();
         // Bị gỡ khỏi vai trò viết chính thì chỉ còn xem được bài cũ
         Assignment lead = leadAssignment(topicId, me.getId()).orElse(null);
         List<ArticleEditorDTO.Version> history = versionHistory(article);
-        // Bài đang bị trả về: phiên bản bị trả về là phiên bản mới nhất (danh sách xếp mới nhất trước)
-        ArticleEditorDTO.Version returnedVersion =
-                article.getStatus() == ArticleStatus.REVISION_REQUIRED && !history.isEmpty() ? history.get(0) : null;
+        // Bài đang bị trả về: phiên bản bị trả về là phiên bản mới nhất (danh sách xếp
+        // mới nhất trước)
+        ArticleEditorDTO.Version returnedVersion = article.getStatus() == ArticleStatus.REVISION_REQUIRED
+                && !history.isEmpty() ? history.get(0) : null;
+
+        // //1. Vế 1: lead != null → Check xem BẠN CÓ CÒN LÀ NGƯỜI VIẾT CHÍNH KHÔNG?
+        // lead là phân công vai trò của bạn trên Đề tài (Topic).
+        // Nếu bạn từng viết bài này, nhưng sau đó Trưởng ban gỡ bạn ra hoặc chuyển vai
+        // trò của bạn cho người khác (trong DB đánh dấu status = 'REMOVED'):
+        // → lead sẽ bị null.
+        // → Kết quả: false (Bạn chỉ được mở lên xem lại bài cũ mình từng viết, không
+        // được sửa nữa).
+        // Nếu bạn vẫn đang là người viết chính hợp lệ:
+        // → lead != null là true.
+        // 2. Vế 2: EDITABLE.contains(article.getStatus()) → Check xem BÀI CÓ ĐANG Ở
+        // TRẠNG THÁI ĐƯỢC PHÉP SỬA KHÔNG?
+
+        // Nó kiểm tra trạng thái hiện tại của bài (article.getStatus()) có nằm trong
+        // danh sách EDITABLE (gồm DRAFT và REVISION_REQUIRED) hay không:
+
+        // Bài đang là DRAFT (Bản nháp) → Nằm trong danh sách → true.
+        // Bài đang là REVISION_REQUIRED (Bị trả về để sửa) → Nằm trong danh sách →
+        // true.
+        // Bài đã nộp và đang là DEPARTMENT_REVIEW (Chờ Trưởng ban duyệt) → Không nằm
+        // trong danh sách → false (Đang nộp duyệt thì bài bị khóa lại, không được tự ý
+        // sửa).
+        // Bài đã là PUBLISHED (Đã xuất bản lên báo) → Không nằm trong danh sách → false
+        // (Bài đã lên báo rồi thì không sửa lung tung được
         return articleMapper.toEditorDTO(article, lead != null && EDITABLE.contains(article.getStatus()), lead,
                 reviewerName(topicId),
-                // Chỉ lấy phản hồi đã có quyết định: lượt đang duyệt dở thì phóng viên chưa được thấy
-                reviews.findFirstByVersion_Article_IdAndDecisionIsNotNullOrderByIdDesc(articleId).map(articleMapper::toReviewItem).orElse(null),
+                // Chỉ lấy phản hồi đã có quyết định: lượt đang duyệt dở thì phóng viên chưa
+                // được thấy
+                reviews.findFirstByVersion_Article_IdAndDecisionIsNotNullOrderByIdDesc(articleId)
+                        .map(articleMapper::toReviewItem).orElse(null),
                 history,
                 returnedVersion,
                 articleSources.findByArticleOrdered(articleId).stream().map(articleMapper::toSourceItem).toList(),
                 topicMedia(topicId));
+    }
+
+    @Override // Báo cho Java rằng method này là phần xử lý thật của method đã khai báo trong
+              // ArticleService.
+    @Transactional // Các thay đổi database trong hàm được thực hiện cùng nhau. Nếu có lỗi, thay
+                   // đổi sẽ không được lưu dở dang.
+    // Hàm sẽ trả lại nhãn version, ví dụ "1.0".
+    public String restoreVersion(Integer articleId, Integer versionId, String email) {
+        // Check xem người vào có phải là người viết bài hay không, nếu không thì throw
+        // ra lỗi
+        /*
+         * Bài có tồn tại không.
+         * Người đăng nhập có đúng là Lead của bài không.
+         * Người đó có còn assignment LEAD hiệu lực trên Topic không.
+         * Bài có đang ở trạng thái cho phép sửa không:
+         * DRAFT
+         * REVISION_REQUIRED
+         */
+        Article article = editableArticle(articleId, email);
+
+        // Lấy các version thuộc articleId hiện tại.
+        ArticleVersion version = null;
+
+        List<ArticleVersion> versionList = versions.findByArticle_IdOrderByVersionNumberDesc(articleId);
+
+        for (ArticleVersion currentVersion : versionList) {
+            if (currentVersion.getId().equals(versionId)) {
+                version = currentVersion;
+                break;
+            }
+        }
+
+        if (version == null) {
+            throw new ApplicationException(ErrorCode.ARTICLE_VERSION_NOT_FOUND);
+        }
+        // Chép nội dung version cũ vào bản đang soạn.
+        // Không sửa hoặc xóa version lịch sử.
+        article.setTitle(version.getTitle());
+        article.setSubtitle(version.getSubtitle());
+        article.setSapo(version.getSapo());
+        article.setContent(version.getContent());
+
+        // Lưu version vừa khôi phục để tự điền ghi chú khi phóng viên nộp lại.
+        article.setRestoredFromVersionId(version.getId());
+
+        // Article không tự cập nhật updatedAt nên cần đặt thủ công.
+        article.setUpdatedAt(OffsetDateTime.now().truncatedTo(ChronoUnit.SECONDS));
+
+        // Trả nhãn để Controller hiển thị thông báo, ví dụ: "1.0".
+        return version.getVersionLabel();
+
     }
 
     // Ảnh / video trong kho tư liệu của đề tài để chèn vào bài
@@ -177,17 +263,24 @@ public class ArticleServiceImpl implements ArticleService {
                 .map(articleMapper::toTopicMedia).filter(Objects::nonNull).toList();
     }
 
-    // Lịch sử phiên bản: mỗi bản kèm nhận xét của từng cấp duyệt và các góp ý (comment) gắn trên bản đó.
+    // Lịch sử phiên bản: mỗi bản kèm nhận xét của từng cấp duyệt và các góp ý
+    // (comment) gắn trên bản đó.
     //
-    // Quy tắc phóng viên được xem gì (kiểm tra ở backend, không chỉ ẩn trên giao diện):
-    //   1. Lượt duyệt chưa có quyết định (decision = NULL) là lượt Trưởng ban / Thư ký đang duyệt dở: KHÔNG trả về.
-    //   2. Góp ý (comment) chỉ trả về khi phiên bản đó ĐÃ BỊ TRẢ VỀ (có lượt duyệt "Yêu cầu chỉnh sửa").
-    //      Lúc đó trả cả góp ý của Trưởng ban lẫn Thư ký trên phiên bản đó, mỗi góp ý ghi rõ người góp ý và cấp.
+    // Quy tắc phóng viên được xem gì (kiểm tra ở backend, không chỉ ẩn trên giao
+    // diện):
+    // 1. Lượt duyệt chưa có quyết định (decision = NULL) là lượt Trưởng ban / Thư
+    // ký đang duyệt dở: KHÔNG trả về.
+    // 2. Góp ý (comment) chỉ trả về khi phiên bản đó ĐÃ BỊ TRẢ VỀ (có lượt duyệt
+    // "Yêu cầu chỉnh sửa").
+    // Lúc đó trả cả góp ý của Trưởng ban lẫn Thư ký trên phiên bản đó, mỗi góp ý
+    // ghi rõ người góp ý và cấp.
     private List<ArticleEditorDTO.Version> versionHistory(Article article) {
         List<ArticleVersion> all = versions.findByArticle_IdOrderByVersionNumberDesc(article.getId());
-        if (all.isEmpty()) return List.of();
+        if (all.isEmpty())
+            return List.of();
 
-        // Quy tắc 1: chỉ giữ lượt duyệt đã có quyết định, xếp theo thứ tự thời gian (Trưởng ban trước, Thư ký sau)
+        // Quy tắc 1: chỉ giữ lượt duyệt đã có quyết định, xếp theo thứ tự thời gian
+        // (Trưởng ban trước, Thư ký sau)
         List<ArticleReview> decidedReviews = reviews.findByVersionIn(all).stream()
                 .filter(r -> r.getDecision() != null)
                 .sorted(Comparator.comparing(ArticleReview::getId))
@@ -211,13 +304,15 @@ public class ArticleServiceImpl implements ArticleService {
         Map<Integer, List<ArticleEditorDTO.VersionComment>> commentsByVersion = visibleComments.stream()
                 .filter(c -> c.getParent() == null)
                 .collect(Collectors.groupingBy(c -> c.getReview().getVersion().getId(), Collectors.mapping(
-                        c -> articleMapper.toVersionComment(c, repliesByParent.getOrDefault(c.getId(), List.of()).stream()
-                                .map(r -> articleMapper.toVersionComment(r, List.of())).toList()),
+                        c -> articleMapper.toVersionComment(c,
+                                repliesByParent.getOrDefault(c.getId(), List.of()).stream()
+                                        .map(r -> articleMapper.toVersionComment(r, List.of())).toList()),
                         Collectors.toList())));
 
         return all.stream()
                 .map(v -> articleMapper.toVersionItem(v,
-                        reviewsByVersion.getOrDefault(v.getId(), List.of()).stream().map(articleMapper::toVersionReview).toList(),
+                        reviewsByVersion.getOrDefault(v.getId(), List.of()).stream().map(articleMapper::toVersionReview)
+                                .toList(),
                         commentsByVersion.getOrDefault(v.getId(), List.of()),
                         // Chia đoạn bằng đúng mapper của màn Trưởng ban để vị trí góp ý khớp tuyệt đối
                         versionViewMapper.toVersionView(v)))
@@ -250,7 +345,8 @@ public class ArticleServiceImpl implements ArticleService {
         all.forEach(s -> s.setFeatured(s == chosen));
     }
 
-    // Lấy ảnh / video từ tư liệu đề tài vào bài: gắn source đó vào article_source (nếu chưa gắn) để dùng làm tư liệu / ảnh đại diện
+    // Lấy ảnh / video từ tư liệu đề tài vào bài: gắn source đó vào article_source
+    // (nếu chưa gắn) để dùng làm tư liệu / ảnh đại diện
     @Override
     @Transactional
     public ArticleMediaUploadResponseDTO attachTopicMedia(Integer articleId, Integer sourceId, String email) {
@@ -258,19 +354,22 @@ public class ArticleServiceImpl implements ArticleService {
         TopicSource topicSource = topicSources.findByTopic_IdAndSource_Id(article.getTopic().getId(), sourceId)
                 .orElseThrow(() -> new ApplicationException(ErrorCode.TOPIC_SOURCE_NOT_FOUND));
         ArticleEditorDTO.TopicMedia media = articleMapper.toTopicMedia(topicSource);
-        if (media == null) throw new ApplicationException(ErrorCode.TOPIC_SOURCE_NOT_FOUND);
+        if (media == null)
+            throw new ApplicationException(ErrorCode.TOPIC_SOURCE_NOT_FOUND);
         MediaKind kind = media.video() ? MediaKind.VIDEO : MediaKind.IMAGE;
         String caption = trimTo(media.note(), 300);
 
         Optional<ArticleSource> existing = articleSources.findByArticle_IdAndSource_Id(articleId, sourceId);
         if (existing.isPresent()) {
             ArticleSource attached = existing.get();
-            return new ArticleMediaUploadResponseDTO(true, "Đã chèn tư liệu đề tài", kind, media.fileUrl(), attached.getId(), media.title(),
+            return new ArticleMediaUploadResponseDTO(true, "Đã chèn tư liệu đề tài", kind, media.fileUrl(),
+                    attached.getId(), media.title(),
                     attached.getCaption() != null ? attached.getCaption() : caption, false);
         }
         // Bài chưa có ảnh đại diện thì lấy luôn ảnh vừa chọn
         boolean featured = kind == MediaKind.IMAGE
-                && articleSources.findByArticleOrdered(articleId).stream().noneMatch(s -> Boolean.TRUE.equals(s.getFeatured()));
+                && articleSources.findByArticleOrdered(articleId).stream()
+                        .noneMatch(s -> Boolean.TRUE.equals(s.getFeatured()));
         ArticleSource attached = new ArticleSource();
         attached.setArticle(article);
         attached.setSource(topicSource.getSource());
@@ -278,20 +377,25 @@ public class ArticleServiceImpl implements ArticleService {
         attached.setNote("Lấy từ tư liệu đề tài");
         attached.setFeatured(featured);
         articleSources.save(attached);
-        return new ArticleMediaUploadResponseDTO(true, "Đã chèn tư liệu đề tài", kind, media.fileUrl(), attached.getId(), media.title(), caption, featured);
+        return new ArticleMediaUploadResponseDTO(true, "Đã chèn tư liệu đề tài", kind, media.fileUrl(),
+                attached.getId(), media.title(), caption, featured);
     }
 
     // Tải ảnh / video từ máy lên Cloudinary; DB chỉ lưu đường dẫn (secure_url).
-    // Ảnh: tạo source IMAGE + gắn article_source để dùng làm tư liệu / ảnh đại diện.
-    // Video: source_type trong DB chưa có VIDEO nên chỉ trả url để chèn vào nội dung bài.
+    // Ảnh: tạo source IMAGE + gắn article_source để dùng làm tư liệu / ảnh đại
+    // diện.
+    // Video: source_type trong DB chưa có VIDEO nên chỉ trả url để chèn vào nội
+    // dung bài.
     @Override
     @Transactional
-    public ArticleMediaUploadResponseDTO uploadMedia(Integer articleId, MultipartFile file, String caption, String email) {
+    public ArticleMediaUploadResponseDTO uploadMedia(Integer articleId, MultipartFile file, String caption,
+            String email) {
         Article article = editableArticle(articleId, email);
         String note = trimTo(caption, 300);
         StoredMedia stored = mediaStorage.upload(file, "article-" + articleId);
         if (stored.kind() == MediaKind.VIDEO)
-            return new ArticleMediaUploadResponseDTO(true, "Đã tải video lên", MediaKind.VIDEO, stored.url(), null, null, note, false);
+            return new ArticleMediaUploadResponseDTO(true, "Đã tải video lên", MediaKind.VIDEO, stored.url(), null,
+                    null, note, false);
         try {
             Source source = new Source();
             source.setAddedBy(article.getLead());
@@ -301,7 +405,8 @@ public class ArticleServiceImpl implements ArticleService {
             sourceRepository.save(source);
 
             // Bài chưa có ảnh đại diện thì lấy luôn ảnh vừa tải
-            boolean featured = articleSources.findByArticleOrdered(articleId).stream().noneMatch(s -> Boolean.TRUE.equals(s.getFeatured()));
+            boolean featured = articleSources.findByArticleOrdered(articleId).stream()
+                    .noneMatch(s -> Boolean.TRUE.equals(s.getFeatured()));
             ArticleSource attached = new ArticleSource();
             attached.setArticle(article);
             attached.setSource(source);
@@ -322,16 +427,20 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     private static String trimTo(String value, int max) {
-        if (value == null || value.isBlank()) return null;
+        if (value == null || value.isBlank())
+            return null;
         String trimmed = value.trim();
         return trimmed.length() <= max ? trimmed : trimmed.substring(0, max);
     }
 
     // Nộp bài: chụp article_version mới và chuyển sang chờ Trưởng ban duyệt
     private void submitVersion(Article article, String changeSummary) {
-        if (article.getSapo() == null) throw new ApplicationException(ErrorCode.ARTICLE_SAPO_REQUIRED);
-        if (Jsoup.parse(article.getContent()).text().isBlank()) throw new ApplicationException(ErrorCode.ARTICLE_CONTENT_REQUIRED);
-        versions.save(articleMapper.toVersion(article, versions.findFirstByArticleOrderByVersionNumberDesc(article).map(ArticleVersion::getVersionNumber).orElse(0) + 1, changeSummary));
+        if (article.getSapo() == null)
+            throw new ApplicationException(ErrorCode.ARTICLE_SAPO_REQUIRED);
+        if (Jsoup.parse(article.getContent()).text().isBlank())
+            throw new ApplicationException(ErrorCode.ARTICLE_CONTENT_REQUIRED);
+        versions.save(articleMapper.toVersion(article, versions.findFirstByArticleOrderByVersionNumberDesc(article)
+                .map(ArticleVersion::getVersionNumber).orElse(0) + 1, changeSummary));
         article.setStatus(ArticleStatus.DEPARTMENT_REVIEW);
         article.setSubmittedAt(OffsetDateTime.now().truncatedTo(ChronoUnit.SECONDS));
     }
@@ -345,22 +454,36 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     private static void validateDraft(ArticleDraftRequestDTO request) {
-        if (request.getTitle() == null || request.getTitle().isBlank()) throw new ApplicationException(ErrorCode.ARTICLE_TITLE_REQUIRED);
-        if (request.getCategory() == null || request.getCategory().isBlank()) throw new ApplicationException(ErrorCode.ARTICLE_CATEGORY_REQUIRED);
+        if (request.getTitle() == null || request.getTitle().isBlank())
+            throw new ApplicationException(ErrorCode.ARTICLE_TITLE_REQUIRED);
+        if (request.getCategory() == null || request.getCategory().isBlank())
+            throw new ApplicationException(ErrorCode.ARTICLE_CATEGORY_REQUIRED);
     }
 
+    // Bài có tồn tại không.
+    // Người đăng nhập có đúng là Lead của bài không.
+    // Người đó có còn assignment LEAD hiệu lực trên Topic không.
+    // Bài có đang ở trạng thái cho phép sửa không:
+    // DRAFT
+    // REVISION_REQUIRED
     private Article editableArticle(Integer articleId, String email) {
         Account me = currentAccount(email);
-        Article article = articles.findById(articleId).orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_NOT_FOUND));
-        if (!article.getLead().getId().equals(me.getId())) throw new ApplicationException(ErrorCode.ARTICLE_FORBIDDEN);
-        if (leadAssignment(article.getTopic().getId(), me.getId()).isEmpty()) throw new ApplicationException(ErrorCode.ARTICLE_ASSIGNMENT_NOT_LEAD);
-        if (!EDITABLE.contains(article.getStatus())) throw new ApplicationException(ErrorCode.ARTICLE_NOT_EDITABLE);
+        Article article = articles.findById(articleId)
+                .orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_NOT_FOUND));
+        if (!article.getLead().getId().equals(me.getId()))
+            throw new ApplicationException(ErrorCode.ARTICLE_FORBIDDEN);
+        if (leadAssignment(article.getTopic().getId(), me.getId()).isEmpty())
+            throw new ApplicationException(ErrorCode.ARTICLE_ASSIGNMENT_NOT_LEAD);
+        if (!EDITABLE.contains(article.getStatus()))
+            throw new ApplicationException(ErrorCode.ARTICLE_NOT_EDITABLE);
         return article;
     }
 
-    // Chỉ viết bài mới từ nhiệm vụ giao cho chính mình, vai trò viết chính, còn hiệu lực, trên đề tài đã duyệt
+    // Chỉ viết bài mới từ nhiệm vụ giao cho chính mình, vai trò viết chính, còn
+    // hiệu lực, trên đề tài đã duyệt
     private Assignment writableAssignment(Integer assignmentId, Account me) {
-        if (assignmentId == null) throw new ApplicationException(ErrorCode.ARTICLE_ASSIGNMENT_REQUIRED);
+        if (assignmentId == null)
+            throw new ApplicationException(ErrorCode.ARTICLE_ASSIGNMENT_REQUIRED);
         return assignments.findWithDetailsById(assignmentId)
                 .filter(a -> a.getAccount().getId().equals(me.getId()))
                 .filter(a -> a.getAssignmentRole() == AssignmentRole.LEAD && a.getStatus() == AssignmentStatus.ASSIGNED)
@@ -374,17 +497,22 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     private String reviewerName(Integer topicId) {
-        return assignments.findFirstByTopic_IdAndAssignmentRoleAndStatusNot(topicId, AssignmentRole.DEPARTMENT_HEAD, AssignmentStatus.REMOVED)
+        return assignments
+                .findFirstByTopic_IdAndAssignmentRoleAndStatusNot(topicId, AssignmentRole.DEPARTMENT_HEAD,
+                        AssignmentStatus.REMOVED)
                 .map(a -> a.getAccount().getFullName()).orElse(null);
     }
 
     private Account currentAccount(String email) {
-        if (email == null) throw new ApplicationException(ErrorCode.ARTICLE_FORBIDDEN);
-        return accounts.findByEmailIgnoreCase(email.trim()).orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_FORBIDDEN));
+        if (email == null)
+            throw new ApplicationException(ErrorCode.ARTICLE_FORBIDDEN);
+        return accounts.findByEmailIgnoreCase(email.trim())
+                .orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_FORBIDDEN));
     }
 
     private static String sanitize(String html) {
-        if (html == null || html.isBlank()) return "";
+        if (html == null || html.isBlank())
+            return "";
         return Jsoup.clean(html, "http://localhost/", CONTENT_SAFELIST, OUTPUT);
     }
 }

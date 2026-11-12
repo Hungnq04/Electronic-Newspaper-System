@@ -42,7 +42,8 @@ public class DepartmentHeadController {
         model.addAttribute("pageTitle", "Dashboard Trưởng phòng");
         model.addAttribute("contentView", "department_head/dashboard");
         model.addAttribute("contentFragment", "departmentHeadContent");
-
+        model.addAttribute("css", List.of("/reporter/css/reporter-tasks.css",
+                                  "/department_head/css/department-head-dashboard.css"));
         return "layout/app"; // Trả về tên của template Thymeleaf
     }
 

@@ -18,4 +18,5 @@ public interface ArticleService {
     void setFeaturedImage(Integer articleId, Integer articleSourceId, String email);
     ArticleMediaUploadResponseDTO attachTopicMedia(Integer articleId, Integer sourceId, String email);
     ArticleMediaUploadResponseDTO uploadMedia(Integer articleId, MultipartFile file, String caption, String email);
+    String restoreVersion(Integer articleId, Integer versionId, String email);
 }

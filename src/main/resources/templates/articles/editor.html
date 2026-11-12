@@ -312,6 +312,15 @@
             </div>
         </div>
         <p class="version-meta" th:text="'Nộp bởi ' + ${v.creatorName()} + ' lúc ' + ${#temporals.format(v.createdAt(), 'HH:mm dd/MM/yyyy')}"></p>
+        
+        <!-- Nút khôi phục version: chỉ hiện khi bài còn được phép sửa (editable) -->
+        <!--article.editable: boolean từ ArticleEditorDTO -->
+        <form class="restore-form" method="post" th:if="${article.editable}"
+              th:action="@{/articles/{id}/versions/{versionId}/restore(id=${article.id},versionId=${v.id()})}"
+              th:attr="data-confirm='Khôi phục nội dung phiên bản ' + ${v.label()} + ' vào bản đang soạn? Nội dung đang soạn sẽ bị thay thế; lịch sử phiên bản giữ nguyên.'">
+            <button type="submit" class="btn mini"><i data-lucide="rotate-ccw"></i>Khôi phục bản này vào bản đang soạn</button>
+        </form>
+
         <div class="field-box" th:if="${v.changeSummary() != null}">
             <span class="label">Ghi chú khi nộp</span>
             <p class="pre-wrap" th:text="${v.changeSummary()}"></p>

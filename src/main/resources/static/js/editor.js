@@ -14,7 +14,7 @@
     if (window.lucide) window.lucide.createIcons();
 
     /* ---------- Tiện ích chung ---------- */
-    const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+    const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const formatTime = iso => {
         const d = iso ? new Date(iso) : new Date();
         const p = n => String(n).padStart(2, '0');
@@ -511,6 +511,14 @@
     titleEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sapoEl.focus(); } });
     window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
 
+    /* ---------- Khôi phục phiên bản: hỏi lại trước khi gửi ---------- */
+    document.querySelectorAll('form.restore-form[data-confirm]').forEach(form => {   // ① class của form khôi phục
+        form.addEventListener('submit', e => {                                  // ② sự kiện gửi form
+            if (!confirm(form.dataset.confirm)) { e.preventDefault(); return; }             // ③ đọc data-confirm; ④ chặn gửi form
+            dirty = false;   // nội dung sắp bị thay, tắt câu hỏi "Rời khỏi trang?"
+        });
+    });
+
     /* ---------- Nộp bài ---------- */
     $('#articleForm').addEventListener('submit', e => {
         const isSubmit = e.submitter?.value === 'submit' || (!A.isNew && !e.submitter);
@@ -562,3 +570,4 @@
 
     refreshToolbar();
 })();
+

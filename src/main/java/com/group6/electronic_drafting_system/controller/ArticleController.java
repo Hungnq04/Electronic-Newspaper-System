@@ -119,6 +119,31 @@ public class ArticleController {
         }
         return "redirect:/articles/" + id + "/edit";
     }
+        // Khôi phục version cũ vào bản đang soạn.
+    @PostMapping("/{id}/versions/{versionId}/restore")
+    public String restoreVersion(@PathVariable Integer id,
+                                 @PathVariable Integer versionId,
+                                 Authentication auth,
+                                 RedirectAttributes redirect) {
+        try {
+            // Lấy email người đang đăng nhập và gọi Service khôi phục
+            String label = articleService.restoreVersion(id, versionId, currentEmail(auth));
+
+            // Thành công: gửi thông báo màu xanh qua trang soạn bài
+            redirect.addFlashAttribute("message", "Đã khôi phục nội dung phiên bản " + label
+                    + " vào bản đang soạn. Lịch sử phiên bản giữ nguyên; phiên bản mới sẽ được tạo khi bạn nộp lại.");
+        } catch (ApplicationException ex) {
+            // Lỗi nghiệp vụ (ví dụ: không có quyền, không tìm thấy version): hiện thông báo đỏ, bắt lỗi từ service 
+            redirect.addFlashAttribute("error", ex.getErrorCode().getMessage());
+        } catch (Exception ex) {
+            // Lỗi hệ thống bất ngờ
+            log.error("Restore version {} failed for article {}", versionId, id, ex);
+            redirect.addFlashAttribute("error", ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage());
+        }
+
+        // Khôi phục xong thì tải lại đúng trang soạn bài của bài viết đó
+        return "redirect:/articles/" + id + "/edit";
+    }
 
     @PostMapping("/{id}/featured")
     @ResponseBody

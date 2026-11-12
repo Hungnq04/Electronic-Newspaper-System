@@ -21,6 +21,7 @@ public interface ArticleVersionRepository extends JpaRepository<ArticleVersion, 
             + "(select max(v2.versionNumber) from ArticleVersion v2 where v2.article = v.article)")
     List<ArticleVersion> findLatestByArticleIn(@Param("articles") Collection<Article> articles);
 
+    // Version mới nhất của bài, kèm thông tin creator
     @EntityGraph(attributePaths = "creator")
     List<ArticleVersion> findByArticle_IdOrderByVersionNumberDesc(Integer articleId);
 }

@@ -308,3 +308,8 @@ svg.lucide { width: 16px; height: 16px; stroke-width: 2; flex-shrink: 0; }
 @media (max-width: 820px) { .list-wrap { padding: 16px; overflow-x: auto; } }
 
 a.btn, a.btn:hover { text-decoration: none; }
+
+/* Nộp lại (UC-25): dấu * cho ô ghi chú bắt buộc */
+.required-mark { color: #c92a2a; margin-left: 2px; }
+/* Khôi phục phiên bản (UC-24): nút nằm ngay dưới dòng "Nộp bởi ..." trong cửa sổ chi tiết phiên bản */
+.restore-form { margin: 0 0 14px; }

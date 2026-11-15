@@ -1,0 +1,21 @@
+/* Màn "Lịch sử duyệt" (templates/department_head/review-history.html).
+   Phần lớn giao diện dùng chung reporter-tasks.css (class rp-). File này chỉ thêm vài chi tiết riêng. */
+
+/* 3 ô số liệu (rp-stats mặc định chia 4 cột) */
+.rh-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 720px) { .rh-stats { grid-template-columns: 1fr; } }
+
+/* Dòng "Đề tài: ..." dưới tít bài */
+.rh-topic { display: block; margin-bottom: 4px; color: var(--rp-muted); font-size: 12px; }
+
+/* Nhãn phiên bản v1.0, v1.1 */
+.rh-version { font-family: var(--rp-mono); font-size: 12px; font-weight: 700; color: var(--rp-ink); }
+
+/* "3 góp ý" dưới nhãn quyết định */
+.rh-comment-count { display: flex; align-items: center; gap: 4px; margin-top: 6px; color: var(--rp-muted); font-size: 11px; }
+.rh-comment-count .rp-icon { width: 12px; height: 12px; }
+
+/* Cột nhận xét: tối đa 3 dòng, dài hơn thì hiện "..." */
+.rh-col-feedback { width: 26%; }
+.rh-feedback { margin: 0; color: #4a5265; font-size: 12px; white-space: pre-line;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }

@@ -15,6 +15,7 @@ import com.group6.electronic_drafting_system.entity.Assignment;
 import com.group6.electronic_drafting_system.entity.Comment;
 import com.group6.electronic_drafting_system.entity.Source;
 import com.group6.electronic_drafting_system.entity.TopicSource;
+import com.group6.electronic_drafting_system.entity.enums.ArticleReviewDecision;
 import com.group6.electronic_drafting_system.entity.enums.ArticleStatus;
 import com.group6.electronic_drafting_system.entity.enums.AssignmentRole;
 import com.group6.electronic_drafting_system.entity.enums.AssignmentStatus;
@@ -23,6 +24,7 @@ import com.group6.electronic_drafting_system.entity.enums.TopicStatus;
 import com.group6.electronic_drafting_system.exception.ApplicationException;
 import com.group6.electronic_drafting_system.exception.ErrorCode;
 import com.group6.electronic_drafting_system.mapper.Article.ArticleMapper;
+import com.group6.electronic_drafting_system.mapper.DepartmentHead.ReviewWorkspaceMapper;
 import com.group6.electronic_drafting_system.mapper.Reporter.ReporterTaskMapper;
 import com.group6.electronic_drafting_system.repository.AccountRepository;
 import com.group6.electronic_drafting_system.repository.ArticleRepository;
@@ -84,11 +86,14 @@ public class ArticleServiceImpl implements ArticleService {
     private final SourceRepository sourceRepository;
     private final MediaStorageService mediaStorage;
     private final TopicSourceRepository topicSources;
+    // Dùng chung cách chia nội dung thành từng đoạn với màn Trưởng ban (vị trí góp ý tính theo cách chia này)
+    private final ReviewWorkspaceMapper versionViewMapper;
 
     public ArticleServiceImpl(ArticleRepository articles, ArticleVersionRepository versions, ArticleSourceRepository articleSources,
                               ArticleReviewRepository reviews, CommentRepository comments, AssignmentRepository assignments,
                               AccountRepository accounts, ArticleMapper articleMapper,
-                              SourceRepository sourceRepository, MediaStorageService mediaStorage, TopicSourceRepository topicSources) {
+                              SourceRepository sourceRepository, MediaStorageService mediaStorage, TopicSourceRepository topicSources,
+                              ReviewWorkspaceMapper versionViewMapper) {
         this.articles = articles;
         this.versions = versions;
         this.articleSources = articleSources;
@@ -100,6 +105,7 @@ public class ArticleServiceImpl implements ArticleService {
         this.sourceRepository = sourceRepository;
         this.mediaStorage = mediaStorage;
         this.topicSources = topicSources;
+        this.versionViewMapper = versionViewMapper;
     }
 
     @Override
@@ -151,12 +157,49 @@ public class ArticleServiceImpl implements ArticleService {
         Integer topicId = article.getTopic().getId();
         // Bị gỡ khỏi vai trò viết chính thì chỉ còn xem được bài cũ
         Assignment lead = leadAssignment(topicId, me.getId()).orElse(null);
+        List<ArticleEditorDTO.Version> history = versionHistory(article);
+        // Bài đang bị trả về: phiên bản bị trả về là phiên bản mới nhất (danh sách xếp mới nhất trước)
+        ArticleEditorDTO.Version returnedVersion =
+                article.getStatus() == ArticleStatus.REVISION_REQUIRED && !history.isEmpty() ? history.get(0) : null;
+        // Vừa khôi phục version nào (restored_from_version_id) -> lấy nhãn "1.0", "1.1"... để điền sẵn ghi chú
+        String restoredFromLabel = history.stream()
+                .filter(v -> v.id().equals(article.getRestoredFromVersionId()))
+                .map(ArticleEditorDTO.Version::label)
+                .findFirst().orElse(null);
         return articleMapper.toEditorDTO(article, lead != null && EDITABLE.contains(article.getStatus()), lead,
                 reviewerName(topicId),
-                reviews.findFirstByVersion_Article_IdOrderByIdDesc(articleId).map(articleMapper::toReviewItem).orElse(null),
-                versionHistory(article),
+                // Chỉ lấy phản hồi đã có quyết định: lượt đang duyệt dở thì phóng viên chưa được thấy
+                reviews.findFirstByVersion_Article_IdAndDecisionIsNotNullOrderByIdDesc(articleId).map(articleMapper::toReviewItem).orElse(null),
+                history,
+                returnedVersion,
+                restoredFromLabel,
                 articleSources.findByArticleOrdered(articleId).stream().map(articleMapper::toSourceItem).toList(),
                 topicMedia(topicId));
+    }
+
+    // Khôi phục version cũ (UC-24, EC-03, BR-18): chép tít, tít phụ, sapo, nội dung của version vào BẢN ĐANG SOẠN.
+    // - Không sửa, không xóa, không tạo version nào (version chỉ tạo ở lần nộp lại kế tiếp).
+    // - Trả về nhãn version (vd "1.0") để controller báo cho người dùng.
+    @Override
+    @Transactional
+    public String restoreVersion(Integer articleId, Integer versionId, String email) {
+        // Kiểm tra quyền: phải là Lead đang hoạt động của bài và bài đang sửa được (DRAFT / REVISION_REQUIRED)
+        Article article = editableArticle(articleId, email);
+        //versions.findByArticle_IdOrderByVersionNumberDesc(articleId): lấy chỉ các version của bài này
+        ArticleVersion version = versions.findByArticle_IdOrderByVersionNumberDesc(articleId).stream()
+                .filter(v -> v.getId().equals(versionId))
+                .findFirst()
+                .orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_VERSION_NOT_FOUND));
+
+        // Chép nội dung version vào bản đang soạn (chuyên mục và tư liệu đính kèm giữ nguyên vì không lưu theo version)
+        article.setTitle(version.getTitle());
+        article.setSubtitle(version.getSubtitle());
+        article.setSapo(version.getSapo());
+        article.setContent(version.getContent());
+        // Ghi lại đã khôi phục từ version nào (DB cho phép vì bài đang DRAFT / REVISION_REQUIRED - ck_article_restore)
+        article.setRestoredFromVersionId(version.getId());
+        article.setUpdatedAt(OffsetDateTime.now().truncatedTo(ChronoUnit.SECONDS));
+        return version.getVersionLabel();
     }
 
     // Ảnh / video trong kho tư liệu của đề tài để chèn vào bài
@@ -165,26 +208,50 @@ public class ArticleServiceImpl implements ArticleService {
                 .map(articleMapper::toTopicMedia).filter(Objects::nonNull).toList();
     }
 
-    // Lịch sử phiên bản: mỗi bản kèm nhận xét của từng cấp duyệt và các góp ý (comment) gắn trên bản đó
+    // Lịch sử phiên bản: mỗi bản kèm nhận xét của từng cấp duyệt và các góp ý (comment) gắn trên bản đó.
+    //
+    // Quy tắc phóng viên được xem gì (kiểm tra ở backend, không chỉ ẩn trên giao diện):
+    //   1. Lượt duyệt chưa có quyết định (decision = NULL) là lượt Trưởng ban / Thư ký đang duyệt dở: KHÔNG trả về.
+    //   2. Góp ý (comment) chỉ trả về khi phiên bản đó ĐÃ BỊ TRẢ VỀ (có lượt duyệt "Yêu cầu chỉnh sửa").
+    //      Lúc đó trả cả góp ý của Trưởng ban lẫn Thư ký trên phiên bản đó, mỗi góp ý ghi rõ người góp ý và cấp.
     private List<ArticleEditorDTO.Version> versionHistory(Article article) {
         List<ArticleVersion> all = versions.findByArticle_IdOrderByVersionNumberDesc(article.getId());
         if (all.isEmpty()) return List.of();
-        Map<Integer, List<ArticleReview>> reviewsByVersion = reviews.findByVersionIn(all).stream()
+
+        // Quy tắc 1: chỉ giữ lượt duyệt đã có quyết định, xếp theo thứ tự thời gian (Trưởng ban trước, Thư ký sau)
+        List<ArticleReview> decidedReviews = reviews.findByVersionIn(all).stream()
+                .filter(r -> r.getDecision() != null)
                 .sorted(Comparator.comparing(ArticleReview::getId))
+                .toList();
+        Map<Integer, List<ArticleReview>> reviewsByVersion = decidedReviews.stream()
                 .collect(Collectors.groupingBy(r -> r.getVersion().getId()));
-        List<Comment> allComments = comments.findByReviewVersionArticleOrderByCreatedAtAscIdAsc(article);
-        Map<Integer, List<Comment>> repliesByParent = allComments.stream().filter(c -> c.getParent() != null)
+
+        // Quy tắc 2: các phiên bản đã bị trả về (có lượt duyệt REQUEST_REVISION)
+        Set<Integer> returnedVersionIds = decidedReviews.stream()
+                .filter(r -> r.getDecision() == ArticleReviewDecision.REQUEST_REVISION)
+                .map(r -> r.getVersion().getId())
+                .collect(Collectors.toSet());
+
+        // Chỉ giữ góp ý thuộc lượt duyệt đã có quyết định, trên phiên bản đã bị trả về
+        List<Comment> visibleComments = comments.findByReviewVersionArticleOrderByCreatedAtAscIdAsc(article).stream()
+                .filter(c -> c.getReview().getDecision() != null)
+                .filter(c -> returnedVersionIds.contains(c.getReview().getVersion().getId()))
+                .toList();
+        Map<Integer, List<Comment>> repliesByParent = visibleComments.stream().filter(c -> c.getParent() != null)
                 .collect(Collectors.groupingBy(c -> c.getParent().getId()));
-        Map<Integer, List<ArticleEditorDTO.VersionComment>> commentsByVersion = allComments.stream()
+        Map<Integer, List<ArticleEditorDTO.VersionComment>> commentsByVersion = visibleComments.stream()
                 .filter(c -> c.getParent() == null)
                 .collect(Collectors.groupingBy(c -> c.getReview().getVersion().getId(), Collectors.mapping(
                         c -> articleMapper.toVersionComment(c, repliesByParent.getOrDefault(c.getId(), List.of()).stream()
                                 .map(r -> articleMapper.toVersionComment(r, List.of())).toList()),
                         Collectors.toList())));
+
         return all.stream()
                 .map(v -> articleMapper.toVersionItem(v,
                         reviewsByVersion.getOrDefault(v.getId(), List.of()).stream().map(articleMapper::toVersionReview).toList(),
-                        commentsByVersion.getOrDefault(v.getId(), List.of())))
+                        commentsByVersion.getOrDefault(v.getId(), List.of()),
+                        // Chia đoạn bằng đúng mapper của màn Trưởng ban để vị trí góp ý khớp tuyệt đối
+                        versionViewMapper.toVersionView(v)))
                 .toList();
     }
 
@@ -196,8 +263,11 @@ public class ArticleServiceImpl implements ArticleService {
         return article.getUpdatedAt();
     }
 
+    // noRollbackFor: nếu bị lỗi kiểm tra (thiếu ghi chú, thiếu tư liệu...) thì VẪN GIỮ bản nháp vừa sửa,
+    // chỉ không tạo version. Không có dòng này, transaction bị hủy và Lead mất phần vừa gõ.
+    // An toàn vì submitVersion() kiểm tra hết TRƯỚC khi lưu version và đổi trạng thái.
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = ApplicationException.class)
     public void submit(Integer articleId, ArticleDraftRequestDTO request, String email) {
         Article article = editableArticle(articleId, email);
         applyDraft(article, request);
@@ -292,12 +362,52 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     // Nộp bài: chụp article_version mới và chuyển sang chờ Trưởng ban duyệt
+    // Dùng cho cả nộp lần đầu (FL-04) và nộp lại (FL-05). Kiểm tra HẾT rồi mới lưu version và đổi trạng thái.
     private void submitVersion(Article article, String changeSummary) {
+        // 1. Trường bắt buộc (FR-07)
         if (article.getSapo() == null) throw new ApplicationException(ErrorCode.ARTICLE_SAPO_REQUIRED);
         if (Jsoup.parse(article.getContent()).text().isBlank()) throw new ApplicationException(ErrorCode.ARTICLE_CONTENT_REQUIRED);
-        versions.save(articleMapper.toVersion(article, versions.findFirstByArticleOrderByVersionNumberDesc(article).map(ArticleVersion::getVersionNumber).orElse(0) + 1, changeSummary));
+
+        // 2. Ít nhất một tư liệu, và mọi ảnh có chú thích (FR-07, giống rule R19 trong DB)
+        //    Bài vừa tạo (chưa lưu) thì chưa có id nên cũng chưa có tư liệu nào.
+        List<ArticleSource> attached = article.getId() == null ? List.of() : articleSources.findByArticleOrdered(article.getId());
+        if (attached.isEmpty()) throw new ApplicationException(ErrorCode.ARTICLE_SOURCE_REQUIRED);
+        boolean imageWithoutCaption = attached.stream()
+                .anyMatch(s -> s.getSource().getSourceType() == SourceType.IMAGE
+                        && (s.getCaption() == null || s.getCaption().isBlank()));
+        if (imageWithoutCaption) throw new ApplicationException(ErrorCode.ARTICLE_IMAGE_CAPTION_REQUIRED);
+
+        // 3. Nộp lại (đã có version trước): bắt buộc ghi chú và nội dung phải khác bản trước (UC-25)
+        Optional<ArticleVersion> latest = versions.findFirstByArticleOrderByVersionNumberDesc(article);
+        if (latest.isPresent()) {
+            if (changeSummary == null || changeSummary.isBlank()) {
+                throw new ApplicationException(ErrorCode.ARTICLE_CHANGE_SUMMARY_REQUIRED);
+            }
+            if (sameContent(article, latest.get())) throw new ApplicationException(ErrorCode.ARTICLE_CONTENT_UNCHANGED);
+        }
+
+        // 4. Hợp lệ: chụp version mới (1.0, 1.1...) và chuyển sang chờ Trưởng ban duyệt
+        int nextNumber = latest.map(ArticleVersion::getVersionNumber).orElse(0) + 1;
+        versions.save(articleMapper.toVersion(article, nextNumber, changeSummary));
         article.setStatus(ArticleStatus.DEPARTMENT_REVIEW);
         article.setSubmittedAt(OffsetDateTime.now().truncatedTo(ChronoUnit.SECONDS));
+        // Đã nộp thì xóa dấu "vừa khôi phục": DB chỉ cho có giá trị này khi bài DRAFT / REVISION_REQUIRED (ck_article_restore)
+        article.setRestoredFromVersionId(null);
+    }
+
+    // So bản đang soạn với version đã nộp: tít, tít phụ, sapo, nội dung (ảnh / tư liệu đính kèm không tính)
+    private static boolean sameContent(Article article, ArticleVersion version) {
+        return sameText(article.getTitle(), version.getTitle())
+                && sameText(article.getSubtitle(), version.getSubtitle())
+                && sameText(article.getSapo(), version.getSapo())
+                && sameText(article.getContent(), version.getContent());
+    }
+
+    // null và chuỗi rỗng coi như nhau; bỏ khoảng trắng thừa ở hai đầu
+    private static boolean sameText(String a, String b) {
+        String left = a == null ? "" : a.trim();
+        String right = b == null ? "" : b.trim();
+        return left.equals(right);
     }
 
     private void applyDraft(Article article, ArticleDraftRequestDTO request) {
@@ -312,7 +422,7 @@ public class ArticleServiceImpl implements ArticleService {
         if (request.getTitle() == null || request.getTitle().isBlank()) throw new ApplicationException(ErrorCode.ARTICLE_TITLE_REQUIRED);
         if (request.getCategory() == null || request.getCategory().isBlank()) throw new ApplicationException(ErrorCode.ARTICLE_CATEGORY_REQUIRED);
     }
-
+    //
     private Article editableArticle(Integer articleId, String email) {
         Account me = currentAccount(email);
         Article article = articles.findById(articleId).orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_NOT_FOUND));

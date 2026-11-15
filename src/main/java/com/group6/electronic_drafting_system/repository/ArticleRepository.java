@@ -15,17 +15,31 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface ArticleRepository extends JpaRepository<Article, Integer> {
-    // Bài chờ Trưởng phòng X = bài thuộc Topic mà X đang là DEPARTMENT_HEAD (assignment chưa REMOVED), theo CLAUDE.md mục 6.3 / rule R09
+    // Điều kiện "Topic của bài được GIAO cho Trưởng phòng :headId":
+    // có dòng assignment DEPARTMENT_HEAD (chưa REMOVED) của người này trên Topic của bài (CLAUDE.md mục 6.3 / rule R09)
     String HEAD_OF_TOPIC = "exists (select 1 from Assignment s where s.topic = a.topic and s.account.id = :headId "
             + "and s.assignmentRole = com.group6.electronic_drafting_system.entity.enums.AssignmentRole.DEPARTMENT_HEAD "
             + "and s.status <> com.group6.electronic_drafting_system.entity.enums.AssignmentStatus.REMOVED)";
 
-    @Query("select a from Article a join fetch a.lead join fetch a.topic "
-            + "where a.status = :status and " + HEAD_OF_TOPIC + " order by a.submittedAt desc")
-    List<Article> findByStatusForDepartmentHead(@Param("status") ArticleStatus status, @Param("headId") Integer headId);
+    // Quy tắc "cách A" của dashboard Trưởng phòng: thấy bài khi
+    //   Topic của bài thuộc PHÒNG mình (topic.department_id = :departmentId)
+    //   HOẶC Topic được GIAO cho mình (HEAD_OF_TOPIC; cần cho Topic do Thư ký tạo, vì loại này không có phòng ban)
+    // Ghi chú: đây là quy tắc mới, khác CLAUDE.md mục 6.3 (chỉ theo assignment) -> cần báo cả nhóm.
+    String IN_MY_DEPARTMENT_OR_ASSIGNED = "(a.topic.department.id = :departmentId or " + HEAD_OF_TOPIC + ")";
 
-    @Query("select count(a) from Article a where a.status = :status and " + HEAD_OF_TOPIC)
-    long countByStatusForDepartmentHead(@Param("status") ArticleStatus status, @Param("headId") Integer headId);
+    // Danh sách bài có trạng thái :status mà Trưởng phòng được thấy (theo quy tắc ở trên), mới nộp xếp trước.
+    // join fetch: lấy luôn Lead và Topic trong cùng câu SQL (đỡ phải hỏi DB thêm khi đổi bài thành thẻ hiển thị).
+    @Query("select a from Article a join fetch a.lead join fetch a.topic "
+            + "where a.status = :status and " + IN_MY_DEPARTMENT_OR_ASSIGNED + " order by a.submittedAt desc")
+    List<Article> findByStatusForDepartment(@Param("status") ArticleStatus status,
+                                            @Param("departmentId") Integer departmentId,
+                                            @Param("headId") Integer headId);
+
+    // Đếm số bài có trạng thái :status, cùng quy tắc với findByStatusForDepartment (để các con số khớp với danh sách)
+    @Query("select count(a) from Article a where a.status = :status and " + IN_MY_DEPARTMENT_OR_ASSIGNED)
+    long countByStatusForDepartment(@Param("status") ArticleStatus status,
+                                    @Param("departmentId") Integer departmentId,
+                                    @Param("headId") Integer headId);
 
     // Đếm nguồn của nhiều bài trong 1 query (tránh N+1 khi gọi article.getSources().size()); mỗi dòng: [articleId, count]
     @Query("select s.article.id, count(s) from ArticleSource s where s.article.id in :articleIds group by s.article.id")

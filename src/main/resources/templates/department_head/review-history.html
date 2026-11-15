@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  Màn "Lịch sử duyệt" của Trưởng ban (UC-35). Chỉ XEM, không có nút ghi dữ liệu.
+  Dữ liệu: ${history} (ReviewHistoryPageDTO) do DepartmentHeadController.reviewHistory() truyền vào.
+  Giao diện dùng chung class rp- của màn /reporter/tasks (static/reporter/css/reporter-tasks.css)
+  + vài dòng riêng trong static/department_head/css/department-head-review-history.css.
+  Lọc theo quyết định / chuyên mục / từ khóa do static/department_head/js/department-head-review-history.js xử lý
+  ngay trên trình duyệt (không gửi lại server), dựa vào các thuộc tính data-* trên từng dòng.
+-->
+<th:block th:fragment="reviewHistoryContent">
+    <!-- Bộ icon dùng trong trang (SVG sprite nội bộ, không cần thư viện ngoài). Dùng bằng <use href="#rh-icon-..."> -->
+    <svg class="rp-svg-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+        <symbol id="rh-icon-search" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.7"/><path d="m16 16 4.5 4.5"/></symbol>
+        <symbol id="rh-icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+        <symbol id="rh-icon-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16.5 9"/></symbol>
+        <symbol id="rh-icon-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="m16.5 3.5 4 4L8 20l-5 1 1-5Z"/></symbol>
+        <symbol id="rh-icon-folder" viewBox="0 0 24 24"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2h8.5A1.5 1.5 0 0 1 21 9.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5Z"/></symbol>
+        <symbol id="rh-icon-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+        <symbol id="rh-icon-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+        <symbol id="rh-icon-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+        <symbol id="rh-icon-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+    </svg>
+
+    <!-- class rh-page: điểm bám của department-head-review-history.js -->
+    <section class="rp-page rh-page" aria-label="Lịch sử duyệt bài của Trưởng ban">
+        <!-- Thanh trên cùng: dùng lại fragment dhTopbar trong department_head/dashboard.html (ô tìm nhanh tắt, vì lọc nằm ở dưới) -->
+        <header th:replace="~{department_head/dashboard :: dhTopbar(${history.displayName}, ${history.departmentName}, ${history.userInitials}, false)}"></header>
+
+        <main class="rp-main">
+            <div class="rp-heading-row">
+                <div class="rp-heading">
+                    <nav class="rp-breadcrumb" aria-label="Breadcrumb">
+                        <span>QUY TRÌNH CẤP 2</span><svg class="rp-icon rp-icon--tiny"><use href="#rh-icon-chevron-right"></use></svg><strong>Lịch sử duyệt</strong>
+                    </nav>
+                    <h1>Lịch sử duyệt của tôi</h1>
+                    <p>Các lượt duyệt cấp phòng bạn đã chốt (Duyệt hoặc Yêu cầu sửa), mới nhất trước. Lượt đang duyệt dở không hiện ở đây.</p>
+                </div>
+                <div class="rp-heading-actions">
+                    <a class="rp-button rp-button--outline" th:href="@{/department-head/dashboard}">Về danh sách chờ duyệt</a>
+                </div>
+            </div>
+
+            <!-- 3 ô số liệu: tổng / đã duyệt / yêu cầu sửa (tính ở DepartmentHeadServiceImpl.getReviewHistory, BƯỚC 4) -->
+            <section class="rp-stats rh-stats" aria-label="Số liệu lịch sử duyệt">
+                <article class="rp-stat">
+                    <div class="rp-stat-head"><span>TỔNG LƯỢT ĐÃ DUYỆT</span><span class="rp-stat-icon"><svg class="rp-icon"><use href="#rh-icon-clock"></use></svg></span></div>
+                    <strong class="rp-stat-value" th:text="${history.totalCount}">12</strong>
+                </article>
+                <article class="rp-stat rp-stat--success">
+                    <div class="rp-stat-head"><span>ĐÃ DUYỆT, CHUYỂN THƯ KÝ</span><span class="rp-stat-icon"><svg class="rp-icon"><use href="#rh-icon-check-circle"></use></svg></span></div>
+                    <strong class="rp-stat-value" th:text="${history.approvedCount}">8</strong>
+                </article>
+                <article class="rp-stat rp-stat--warning">
+                    <div class="rp-stat-head"><span>YÊU CẦU SỬA</span><span class="rp-stat-icon"><svg class="rp-icon"><use href="#rh-icon-edit"></use></svg></span></div>
+                    <strong class="rp-stat-value" th:text="${history.revisionCount}">4</strong>
+                </article>
+            </section>
+
+            <!-- Bộ lọc: chỉ ẩn / hiện dòng trên trình duyệt (JS), không tải lại trang -->
+            <section class="rp-filter-panel" aria-label="Bộ lọc lịch sử duyệt" th:unless="${#lists.isEmpty(history.items)}">
+                <div class="rp-filter-top">
+                    <div class="rp-view-switch" role="group" aria-label="Lọc theo quyết định">
+                        <!-- data-rh-decision: all = tất cả, approved = Đã duyệt, revision = Yêu cầu sửa -->
+                        <button class="is-active" type="button" data-rh-decision="all">Tất cả <b th:text="${history.totalCount}">12</b></button>
+                        <button type="button" data-rh-decision="approved">Đã duyệt <b th:text="${history.approvedCount}">8</b></button>
+                        <button type="button" data-rh-decision="revision">Yêu cầu sửa <b th:text="${history.revisionCount}">4</b></button>
+                    </div>
+                    <label class="rp-filter-search">
+                        <svg class="rp-icon"><use href="#rh-icon-search"></use></svg>
+                        <input id="rh-search" type="search" placeholder="Tìm theo tít bài, đề tài, mã bài…" aria-label="Tìm trong lịch sử duyệt">
+                    </label>
+                </div>
+                <div class="rp-filter-row">
+                    <label class="rp-select-field"><span><svg class="rp-icon"><use href="#rh-icon-folder"></use></svg>CHUYÊN MỤC:</span>
+                        <select id="rh-category">
+                            <option value="all">Toàn bộ chuyên mục</option>
+                            <option th:each="category : ${history.categories}" th:value="${category}" th:text="${category}">Kinh tế</option>
+                        </select><svg class="rp-icon rp-select-chevron"><use href="#rh-icon-chevron-down"></use></svg></label>
+                </div>
+            </section>
+
+            <section class="rp-card">
+                <div class="rp-card-head">
+                    <h2>Các lượt đã duyệt <span class="rp-count-pill"><b id="rh-visible-count" th:text="${history.totalCount}">12</b> bản ghi</span></h2>
+                    <span class="rp-sort-note">Mới nhất trước</span>
+                </div>
+
+                <!-- Chưa có lượt duyệt nào -->
+                <div class="rp-empty rp-empty--compact" th:if="${#lists.isEmpty(history.items)}">
+                    <svg class="rp-icon"><use href="#rh-icon-clock"></use></svg>
+                    <strong>Bạn chưa duyệt bài nào</strong>
+                    <p>Khi bạn bấm Duyệt hoặc Yêu cầu sửa ở màn thẩm định, lượt duyệt sẽ hiện ở đây.</p>
+                </div>
+
+                <div class="rp-table-wrap" th:unless="${#lists.isEmpty(history.items)}">
+                    <table class="rp-table">
+                        <thead>
+                        <tr>
+                            <th>Bài viết &amp; đề tài</th>
+                            <th>Phiên bản</th>
+                            <th>Quyết định</th>
+                            <th>Nhận xét</th>
+                            <th>Thời điểm duyệt</th>
+                            <th>Trạng thái bài hiện tại</th>
+                            <th class="rp-right">Thao tác</th>
+                        </tr>
+                        </thead>
+                        <tbody id="rh-list">
+                        <!-- Mỗi dòng = 1 ReviewHistoryItemDTO. Các data-* để JS lọc:
+                               data-decision = approved / revision, data-category = chuyên mục, data-search = chữ để tìm -->
+                        <tr class="rh-row" th:each="item : ${history.items}"
+                            th:attr="data-decision=${item.approved} ? 'approved' : 'revision',data-category=${item.category},data-search=|${item.articleCode} ${item.articleTitle} ${item.topicTitle}|">
+                            <td class="rp-col-task">
+                                <span class="rp-priority rp-priority--low" th:text="|#${item.articleCode}|">#BT-15</span>
+                                <span class="rp-task-title" th:text="${item.articleTitle}">Tít bài</span>
+                                <span class="rh-topic" th:text="|Đề tài: ${item.topicTitle}|">Đề tài: ...</span>
+                                <span class="rp-task-category"><svg class="rp-icon"><use href="#rh-icon-folder"></use></svg><span th:text="${item.category}">Kinh tế</span></span>
+                            </td>
+                            <td><span class="rh-version" th:text="|v${item.versionLabel}|">v1.0</span></td>
+                            <td>
+                                <!-- Đã duyệt: nhãn xanh (rp-stage--done); Yêu cầu sửa: nhãn vàng (rp-stage--review) -->
+                                <span class="rp-stage" th:classappend="${item.approved} ? 'rp-stage--done' : 'rp-stage--review'"><i></i><span th:text="${item.decisionText}">Đã duyệt</span></span>
+                                <small class="rh-comment-count" th:if="${item.commentCount > 0}">
+                                    <svg class="rp-icon"><use href="#rh-icon-message"></use></svg><span th:text="|${item.commentCount} góp ý|">3 góp ý</span>
+                                </small>
+                            </td>
+                            <td class="rh-col-feedback">
+                                <p class="rh-feedback" th:if="${item.feedback != null}" th:text="${item.feedback}">Nhận xét</p>
+                                <span class="rp-muted" th:if="${item.feedback == null}">Không có nhận xét</span>
+                            </td>
+                            <td><span class="rp-muted" th:text="${item.reviewedAtText}">09:30 07/11/2026</span></td>
+                            <td>
+                                <span class="rp-stage" th:classappend="|rp-stage--${item.articleStatusGroup}|"><i></i><span th:text="${item.articleStatusText}">Đã xuất bản</span></span>
+                            </td>
+                            <td class="rp-col-actions">
+                                <div class="rp-actions">
+                                    <!-- Mở màn thẩm định: bài không còn chờ duyệt nên tự ở chế độ CHỈ XEM (reviewable = false) -->
+                                    <a class="rp-button rp-button--outline rp-button--small" th:href="@{/department-head/articles/{id}/review(id=${item.articleId})}"><svg class="rp-icon"><use href="#rh-icon-eye"></use></svg>Xem bài</a>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <!-- Hiện khi bộ lọc không khớp dòng nào (JS bật / tắt bằng thuộc tính hidden) -->
+                    <div class="rp-empty rp-empty--compact" id="rh-no-match" hidden>
+                        <svg class="rp-icon"><use href="#rh-icon-search"></use></svg>
+                        <strong>Không có lượt duyệt nào khớp bộ lọc</strong>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </section>
+</th:block>
+</body>
+</html>

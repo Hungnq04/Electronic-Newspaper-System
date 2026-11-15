@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.security.Principal;
 import java.util.List;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -33,7 +35,7 @@ public class SecretaryTopicController {
     @GetMapping
     public String workspace(@RequestParam(required = false) Integer department, @RequestParam(required = false) Integer topic,
                             Principal principal, Model model) {
-        model.addAttribute("ws", topicReviewService.getSecretaryWorkspace(principal.getName(), department, topic));
+        model.addAttribute("ws", topicReviewService.getSecretaryWorkspace(currentEmail(principal), department, topic));
         model.addAttribute("pageTitle", "Duyệt đề tài cuối | CMS Core");
         model.addAttribute("contentView", "secretary/topic-final-review");
         model.addAttribute("contentFragment", "content");
@@ -45,7 +47,7 @@ public class SecretaryTopicController {
     @PostMapping("/{topicId}/approve")
     public String approve(@PathVariable Integer topicId, Principal principal, RedirectAttributes redirect) {
         try {
-            topicReviewService.secretaryApprove(principal.getName(), topicId);
+            topicReviewService.secretaryApprove(currentEmail(principal), topicId);
             redirect.addFlashAttribute("message", "Đã duyệt đề tài. Đề tài chuyển sang ACTIVE và đã giao Lead / Trưởng ban.");
             return "redirect:" + PATH;
         } catch (ApplicationException ex) {
@@ -57,7 +59,7 @@ public class SecretaryTopicController {
     public String reject(@PathVariable Integer topicId, @RequestParam(required = false) String reason,
                          Principal principal, RedirectAttributes redirect) {
         try {
-            topicReviewService.secretaryReject(principal.getName(), topicId, reason);
+            topicReviewService.secretaryReject(currentEmail(principal), topicId, reason);
             redirect.addFlashAttribute("message", "Đã từ chối đề tài. Phóng viên sẽ thấy lý do từ chối.");
             return "redirect:" + PATH;
         } catch (ApplicationException ex) {
@@ -73,6 +75,15 @@ public class SecretaryTopicController {
         redirect.addFlashAttribute("error", ex.getErrorCode().getMessage());
         redirect.addFlashAttribute("reason", reason);
         return "redirect:" + PATH + "?topic=" + topicId;
+    }
+
+    // Lấy email người đăng nhập. Đăng nhập bằng mật khẩu: getName() chính là email.
+    // Đăng nhập Google: getName() là mã định danh của Google ("sub"), nên phải đọc thuộc tính "email"
+    // (cùng cách với TopicProposalController.currentEmail).
+    private static String currentEmail(Principal principal) {
+        if (principal instanceof Authentication auth && auth.getPrincipal() instanceof OAuth2User google
+                && google.getAttribute("email") instanceof String email) return email;
+        return principal.getName();
     }
 
     @ExceptionHandler(ApplicationException.class)

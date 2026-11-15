@@ -203,6 +203,7 @@
                             </td>
                             <td class="rp-col-actions">
                                 <div class="rp-actions">
+                                    <!-- nut xem chi tiet -->
                                     <a class="rp-button rp-button--ghost rp-button--small" th:href="@{/reporter/tasks/{id}(id=${t.assignmentId()})}"><svg class="rp-icon"><use href="#rp-icon-eye"></use></svg>Chi tiết</a>
                                     <a class="rp-button rp-button--small" th:if="${t.writeHref() != null}"
                                        th:classappend="${t.stage().open} ? (${t.urgent()} ? ' rp-button--danger' : ' rp-button--primary') : ' rp-button--outline'"

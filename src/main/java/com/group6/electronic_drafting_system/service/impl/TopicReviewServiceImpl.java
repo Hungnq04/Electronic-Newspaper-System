@@ -62,7 +62,7 @@ public class TopicReviewServiceImpl implements TopicReviewService {
     // ===================== Trưởng ban =====================
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true) //2
     public TopicReviewWorkspaceDTO getHeadWorkspace(String email, Integer selectedTopicId) {
         Account head = requireRole(email, RoleName.DEPARTMENT_HEAD);
         Integer departmentId = head.getDepartment().getId();
@@ -104,7 +104,7 @@ public class TopicReviewServiceImpl implements TopicReviewService {
     }
 
     @Override
-    @Transactional
+    @Transactional //yeucausua
     public void headRequestChanges(String email, Integer topicId, String feedback) {
         Account head = requireRole(email, RoleName.DEPARTMENT_HEAD);
         String content = requireText(feedback, ErrorCode.TOPIC_FEEDBACK_REQUIRED);

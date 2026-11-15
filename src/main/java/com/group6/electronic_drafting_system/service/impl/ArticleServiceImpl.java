@@ -484,7 +484,7 @@ public class ArticleServiceImpl implements ArticleService {
         if (request.getCategory() == null || request.getCategory().isBlank())
             throw new ApplicationException(ErrorCode.ARTICLE_CATEGORY_REQUIRED);
     }
-
+    //
     private Article editableArticle(Integer articleId, String email) {
         Account me = currentAccount(email);
         Article article = articles.findById(articleId)

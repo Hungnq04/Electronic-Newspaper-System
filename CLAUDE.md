@@ -70,13 +70,13 @@ Hệ quả khi code:
 
 ## 3. Vai trò và quyền hạn
 
-**Reporter**: đề xuất Topic; quyền Lead / Supporting xem bảng mục 2; Lead phản hồi comment. Không duyệt, không publish.
+**Reporter**: đề xuất Topic (chỉ cho **phòng ban của chính mình**); sửa và gửi lại Topic khi Trưởng phòng yêu cầu sửa; quyền Lead / Supporting xem bảng mục 2; Lead phản hồi comment. Không duyệt, không publish.
 
-**Department Head (Trưởng phòng)**: duyệt Topic ở cấp phòng; nhận Topic Secretary giao xuống; **phân công** Lead và Supporting (mỗi người một nhiệm vụ + deadline riêng); review Article cấp phòng (Inline Comment, Request Revision, Approve cấp phòng). **Không** Final Approve, **không** Publish, **không** sửa trực tiếp nội dung Article (OQ-01), **không** tự tạo Topic (OQ-07).
+**Department Head (Trưởng phòng)**: duyệt Topic ở cấp phòng, chỉ Topic của phòng mình (**Approve** hoặc **Yêu cầu sửa**; **không** được từ chối Topic); nhận Topic Secretary giao xuống; **phân công** Lead và Supporting (mỗi người một nhiệm vụ + deadline riêng); review Article cấp phòng (Inline Comment, Request Revision, Approve cấp phòng). **Không** Final Approve, **không** Publish, **không** sửa trực tiếp nội dung Article (OQ-01), **không** tự tạo Topic (OQ-07).
 
 **Editorial Secretary (Thư ký tòa soạn)**: tạo Editorial Topic (top-down) và giao cho Department Head; duyệt Topic lần cuối (Approve / Reject); review Article sau khi Department Head đã duyệt; Final Approve; Publish hoặc Schedule; Return to Lead; Cancel & Return.
 
-**Admin**: đổi role, gán phòng ban, khóa / mở tài khoản. **Không** tham gia biên tập (không duyệt, không publish; BR-37). Admin không được tạo Topic.
+**Admin**: duyệt tài khoản mới đăng ký (`AWAITING_APPROVAL`, xem mục 9); đổi role, gán phòng ban, khóa / mở tài khoản. **Không** tham gia biên tập (không duyệt, không publish; BR-37). Admin không được tạo Topic.
 
 **Public Reader**: chỉ xem bài PUBLISHED. Không thấy Draft, Version History, Comment nội bộ.
 
@@ -91,14 +91,23 @@ Quy tắc chung: **người duyệt không được duyệt Topic / Article do c
 **(A) Reporter đề xuất (bottom-up):**
 ```
 Reporter tạo Topic ──► DEPARTMENT_REVIEW ──► (TP duyệt) ──► SECRETARY_REVIEW ──► (Thư ký duyệt) ──► ACTIVE
-                              │                                    │
-                         REJECTED + feedback                  REJECTED + feedback
+                        ▲        │                                 │
+                        │   TP yêu cầu sửa                    REJECTED + lý do (kết thúc)
+                        │   (awaiting_revision = 1)
+                        └── Reporter sửa, gửi lại (awaiting_revision = 0)
 ```
-- Bị từ chối ở **bất kỳ cấp nào** → `REJECTED` + feedback, **kết thúc**. Không có vòng "yêu cầu sửa Topic", không gửi lại (OQ-08). Reporter đề xuất Topic mới.
+- Topic mới vào thẳng `DEPARTMENT_REVIEW` (không có Draft). `topic.department_id` = phòng ban của Reporter đề xuất; chỉ Trưởng phòng **cùng phòng** mới thấy và duyệt được.
+- **Trưởng phòng** chỉ có 2 lựa chọn (không được từ chối):
+  - **Approve** → ghi `topic_review` (`DEPARTMENT` / `APPROVED`), lưu `topic.reviewed_by_head_id`, status → `SECRETARY_REVIEW`.
+  - **Yêu cầu sửa** (góp ý bắt buộc) → ghi một dòng `topic_feedback` loại `CHANGE_REQUEST` (**không** ghi `topic_review`), bật `awaiting_revision = 1`, status **vẫn** `DEPARTMENT_REVIEW`. Topic rời khỏi hàng chờ của TP cho đến khi Reporter gửi lại.
+  - Reporter (chỉ người tạo, chỉ khi `awaiting_revision = 1`) sửa tít / mô tả rồi gửi lại → `awaiting_revision = 0`, Topic quay về hàng chờ TP. **Được sửa nhiều vòng.**
+- **Thư ký** chỉ thấy Topic `SECRETARY_REVIEW` (có thể lọc theo phòng ban): **Approve** → `ACTIVE`, hoặc **Reject** kèm lý do bắt buộc (BR-12) → `REJECTED`. Lý do từ chối lưu ở `topic_review.feedback` (`SECRETARY` / `REJECTED`).
+- `ACTIVE` và `REJECTED` là trạng thái cuối. Topic `REJECTED` **không gửi lại được** (OQ-08); Reporter đề xuất Topic mới.
 - Khi Secretary approve, **hệ thống tự tạo 2 Assignment**:
   1. Reporter đề xuất → `LEAD` (giao bởi Secretary đã approve; nhiệm vụ và deadline **để trống**, Department Head bổ sung sau).
-  2. Department Head đã duyệt ở cấp phòng → `DEPARTMENT_HEAD` của Topic.
-- Từ chối bắt buộc có feedback (BR-12).
+  2. Department Head đã duyệt ở cấp phòng (`reviewed_by_head_id`) → `DEPARTMENT_HEAD` của Topic.
+- Mỗi lần TP yêu cầu sửa, Thư ký duyệt hoặc từ chối, Reporter nhận một thông báo trong hệ thống (bảng `notification`, xem mục 8).
+- Dữ liệu cũ (từ trước FL-01) có thể có `topic_review` `DEPARTMENT` / `REJECTED` (ví dụ dữ liệu mẫu T9). Code mới không tạo thêm trường hợp này.
 
 **(B) Secretary giao xuống (top-down):**
 ```
@@ -112,6 +121,7 @@ Secretary tạo Editorial Topic ──► ACTIVE ngay ──► "Topic chưa gia
 
 ### 4.2. Trạng thái Topic (theo DB)
 `DEPARTMENT_REVIEW` → `SECRETARY_REVIEW` → `ACTIVE`, hoặc `REJECTED`.
+"Đang chờ Reporter sửa" **không phải** một status riêng: đó là `status = 'DEPARTMENT_REVIEW'` + cờ `awaiting_revision = 1` (DB có constraint `ck_topic_awaiting_revision`: cờ chỉ được bật khi status là `DEPARTMENT_REVIEW`).
 Topic không tự đóng khi có bài PUBLISHED (BR-02). Một Topic có nhiều Article (BR-01). Topic cũ "hot" lại thì tạo Article mới trong Topic cũ, không tạo Topic trùng (EC-06).
 
 ### 4.3. Tình trạng giao việc không lưu thành status
@@ -209,7 +219,13 @@ Phải có: tít, sapo, nội dung, **ít nhất một Source**, và **mọi ả
 
 ## 8. Cơ sở dữ liệu (SQL Server) — `cms_core_sqlserver_v2.sql`
 
-15 bảng: `role`, `department`, `account`, `account_otp`, `topic`, `topic_review`, `assignment`, `source`, `topic_source`, `article_source`, `article`, `article_version`, `article_review`, `comment`, `publication`.
+17 bảng: `role`, `department`, `account`, `account_otp`, `topic`, `topic_review`, `topic_feedback`, `notification`, `assignment`, `source`, `topic_source`, `article_source`, `article`, `article_version`, `article_review`, `comment`, `publication`.
+
+Phần thêm cho FL-01 (đã gộp vào file v2; DB dựng từ bản v2 cũ thì chạy `database/fl01_iter1_migration.sql` rồi `fl01_iter2_migration.sql`):
+- `topic` thêm 3 cột: `department_id` (phòng phụ trách), `awaiting_revision` (cờ "TP yêu cầu sửa"), `reviewed_by_head_id` (TP đã duyệt cấp phòng).
+- `topic_feedback`: mỗi vòng TP yêu cầu sửa Topic là một dòng (`topic_id`, `author_id`, `feedback_type`, `content`, `created_at`). Chỉ thêm, không sửa / xóa. `feedback_type` có 2 giá trị `CHANGE_REQUEST` / `REJECTION`, nhưng code hiện **chỉ dùng `CHANGE_REQUEST`** (lý do Thư ký từ chối nằm ở `topic_review.feedback`).
+- `notification`: thông báo trong hệ thống cho Reporter (chuông trên header), gắn với một Topic (`account_id`, `topic_id`, `message`, `is_read`, `created_at`). Bấm vào thì đánh dấu đã đọc và mở Topic. **Không** gửi email.
+- `account.status` thêm `AWAITING_APPROVAL` (xem mục 9).
 
 Views: `v_topic_team`, `v_article_board`, `v_article_timeline`, `v_public_article`, `v_rule_violations`.
 
@@ -243,14 +259,21 @@ ORDER BY v.created_at;
 
 ## 9. Tài khoản & bảo mật
 
-- Đăng ký (username, họ tên, email, mật khẩu) → role `REPORTER`, status `PENDING`. Xác minh OTP 6 số qua email → `ACTIVE`. **`PENDING` không đăng nhập được.**
+- Trạng thái tài khoản: `PENDING` → `AWAITING_APPROVAL` → `ACTIVE`, ngoài ra `LOCKED` / `INACTIVE`. **Chỉ `ACTIVE` đăng nhập được.**
+- Đăng ký (username, họ tên, email Gmail, mật khẩu) → role `REPORTER`, status `PENDING`. Xác minh OTP 6 số qua email → **`AWAITING_APPROVAL`** (chưa vào hệ thống được, chờ Admin).
+- Admin duyệt tài khoản `AWAITING_APPROVAL`:
+  - **Duyệt**: chọn role (`REPORTER` / `DEPARTMENT_HEAD` / `EDITORIAL_SECRETARY`, không cấp `ADMIN`) và phòng ban (**bắt buộc** với `REPORTER` và `DEPARTMENT_HEAD`) → `ACTIVE`, gửi email báo kết quả.
+  - **Từ chối** (kèm lý do) → `INACTIVE`, gửi email báo kết quả. Không xóa tài khoản.
 - OTP: chỉ lưu **hash**; hết hạn **10 phút**; sai tối đa **5 lần** thì khóa mã; dùng **một lần**; gửi lại sau **60 giây**. Mục đích chỉ có `VERIFY_EMAIL` và `RESET_PASSWORD` (không có đăng nhập 2 lớp).
-- Quên mật khẩu: nhập email → hệ thống trả lời **giống nhau** dù email có tồn tại hay không.
+- Quên mật khẩu: nhập email → hệ thống trả lời **giống nhau** dù email có tồn tại hay không. Mã thật chỉ gửi cho tài khoản `ACTIVE` hoặc `AWAITING_APPROVAL`.
 - Mật khẩu lưu **BCrypt**, không bao giờ lưu plaintext.
 - Tài khoản không còn `ACTIVE` (LOCKED / INACTIVE) thì không được giữ assignment đang hiệu lực (rule R23).
 - Department Head phải được gán phòng ban (rule R20).
 - Người dùng không được truy cập trang / chức năng của role khác bằng cách đổi URL (NFR-01).
-- **Đăng nhập Google OAuth2** đã có trong code (`config/GoogleLoginSuccessHandler.java`) nhưng PRD chưa mô tả. _TODO (tôi sẽ bổ sung): email Google chưa có tài khoản thì xử lý sao? trạng thái / role mặc định?_ Chưa rõ thì hỏi tôi.
+- **Đăng nhập Google OAuth2** (`config/GoogleLoginSuccessHandler.java`, PRD chưa mô tả; dưới đây là cách code đang làm):
+  - Email Google chưa có tài khoản (chỉ nhận Gmail, Google phải báo email đã xác minh) → tự tạo tài khoản role `REPORTER`, status `AWAITING_APPROVAL` (bỏ qua OTP vì Google đã xác minh email), mật khẩu là hash của chuỗi ngẫu nhiên. Muốn đăng nhập bằng mật khẩu thì dùng Quên mật khẩu.
+  - Tài khoản đang `PENDING` → chuyển sang `AWAITING_APPROVAL`. Tài khoản `AWAITING_APPROVAL` → báo đang chờ duyệt. `LOCKED` / `INACTIVE` → từ chối đăng nhập.
+  - Chỉ `ACTIVE` mới vào được `/dashboard`.
 
 ---
 
@@ -260,34 +283,34 @@ File draw.io gồm 9 sơ đồ. Khi cần thứ tự bước, ai làm gì, rẽ 
 
 | Mã | Nội dung | Lane | Ý chính |
 |---|---|---|---|
-| FL-01 | Reporter đề xuất Topic (PRD Workflow A) | Reporter, TP, Thư ký, System | Như mục 4.1 (A). Tiếp tục ở FL-03. |
+| FL-01 | Reporter đề xuất Topic (PRD Workflow A) | Reporter, TP, Thư ký, System | Như mục 4.1 (A): TP Approve / Yêu cầu sửa (nhiều vòng), Thư ký Approve / Reject. **Code đi theo mục 4.1**, nếu file draw.io cũ còn vẽ "TP từ chối" thì bỏ qua nhánh đó. Tiếp tục ở FL-03. |
 | FL-02 | Secretary tạo và giao Editorial Topic (Workflow B) | Thư ký, System, TP | Như mục 4.1 (B): giao ngay hoặc để sau (EC-09). |
 | FL-03 | Department Head phân công đội + Supporting cung cấp Material (Workflow B / B2) | TP, System, Reporter | Topic đã có Lead (do Reporter đề xuất) thì TP **chỉ nhập nhiệm vụ + deadline** cho Lead; chưa có thì chọn Lead. Validate như mục 4.1 (B). **Lead sang FL-04**; **Supporting** thêm Material → `COMPLETED`. |
 | FL-04 | Lead viết và nộp Article (Workflow C) | Lead, System | Mục 6.2, 6.4, 7-Version: `DRAFT` → Save Draft (không tạo version) → Submit → version 1.0 → `DEPARTMENT_REVIEW`, khóa nội dung. |
 | FL-05 | Department Head duyệt và vòng sửa (Workflow D) | Lead, TP, System | Mở bài → tạo Review `DEPARTMENT` → comment → Approve (sang FL-06) / Request Revision. Lead xem feedback, có thể Restore, sửa, nhập change note, Resubmit (1.x). |
 | FL-06 | Secretary duyệt cuối (Workflow E) | Lead, TP, Thư ký, System | Final Approve (sang FL-07) / Request Revision trả **thẳng Lead** (TP được báo) → Resubmit **đi lại FL-05** (BR-11). |
 | FL-07 | Xuất bản và đọc công khai (Workflow F) | Thư ký, System, Public Reader | Mục 6.2 + 7-Publication: Return to Lead / Publish now / Schedule / Cancel & Return. |
-| FL-AUTH-01 | Đăng ký và kích hoạt tài khoản | Guest, System, Admin | `PENDING` → OTP → `ACTIVE`; sai OTP đến giới hạn thì vô hiệu mã, chờ 60 giây để xin mã mới; Admin gán phòng ban / đổi role nếu cần. |
+| FL-AUTH-01 | Đăng ký và kích hoạt tài khoản | Guest, System, Admin | `PENDING` → OTP → `AWAITING_APPROVAL` → Admin duyệt (cấp role + phòng ban) → `ACTIVE`, hoặc từ chối → `INACTIVE` (mục 9); sai OTP đến giới hạn thì vô hiệu mã, chờ 60 giây để xin mã mới; Admin gán phòng ban / đổi role nếu cần. |
 | FL-AUTH-02 | Quên mật khẩu bằng OTP | User, System | Luôn hiện cùng một thông báo dù email có tồn tại hay không; đặt lại mật khẩu bằng BCrypt; OTP dùng một lần. |
 
 ### Lưu ý khi cài đặt (flow không ghi rõ)
 
 1. **Trả bài về `REVISION_REQUIRED` (Return to Lead, Cancel & Return, Request Revision của Thư ký)**: phải đặt `article.completed_at = NULL`, nếu không sẽ vi phạm constraint `ck_article_completed`.
 2. **Cancel & Return**: phải **xóa dòng `publication`** trong cùng một transaction với việc đổi trạng thái bài, nếu không `v_rule_violations` sẽ báo R06.
-3. **"Notify" / "Add to review queue" trong flow** chỉ nghĩa là hiển thị trong danh sách chờ của người nhận. **Chưa làm thông báo thật** (OQ-12).
+3. **"Notify" / "Add to review queue" trong flow** chủ yếu nghĩa là hiển thị trong danh sách chờ của người nhận (OQ-12). Riêng FL-01 đã có thông báo trong hệ thống cho Reporter (bảng `notification`) khi TP yêu cầu sửa, Topic được duyệt `ACTIVE` hoặc bị `REJECTED`. Các flow khác (Article...) **chưa** có thông báo; muốn thêm thì hỏi tôi trước.
 4. **Tên gọi**: flow ghi `level = DEPARTMENT / SECRETARY`, trong DB là cột `review_stage`. Code dùng tên cột trong DB.
 5. **Flow không thể hiện BR-34** (người duyệt không được duyệt Topic / Article do mình đề xuất hoặc phụ trách). Vẫn phải kiểm tra ở backend.
 6. Node ghi chú điều kiện (ví dụ "Valid = ...") chỉ là ghi chú của hệ thống, không phải bước do người ở lane đó thực hiện.
 
 ### Các phần chưa có flow riêng
 
-Hãy theo PRD và các mục trên của file này, và **hỏi tôi nếu còn mơ hồ**: Login / Logout; Admin khóa / mở tài khoản; đổi Lead hoặc gỡ Supporting (EC-01, EC-02); giao lại Topic cho Department Head khác; xem Version History, so sánh, Restore ngoài luồng sửa bài; Reply Comment (OQ-11); Edit Topic.
+Hãy theo PRD và các mục trên của file này, và **hỏi tôi nếu còn mơ hồ**: Login / Logout; Admin khóa / mở tài khoản; đổi Lead hoặc gỡ Supporting (EC-01, EC-02); giao lại Topic cho Department Head khác; xem Version History, so sánh, Restore ngoài luồng sửa bài; Reply Comment (OQ-11); Edit Topic ngoài vòng "TP yêu cầu sửa" (trong vòng đó thì xem mục 4.1 A).
 
 ---
 
 ## 11. Ngoài phạm vi Phase 1 (đừng tự làm)
 
-AI viết bài / kiểm fact, video / podcast, mobile app, quảng cáo, thanh toán / subscription, tài khoản và comment của độc giả, analytics / SEO nâng cao, đăng mạng xã hội tự động, đa ngôn ngữ, workflow designer, gỡ / đính chính bài đã PUBLISHED, gửi lại Topic đã REJECTED, thông báo (NOTIFICATION) thật. Các bước "thông báo" hiện chỉ là **hiển thị danh sách chờ** (OQ-12).
+AI viết bài / kiểm fact, video / podcast, mobile app, quảng cáo, thanh toán / subscription, tài khoản và comment của độc giả, analytics / SEO nâng cao, đăng mạng xã hội tự động, đa ngôn ngữ, workflow designer, gỡ / đính chính bài đã PUBLISHED, gửi lại Topic đã REJECTED, thông báo qua email / push. Thông báo trong hệ thống hiện chỉ có ở FL-01 (mục 10, lưu ý 3); các bước "thông báo" khác chỉ là **hiển thị danh sách chờ** (OQ-12).
 
 ---
 
@@ -298,8 +321,8 @@ AI viết bài / kiểm fact, video / podcast, mobile app, quảng cáo, thanh t
 | OQ-05 | Topic cần nhiều người cùng viết bài | Đổi Lead hoặc tạo Topic mới; **không** cho Supporting viết |
 | OQ-06 | Ai nhập nhiệm vụ / deadline của Lead tự động | Để trống ban đầu, Department Head bổ sung |
 | OQ-07 | Department Head tự tạo Topic | Không |
-| OQ-08 | Gửi lại Topic bị REJECTED | Không, đề xuất Topic mới |
-| OQ-09 | Lọc đề xuất Topic theo phòng ban | Chưa lọc ở nghiệp vụ (DB có rule R08 mang tính đề xuất) |
+| OQ-08 | Gửi lại Topic bị REJECTED | Không, đề xuất Topic mới. (Khác với "TP yêu cầu sửa": vòng đó **có**, sửa được nhiều lần, xem mục 4.1 A) |
+| OQ-09 | Lọc đề xuất Topic theo phòng ban | **Có lọc**: Reporter chỉ đề xuất cho phòng mình (`topic.department_id` = phòng của người tạo); TP chỉ thấy và duyệt Topic phòng mình (khớp rule R08); Thư ký thấy mọi phòng, lọc được theo phòng |
 | OQ-11 | Reporter phản hồi Comment | DB đã có `parent_comment_id`, chưa chốt UI |
 | OQ-14 | Người duyệt ≠ người phụ trách (BR-34) | Áp dụng |
 
@@ -307,7 +330,7 @@ AI viết bài / kiểm fact, video / podcast, mobile app, quảng cáo, thanh t
 
 ## 13. Kỹ thuật
 
-**Tech stack:** Java 17, Spring Boot 4.1.1, Maven (`mvnw`), Spring Data JPA + SQL Server (`mssql-jdbc`), Spring Security (form login + Google OAuth2), Spring Mail (gửi OTP qua Gmail SMTP), Bean Validation, Lombok.
+**Tech stack:** Java 17, Spring Boot 4.1.1, Maven (`mvnw`), Spring Data JPA + SQL Server (`mssql-jdbc`), Spring Security (form login + Google OAuth2), Spring Mail (gửi OTP và email kết quả duyệt tài khoản qua Gmail SMTP), Bean Validation, Lombok.
 Giao diện: **Thymeleaf render HTML phía server** (+ `thymeleaf-extras-springsecurity6`) — **không phải** REST API + SPA. Controller trả về tên template, form submit bằng POST.
 
 **Cấu trúc** (`src/main/java/com/group6/electronic_drafting_system/`):

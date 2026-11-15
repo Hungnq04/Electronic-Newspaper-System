@@ -246,7 +246,7 @@ public class TopicReviewServiceImpl implements TopicReviewService {
         if (id == null) return null;
         return topics.findWithPeopleById(id).orElseThrow(() -> new ApplicationException(ErrorCode.TOPIC_NOT_FOUND));
     }
-
+    //demdong 
     private TopicReviewItemDTO toItem(Topic topic) {
         int rounds = (int) topicFeedbacks.countByTopic_IdAndType(topic.getId(), TopicFeedbackType.CHANGE_REQUEST);
         return mapper.toReviewItem(topic, rounds);

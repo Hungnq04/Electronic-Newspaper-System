@@ -95,6 +95,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void persistSecurityContext(HttpServletRequest request) {
+        // Chống session fixation: đổi mã phiên (JSESSIONID) ngay khi đăng nhập thành công.
+        // changeSessionId() chỉ đổi mã, mọi dữ liệu đang có trong session vẫn giữ nguyên.
+        if (request.getSession(false) != null) request.changeSessionId();
         request.getSession(true).setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
                 SecurityContextHolder.getContext());
     }

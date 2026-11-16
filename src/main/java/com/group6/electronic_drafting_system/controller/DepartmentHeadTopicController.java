@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.security.Principal;
 import java.util.List;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -31,7 +33,7 @@ public class DepartmentHeadTopicController {
 //dautienduyet
     @GetMapping
     public String workspace(@RequestParam(required = false) Integer topic, Principal principal, Model model) {
-        model.addAttribute("ws", topicReviewService.getHeadWorkspace(principal.getName(), topic));
+        model.addAttribute("ws", topicReviewService.getHeadWorkspace(currentEmail(principal), topic));
         model.addAttribute("pageTitle", "Duyệt đề tài | CMS Core");
         model.addAttribute("contentView", "department_head/topic-review");
         model.addAttribute("contentFragment", "content");
@@ -43,7 +45,7 @@ public class DepartmentHeadTopicController {
     @PostMapping("/{topicId}/approve")
     public String approve(@PathVariable Integer topicId, Principal principal, RedirectAttributes redirect) {
         try {
-            topicReviewService.headApprove(principal.getName(), topicId);
+            topicReviewService.headApprove(currentEmail(principal), topicId);
             redirect.addFlashAttribute("message", "Đã duyệt đề tài. Đề tài được chuyển lên Thư ký tòa soạn.");
             return "redirect:" + PATH;
         } catch (ApplicationException ex) {
@@ -55,7 +57,7 @@ public class DepartmentHeadTopicController {
     public String requestChanges(@PathVariable Integer topicId, @RequestParam(required = false) String feedback,
                                  Principal principal, RedirectAttributes redirect) {
         try {
-            topicReviewService.headRequestChanges(principal.getName(), topicId, feedback);
+            topicReviewService.headRequestChanges(currentEmail(principal), topicId, feedback);
             redirect.addFlashAttribute("message", "Đã gửi yêu cầu sửa cho phóng viên.");
             return "redirect:" + PATH;
         } catch (ApplicationException ex) {
@@ -71,6 +73,15 @@ public class DepartmentHeadTopicController {
         redirect.addFlashAttribute("error", ex.getErrorCode().getMessage());
         redirect.addFlashAttribute("feedback", feedback);
         return "redirect:" + PATH + "?topic=" + topicId;
+    }
+
+    // Lấy email người đăng nhập. Đăng nhập bằng mật khẩu: getName() chính là email.
+    // Đăng nhập Google: getName() là mã định danh của Google ("sub"), nên phải đọc thuộc tính "email"
+    // (cùng cách với TopicProposalController.currentEmail).
+    private static String currentEmail(Principal principal) {
+        if (principal instanceof Authentication auth && auth.getPrincipal() instanceof OAuth2User google
+                && google.getAttribute("email") instanceof String email) return email;
+        return principal.getName();
     }
 
     @ExceptionHandler(ApplicationException.class)

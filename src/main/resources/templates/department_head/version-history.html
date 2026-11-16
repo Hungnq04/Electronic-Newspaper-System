@@ -63,25 +63,12 @@
                         </ul>
                         <p class="vh-no-review rp-muted" th:if="${#lists.isEmpty(version.reviewNotes)}">Chưa có lượt duyệt nào được chốt trên phiên bản này.</p>
 
-                        <div class="vh-actions">
+                                                <div class="vh-actions">
                             <small class="vh-comment-count"><svg class="rp-icon"><use href="#vh-icon-message"></use></svg><span th:text="|${version.commentCount} góp ý|">2 góp ý</span></small>
-
-                            <!-- Nút So sánh: mở màn thẩm định với ?compare=nhãn -> JS mở sẵn khung so sánh.
-                                 Màn thẩm định luôn so "bản được chọn" với bản MỚI NHẤT (versions[0]), nên:
-                                 - Dòng mới nhất: so với bản liền trước (versions[1]); chỉ hiện khi bài có từ 2 phiên bản. -->
-                            <a class="rp-button rp-button--outline rp-button--small" th:if="${row.first and row.size > 1}"
-                               th:href="@{/department-head/articles/{id}/review(id=${versionHistory.articleId},compare=${versionHistory.versions[1].label})}">
-                                <svg class="rp-icon"><use href="#vh-icon-compare"></use></svg>
-                                <span th:text="|So sánh với v${versionHistory.versions[1].label}|">So sánh</span>
-                            </a>
-                            <!-- - Các dòng cũ: so chính phiên bản đó với bản mới nhất. -->
-                            <a class="rp-button rp-button--outline rp-button--small" th:unless="${row.first}"
-                               th:href="@{/department-head/articles/{id}/review(id=${versionHistory.articleId},compare=${version.label})}">
-                                <svg class="rp-icon"><use href="#vh-icon-compare"></use></svg>
-                                <span th:text="|So sánh với v${versionHistory.versions[0].label}|">So sánh</span>
-                            </a>
+                            <!-- Mở màn Chi tiết phiên bản: nội dung đầy đủ (có ảnh) + góp ý trên phiên bản này -->
+                            <a class="rp-button rp-button--outline rp-button--small"
+                               th:href="@{/department-head/articles/{a}/versions/{v}(a=${versionHistory.articleId},v=${version.versionId})}">Xem chi tiết</a>
                         </div>
-
                         <details class="vh-content">
                             <summary>Xem nội dung phiên bản</summary>
                             <h3 th:text="${version.title}">Tít</h3>

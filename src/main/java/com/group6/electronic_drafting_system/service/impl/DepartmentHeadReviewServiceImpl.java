@@ -356,6 +356,44 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
                 .userInitials(entryMapper.initials(head.getFullName()))
                 .build();
     }
+    
+    // =====================================================================================================
+    // CHI TIẾT PHIÊN BẢN (UC-23). Gọi từ DepartmentHeadController.versionDetail(). Chỉ đọc, không ghi DB.
+    // =====================================================================================================
+    @Override
+    public VersionHistoryPageDTO getVersionDetail(String email, Integer articleId, Integer versionId) {
+        // BƯỚC 1: dùng lại getVersionHistory: đã kiểm tra quyền XEM + có sẵn mọi phiên bản (MỚI NHẤT TRƯỚC),
+        //         mỗi phiên bản đã có nội dung, ảnh (blocks), lượt duyệt (reviewNotes), số góp ý.
+        VersionHistoryPageDTO page = getVersionHistory(email, articleId);
+        List<VersionViewDTO> list = page.getVersions();
+
+        // BƯỚC 2: tìm phiên bản cần xem TRONG CHÍNH bài này (rule R22).
+        // Gõ versionId của bài khác -> không tìm thấy trong danh sách -> lỗi 404.
+        int index = -1;
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i).getVersionId().equals(versionId)) {
+                index = i;
+                break;
+            }
+        }
+        if (index == -1) throw new ApplicationException(ErrorCode.ARTICLE_VERSION_NOT_FOUND);
+
+        // BƯỚC 3: góp ý GỐC trên phiên bản này (của Trưởng phòng và Thư ký). SQL -> CommentRepository.findByVersion
+        List<ReviewCommentDTO> selectedComments = new ArrayList<>();
+        for (Comment comment : comments.findByVersion(versionId)) {
+            if (comment.getParent() == null) {
+                selectedComments.add(mapper.toComment(comment));
+            }
+        }
+
+        // BƯỚC 4: điền 4 ô của màn chi tiết.
+        // Danh sách xếp MỚI NHẤT TRƯỚC, nên bản CŨ hơn nằm ở index + 1, bản MỚI hơn nằm ở index - 1.
+        page.setSelectedVersion(list.get(index));
+        page.setSelectedComments(selectedComments);
+        page.setOlderVersion(index + 1 < list.size() ? list.get(index + 1) : null);
+        page.setNewerVersion(index > 0 ? list.get(index - 1) : null);
+        return page;
+    }
     // ---------- Kiểm tra quyền ----------
     // Các hàm dưới đây được gọi ở ĐẦU mọi method public bên trên. Kiểm tra quyền ở backend
     // nên dù ai đó tự gõ URL hay tự gửi form cũng bị chặn.

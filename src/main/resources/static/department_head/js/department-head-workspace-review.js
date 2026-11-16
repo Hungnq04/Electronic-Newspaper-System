@@ -468,20 +468,6 @@ if (compareCard) {
   });
 }
 
-// Đến từ màn "Lịch sử phiên bản" với URL ...?compare=1.0 -> chọn sẵn v1.0 và mở luôn khung so sánh.
-// URLSearchParams: đọc phần sau dấu "?" của địa chỉ trang.
-const compareParam = new URLSearchParams(window.location.search).get('compare');
-if (compareCard && compareParam) {
-  // Chỉ mở khi ô "So với" thật sự có phiên bản đó (tránh người dùng tự gõ nhãn lạ)
-  const hasOption = Array.from(baseSelect.options).some(function (option) {
-    return option.value === compareParam;
-  });
-  if (hasOption) {
-    baseSelect.value = compareParam;
-    toggleCompare();
-  }
-}
-
 
 // ---------------------------------------------------------------------
 // 6. Tab góp ý (Vòng này / Vòng trước) và hộp thoại Duyệt / Yêu cầu sửa

@@ -31,4 +31,8 @@ public interface DepartmentHeadReviewService {
     // Gọi từ: DepartmentHeadController.versionHistory()  (GET /department-head/articles/{id}/versions)
     VersionHistoryPageDTO getVersionHistory(String email, Integer articleId);
     
+    // Màn "Chi tiết phiên bản": một phiên bản + góp ý trên phiên bản đó + phiên bản trước / sau để lật.
+    // Gọi từ: DepartmentHeadController.versionDetail()  (GET /department-head/articles/{id}/versions/{versionId})
+    VersionHistoryPageDTO getVersionDetail(String email, Integer articleId, Integer versionId);
+    
 }

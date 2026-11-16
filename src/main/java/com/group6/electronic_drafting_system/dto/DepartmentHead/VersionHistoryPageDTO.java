@@ -3,6 +3,7 @@ package com.group6.electronic_drafting_system.dto.DepartmentHead;
 import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
 // Toàn bộ dữ liệu màn "Lịch sử phiên bản" (UC-23, FL-05) của Trưởng phòng.
 // TẠO Ở ĐÂU: DepartmentHeadReviewServiceImpl.getVersionHistory()
@@ -24,4 +25,11 @@ public class VersionHistoryPageDTO {
     private String displayName;
     private String departmentName;
     private String userInitials;
+    
+    // ===== 4 ô chỉ dùng cho màn "Chi tiết phiên bản"; màn Lịch sử phiên bản để trống =====
+    // @Setter: service điền vào SAU khi đã tạo xong hộp (getVersionDetail gọi lại getVersionHistory rồi điền thêm).
+    @Setter private VersionViewDTO selectedVersion;            // phiên bản đang xem (tít, sapo, ảnh, lượt duyệt...)
+    @Setter private List<ReviewCommentDTO> selectedComments;   // góp ý trên phiên bản đang xem
+    @Setter private VersionViewDTO olderVersion;               // phiên bản liền TRƯỚC (cũ hơn); null nếu đang xem v1.0
+    @Setter private VersionViewDTO newerVersion;               // phiên bản liền SAU (mới hơn); null nếu đang xem bản mới nhất
 }

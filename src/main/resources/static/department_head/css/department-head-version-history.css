@@ -27,3 +27,12 @@
 .vh-content h3 { margin: 10px 0 4px; font-size: 16px; }
 .vh-subtitle { margin: 0 0 6px; color: var(--rp-muted); }
 .vh-sapo { font-style: italic; }
+
+/* ===== Màn "Chi tiết phiên bản" (version-detail.html) ===== */
+/* Thanh lật phiên bản: 3 cột (nút trước | phiên bản đang xem | nút sau) */
+.vd-nav { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; margin: 0 0 14px; }
+.vd-nav > :last-child { justify-self: end; }
+.vd-nav-current { font-size: 14px; color: var(--rp-ink); }
+
+/* Khung thông tin vòng duyệt */
+.vd-info { margin-bottom: 16px; padding: 4px 18px 14px; }

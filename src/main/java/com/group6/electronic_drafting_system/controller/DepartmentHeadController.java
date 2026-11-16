@@ -281,6 +281,25 @@ public class DepartmentHeadController {
         model.addAttribute("activePath", "/department-head/dashboard");
         return "layout/app";
     }
+    
+    // ===== Màn "Chi tiết phiên bản" (UC-23): GET /department-head/articles/{articleId}/versions/{versionId} =====
+    // AI ĐƯA REQUEST TỚI ĐÂY? Nút "Xem chi tiết" ở mỗi phiên bản trên màn Lịch sử phiên bản, và nút lật ‹ › trên chính màn này.
+    // Chỉ XEM. Sai quyền -> 403; versionId không thuộc bài -> 404 (handleError).
+    @GetMapping("/articles/{articleId}/versions/{versionId}")
+    public String versionDetail(@PathVariable Integer articleId, @PathVariable Integer versionId,
+                                Authentication authentication, Model model) {
+        model.addAttribute("versionHistory",
+                departmentHeadReviewService.getVersionDetail(currentEmail(authentication), articleId, versionId));
+        model.addAttribute("pageTitle", "Chi tiết phiên bản – Trưởng ban");
+        model.addAttribute("contentView", "department_head/version-detail");
+        model.addAttribute("contentFragment", "versionDetailContent");
+        // Dùng lại CSS của màn thẩm định (phần hiện nội dung bài: ws-title, ws-body, ws-figure...) + CSS lịch sử phiên bản
+        model.addAttribute("pageCss", List.of(NEWSREADER_FONT, "/reporter/css/reporter-tasks.css",
+                "/department_head/css/department-head-workspace-review.css",
+                "/department_head/css/department-head-version-history.css"));
+        model.addAttribute("activePath", "/department-head/dashboard");
+        return "layout/app";
+    }
     // Mở trang thẩm định. Ai đưa tới đây? Trên dashboard, bấm tiêu đề bài hoặc nút "Đọc & Thẩm định chi tiết"
     // (link th:href="@{/department-head/articles/{id}/review(...)}" trong department_head/dashboard.html).
     // Màn thẩm định nằm trong layout chung (sidebar + nội dung), giống màn dashboard

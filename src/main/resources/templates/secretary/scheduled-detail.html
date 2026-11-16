@@ -30,7 +30,7 @@
                 <figcaption th:text="${pub.featuredImageCaption}"></figcaption>
             </figure>
             <p class="sapo" th:text="${pub.sapo}"></p>
-            <p class="pub-paragraph" th:each="p : ${pub.paragraphs}" th:text="${p}"></p>
+            <th:block th:replace="~{fragment/article-body :: blocks(${pub.blocks})}"></th:block>
         </article>
 
         <aside>

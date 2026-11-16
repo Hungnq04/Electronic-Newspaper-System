@@ -1,5 +1,6 @@
 package com.group6.electronic_drafting_system.dto.Publication;
 
+import com.group6.electronic_drafting_system.dto.DepartmentHead.ContentBlockDTO;
 import java.time.OffsetDateTime;
 import java.util.List;
 import lombok.Builder;
@@ -17,7 +18,7 @@ public class PublicationDetailDTO {
     String title;
     String subtitle;
     String sapo;
-    List<String> paragraphs;
+    List<ContentBlockDTO> blocks;   // thân bài đã tách khối: đoạn chữ, ảnh, video, bảng
     String category;
     String featuredImageUrl;
     String featuredImageCaption;

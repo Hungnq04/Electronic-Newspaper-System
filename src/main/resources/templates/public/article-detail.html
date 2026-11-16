@@ -28,9 +28,9 @@
             <p class="caption" th:if="${article.featuredImageCaption}" th:text="${article.featuredImageCaption}">Chú thích ảnh</p>
         </th:block>
 
-        <!-- th:text (không dùng utext): nội dung là văn bản thường, tránh chèn HTML -->
+        <!-- Thân bài: HTML đã được lọc trong ReviewWorkspaceMapper rồi mới in (utext) -->
         <div class="body">
-            <p th:each="para : ${article.paragraphs}" th:text="${para}">Đoạn văn</p>
+            <th:block th:replace="~{fragment/article-body :: blocks(${article.blocks})}"></th:block>
         </div>
     </article>
 

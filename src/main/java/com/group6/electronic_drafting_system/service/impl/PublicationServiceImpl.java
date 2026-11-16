@@ -19,6 +19,7 @@ import com.group6.electronic_drafting_system.entity.enums.ReviewStage;
 import com.group6.electronic_drafting_system.entity.enums.RoleName;
 import com.group6.electronic_drafting_system.exception.ApplicationException;
 import com.group6.electronic_drafting_system.exception.ErrorCode;
+import com.group6.electronic_drafting_system.mapper.DepartmentHead.ReviewWorkspaceMapper;
 import com.group6.electronic_drafting_system.repository.AccountRepository;
 import com.group6.electronic_drafting_system.repository.ArticleRepository;
 import com.group6.electronic_drafting_system.repository.ArticleReviewRepository;
@@ -33,7 +34,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -45,6 +45,8 @@ public class PublicationServiceImpl implements PublicationService {
     // Mọi thời điểm lưu theo giờ Việt Nam (+07:00), đúng quy ước cột DATETIMEOFFSET của DB
     private static final ZoneOffset VN = ZoneOffset.ofHours(7);
     private static final DateTimeFormatter INPUT_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+    // Tách nội dung HTML của trình soạn thảo thành các khối (đoạn, ảnh, bảng); dùng chung bộ tách của màn duyệt
+    private static final ReviewWorkspaceMapper CONTENT_MAPPER = new ReviewWorkspaceMapper();
 
     private final AccountRepository accounts;
     private final ArticleRepository articles;
@@ -165,7 +167,7 @@ public class PublicationServiceImpl implements PublicationService {
                 .title(version.getTitle())
                 .subtitle(version.getSubtitle())
                 .sapo(version.getSapo())
-                .paragraphs(splitParagraphs(version.getContent()))
+                .blocks(CONTENT_MAPPER.blocks(version.getContent()))
                 .category(article.getCategory())
                 .featuredImageUrl(featured == null ? null : featured.getSource().getFileUrl())
                 .featuredImageCaption(featured == null ? null : featured.getCaption())
@@ -393,12 +395,6 @@ public class PublicationServiceImpl implements PublicationService {
         } catch (DateTimeParseException ex) {
             throw new ApplicationException(ErrorCode.PUBLICATION_SCHEDULE_TIME_REQUIRED);
         }
-    }
-
-    // Các đoạn văn cách nhau bằng một dòng trống (quy ước của bảng article_version)
-    private static List<String> splitParagraphs(String content) {
-        if (content == null || content.isBlank()) return List.of();
-        return Arrays.stream(content.strip().split("\\R\\s*\\R")).map(String::strip).filter(p -> !p.isEmpty()).toList();
     }
 
     private static OffsetDateTime now() {

@@ -35,3 +35,11 @@ dialog input[type="datetime-local"]:focus {
 /* Iter3: ghi chú nhỏ trong thẻ Lịch đăng */
 .decision-card .pub-note { margin: 14px 0 12px; color: var(--text-muted); font-size: 14px; }
 .decision-card .pub-note:last-child { margin-bottom: 0; }
+
+/* Ảnh, video, bảng trong thân bài */
+.pub-figure { margin: 18px 0; }
+.pub-figure img, .pub-figure video { display: block; width: 100%; max-height: 560px; object-fit: contain; border-radius: 8px; }
+.pub-figure figcaption { margin-top: 6px; font-size: 14px; font-style: italic; text-align: center; opacity: .75; }
+.pub-table { overflow-x: auto; margin: 18px 0; }
+.pub-table table { border-collapse: collapse; width: 100%; }
+.pub-table th, .pub-table td { border: 1px solid #d6d8df; padding: 6px 10px; text-align: left; vertical-align: top; }

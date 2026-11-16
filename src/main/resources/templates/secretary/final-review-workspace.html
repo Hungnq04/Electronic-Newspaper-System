@@ -32,9 +32,23 @@
                 <figcaption th:text="${ws.featuredImageCaption}"></figcaption>
             </figure>
             <p id="a-sapo" class="sapo" th:text="${ws.sapo}"></p>
-            <p class="paragraph" th:each="p, st : ${ws.paragraphs}" th:id="'p-' + ${st.count}">
-                <span class="pno" th:text="${st.count}"></span><span th:text="${p}"></span>
-            </p>
+            <!-- Thân bài: nội dung là HTML (in đậm, nghiêng, ảnh...). Mỗi khối do ReviewWorkspaceMapper.blocks() tạo.
+                 th:utext = in nguyên HTML (không đổi < > thành chữ); an toàn vì HTML đã được lọc ở mapper (bỏ script, style, on*). -->
+            <th:block th:each="block : ${ws.blocks}" th:switch="${block.kind.name()}">
+                <div th:case="'TEXT'" class="paragraph" th:id="'p-' + ${block.paragraph}">
+                    <span class="pno" th:text="${block.paragraph}"></span>
+                    <div class="paragraph-text" th:classappend="|tag-${block.tag}|" th:utext="${block.html}"></div>
+                </div>
+                <figure th:case="'IMAGE'" class="body-media">
+                    <img th:src="${block.url}" th:alt="${block.caption}" onerror="this.closest('figure').classList.add('img-missing')">
+                    <figcaption th:if="${block.caption}" th:text="${block.caption}"></figcaption>
+                </figure>
+                <figure th:case="'VIDEO'" class="body-media">
+                    <video th:src="${block.url}" controls preload="metadata"></video>
+                    <figcaption th:if="${block.caption}" th:text="${block.caption}"></figcaption>
+                </figure>
+                <div th:case="'TABLE'" class="body-table" th:utext="${block.html}"></div>
+            </th:block>
         </article>
 
         <aside>

@@ -18,15 +18,15 @@
     <header class="topbar">
         <a class="back-link" th:href="${article.assignmentId != null} ? @{/reporter/tasks/{id}(id=${article.assignmentId})} : @{/articles}"
            th:title="${article.assignmentId != null} ? 'Quay lại nhiệm vụ' : 'Quay lại danh sách bài viết'">
-            <i data-lucide="arrow-left"></i><span th:text="${article.assignmentId != null} ? 'Nhiệm vụ' : 'Bài viết'">Nhiệm vụ</span></a>
+            <i data-lucide="arrow-left"></i><span th:text="${article.assignmentId != null} ? 'Nhiệm vụ' : 'Bài viết'"></span></a>
         <div class="save-state">
             <i data-lucide="cloud-check"></i>
-            <span id="saveState" th:text="${article.isNew()} ? 'Bài mới · chưa lưu' : 'Đã lưu lúc ' + ${#temporals.format(article.updatedAt, 'HH:mm dd/MM')}">Đã lưu</span>
+            <span id="saveState" th:text="${article.isNew()} ? 'Bài mới · chưa lưu' : 'Đã lưu lúc ' + ${#temporals.format(article.updatedAt, 'HH:mm dd/MM')}"></span>
         </div>
-        <span class="chip" th:text="${article.statusLabel()}">Bản thảo</span>
+        <span class="chip" th:text="${article.statusLabel()}"></span>
         <div class="top-actions">
             <button type="button" class="btn ghost" data-open="versionModal" th:unless="${article.isNew()}"><i data-lucide="history"></i>Lịch sử phiên bản
-                <span class="count" th:text="${article.versions().size()}">0</span></button>
+                <span class="count" th:text="${article.versions().size()}"></span></button>
             <button type="button" class="btn ghost" id="previewBtn"><i data-lucide="eye"></i>Xem trước</button>
             <button type="button" class="btn outline" id="saveBtn" th:if="${article.editable and !article.isNew()}"><i data-lucide="save"></i>Lưu nháp</button>
             <button type="submit" form="articleForm" name="action" value="draft" class="btn outline" id="createDraftBtn" th:if="${article.isNew()}"><i data-lucide="save"></i>Tạo bản nháp</button>
@@ -129,7 +129,7 @@
             <section class="card title-card">
                 <div class="card-meta">
                     <span class="label">Tiêu đề bài viết (H1)</span>
-                    <span><span id="titleCount">0</span>/255 ký tự · <span class="tag" th:text="${article.category}">Chuyên mục</span></span>
+                    <span><span id="titleCount">0</span>/255 ký tự · <span class="tag" th:text="${article.category}"></span></span>
                 </div>
                 <textarea id="title" name="title" class="title-input" rows="1" maxlength="255" required
                           placeholder="Nhập tiêu đề bài viết…" th:text="${article.title}" th:readonly="${!article.editable}"></textarea>
@@ -177,7 +177,7 @@
                 <div class="statusbar">
                     <span><span id="sbWords">0</span> từ</span>
                     <span><span id="sbChars">0</span> ký tự</span>
-                    <span th:text="${article.isNew()} ? 'Ctrl+S để tạo bản nháp' : 'Ctrl+S để lưu nháp'">Ctrl+S để lưu nháp</span>
+                    <span th:text="${article.isNew()} ? 'Ctrl+S để tạo bản nháp' : 'Ctrl+S để lưu nháp'"></span>
                 </div>
             </section>
         </main>
@@ -188,16 +188,16 @@
             <section th:replace="~{reporter/article-feedback :: feedbackCard(${article})}"></section>
             <section class="card deadline-card" th:if="${article.deadline != null}">
                 <p class="deadline-head"><span><i data-lucide="clock-3"></i>Hạn nộp bài</span>
-                    <strong th:text="${#temporals.format(article.deadline, 'HH:mm')}">17:30</strong></p>
-                <p class="deadline-date" th:text="${#temporals.format(article.deadline, 'dd/MM/yyyy')}">12/10/2026</p>
+                    <strong th:text="${#temporals.format(article.deadline, 'HH:mm')}"></strong></p>
+                <p class="deadline-date" th:text="${#temporals.format(article.deadline, 'dd/MM/yyyy')}"></p>
                 <p class="deadline-left" id="deadlineLeft" th:attr="data-deadline=${article.deadline}">—</p>
             </section>
             <section class="card">
                 <div class="card-head"><h3><i data-lucide="square-check-big"></i>Quy trình duyệt bài</h3>
-                    <span class="badge" th:text="'v' + ${article.versions().size()}">v0</span></div>
+                    <span class="badge" th:text="'v' + ${article.versions().size()}"></span></div>
                 <div class="field-box">
                     <span class="label">Trạng thái hồ sơ</span>
-                    <p class="status-line"><span th:text="${article.statusLabel()}">Bản thảo</span>
+                    <p class="status-line"><span th:text="${article.statusLabel()}"></span>
                         <span class="dot" th:classappend="${article.status.name().toLowerCase()}"></span></p>
                 </div>
                 <div class="field-box">
@@ -213,7 +213,7 @@
                      Backend (ArticleServiceImpl.submitVersion) kiểm tra lại, ô required ở đây chỉ để nhắc sớm. -->
                 <th:block th:if="${article.editable}" th:with="resubmit=${!article.versions().isEmpty()}">
                     <label class="label" for="changeSummary">
-                        <span th:text="${resubmit} ? 'Ghi chú đã sửa gì' : 'Ghi chú cho bản nộp'">Ghi chú cho bản nộp</span>
+                        <span th:text="${resubmit} ? 'Ghi chú đã sửa gì' : 'Ghi chú cho bản nộp'"></span>
                         <span class="required-mark" th:if="${resubmit}">*</span>
                     </label>
                     <!-- Vừa khôi phục version cũ thì điền sẵn "Khôi phục từ version X" (Lead có thể ghi thêm) -->
@@ -221,7 +221,7 @@
                               th:placeholder="${resubmit} ? 'Ví dụ: Sửa số liệu đoạn 2 theo góp ý của Trưởng ban…' : 'Tóm tắt thay đổi / lời nhắn cho Trưởng ban…'"
                               th:text="${changeSummary != null ? changeSummary : (article.restoredFromLabel() != null ? 'Khôi phục từ version ' + article.restoredFromLabel() : '')}"></textarea>
                     <button type="submit" name="action" value="submit" class="btn primary block" th:attr="data-resubmit=${resubmit}">
-                        <i data-lucide="send"></i><span th:text="${resubmit} ? 'Nộp lại cho Trưởng ban' : 'Nộp bản thảo duyệt bài'">Nộp bản thảo duyệt bài</span></button>
+                        <i data-lucide="send"></i><span th:text="${resubmit} ? 'Nộp lại cho Trưởng ban' : 'Nộp bản thảo duyệt bài'"></span></button>
                     <p class="hint">Mỗi lần nộp sẽ tạo một phiên bản mới; bài bị khóa chỉnh sửa cho tới khi được trả về.
                         <th:block th:if="${resubmit}">Bài nộp lại luôn qua Trưởng ban trước, kể cả khi Thư ký là người trả bài.</th:block></p>
                 </th:block>
@@ -247,17 +247,17 @@
                 <datalist id="categoryOptions"><option th:value="${article.topicCategory}"></option></datalist>
                 <input type="hidden" name="assignmentId" th:if="${article.isNew()}" th:value="${article.assignmentId}">
                 <span class="label">Đề tài gốc (theo nhiệm vụ được giao)</span>
-                <p class="field-box plain" th:text="${article.topicTitle}">Đề tài</p>
+                <p class="field-box plain" th:text="${article.topicTitle}"></p>
                 <div class="meta-grid">
-                    <div><span class="label">Ưu tiên</span><p th:text="${article.priorityLabel()}">Bình thường</p></div>
+                    <div><span class="label">Ưu tiên</span><p th:text="${article.priorityLabel()}"></p></div>
                     <div><span class="label">Dự kiến đăng</span>
-                        <p th:text="${article.topicExpectedDate != null} ? ${#temporals.format(article.topicExpectedDate, 'dd/MM/yyyy')} : 'Chưa định'">—</p></div>
+                        <p th:text="${article.topicExpectedDate != null} ? ${#temporals.format(article.topicExpectedDate, 'dd/MM/yyyy')} : 'Chưa định'"></p></div>
                 </div>
             </section>
 
             <section class="card" th:unless="${article.isNew()}">
                 <div class="card-head"><h3><i data-lucide="paperclip"></i>Tư liệu đính kèm</h3>
-                    <span class="badge" th:text="${article.sources().size()}">0</span></div>
+                    <span class="badge" th:text="${article.sources().size()}"></span></div>
                 <p class="hint" th:if="${article.sources().isEmpty()}">Chưa có tư liệu nào gắn với bài viết.</p>
                 <ul class="source-list">
                     <li th:each="s : ${article.sources()}">
@@ -274,7 +274,7 @@
             <section class="card" th:unless="${article.isNew()}">
                 <div class="card-head"><h3><i data-lucide="shield-check"></i>Hồ sơ bài viết</h3></div>
                 <dl class="facts">
-                    <dt>Mã hồ sơ</dt><dd class="mono" th:text="'CMS-' + ${#temporals.format(article.createdAt, 'yyyy')} + '-' + ${article.id}">CMS</dd>
+                    <dt>Mã hồ sơ</dt><dd class="mono" th:text="'CMS-' + ${#temporals.format(article.createdAt, 'yyyy')} + '-' + ${article.id}"></dd>
                     <dt>Tạo lúc</dt><dd th:text="${#temporals.format(article.createdAt, 'HH:mm dd/MM/yyyy')}"></dd>
                     <dt>Cập nhật</dt><dd id="updatedAt" th:text="${#temporals.format(article.updatedAt, 'HH:mm dd/MM/yyyy')}"></dd>
                     <dt>Nộp gần nhất</dt><dd th:text="${article.submittedAt != null} ? ${#temporals.format(article.submittedAt, 'HH:mm dd/MM/yyyy')} : 'Chưa nộp'"></dd>
@@ -293,7 +293,7 @@
             <li th:each="v : ${article.versions()}">
                 <div class="version-row">
                     <div>
-                        <strong th:text="'Phiên bản ' + ${v.label()}">Phiên bản</strong>
+                        <strong th:text="'Phiên bản ' + ${v.label()}"></strong>
                         <span th:text="${v.creatorName()} + ' · ' + ${#temporals.format(v.createdAt(), 'HH:mm dd/MM/yyyy')}"></span>
                     </div>
                     <button type="button" class="btn mini" th:attr="data-open='versionDetail-' + ${v.id()}"><i data-lucide="file-search"></i>Xem chi tiết</button>
@@ -314,7 +314,7 @@
 <div class="modal" th:each="v : ${article.versions()}" th:id="'versionDetail-' + ${v.id()}" hidden>
     <div class="modal-box wide">
         <div class="modal-head">
-            <h3 th:text="'Phiên bản ' + ${v.label()}">Phiên bản</h3>
+            <h3 th:text="'Phiên bản ' + ${v.label()}"></h3>
             <div class="modal-head-actions">
                 <button type="button" class="btn mini" data-open="versionModal"><i data-lucide="arrow-left"></i>Danh sách phiên bản</button>
                 <button type="button" class="close" data-close>&times;</button>
@@ -345,7 +345,7 @@
         </section>
 
         <section class="version-section" th:unless="${v.comments().isEmpty()}">
-            <h4><i data-lucide="messages-square"></i>Góp ý trên bài (<span th:text="${v.comments().size()}">0</span>)</h4>
+            <h4><i data-lucide="messages-square"></i>Góp ý trên bài (<span th:text="${v.comments().size()}"></span>)</h4>
             <ul class="comment-list">
                 <!-- data-*: vị trí góp ý, article-feedback.js dùng để tô vàng chữ trong nội dung phiên bản bên dưới -->
                 <li th:each="c : ${v.comments()}" class="fb-old-comment" th:classappend="${c.isOpen()} ? 'open' : 'resolved'"

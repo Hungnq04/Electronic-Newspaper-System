@@ -14,16 +14,16 @@
                 <nav class="rp-breadcrumb" aria-label="Breadcrumb">
                     <a th:href="@{/reporter/tasks}"><svg class="rp-icon"><use href="#rp-icon-arrow-left"></use></svg>Nhiệm vụ tác nghiệp</a>
                     <span>/</span>
-                    <span class="rp-stage" th:classappend="|rp-stage--${t.stage().group}|"><i></i><span th:text="${t.stage().label}">Đang thực hiện</span></span>
-                    <span class="rp-priority" th:classappend="|rp-priority--${#strings.toLowerCase(t.priority())}|" th:text="${t.priorityLabel()}">Ưu tiên cao</span>
+                    <span class="rp-stage" th:classappend="|rp-stage--${t.stage().group}|"><i></i><span th:text="${t.stage().label}"></span></span>
+                    <span class="rp-priority" th:classappend="|rp-priority--${#strings.toLowerCase(t.priority())}|" th:text="${t.priorityLabel()}"></span>
                 </nav>
                 <div class="rp-deadline-banner" th:if="${t.deadline() != null}"
                      th:classappend="${t.overdue()} ? ' is-overdue' : (${t.stage().open} ? '' : ' is-done')"
                      th:attr="data-rp-countdown=${t.stage().open} ? ${t.deadline()} : null">
                     <svg class="rp-icon"><use href="#rp-icon-alarm"></use></svg>
-                    <span>HẠN CHÓT: <b th:text="${#temporals.format(t.deadline(), 'HH:mm dd/MM/yyyy')}">17:00 24/10/2026</b></span>
+                    <span>HẠN CHÓT: <b th:text="${#temporals.format(t.deadline(), 'HH:mm dd/MM/yyyy')}"></b></span>
                     <span th:if="${t.deadlineText() != null}">•</span>
-                    <b data-rp-countdown-text th:text="${t.deadlineText() != null} ? ${#strings.toUpperCase(t.deadlineText())} : ''">CÒN 1 GIỜ 45 PHÚT</b>
+                    <b data-rp-countdown-text th:text="${t.deadlineText() != null} ? ${#strings.toUpperCase(t.deadlineText())} : ''"></b>
                 </div>
             </div>
 
@@ -33,15 +33,14 @@
                     <span class="rp-control-icon"><svg class="rp-icon"><use href="#rp-icon-camera"></use></svg></span>
                     <div>
                         <strong>Bảng điều khiển tác nghiệp</strong>
-                        <span>Phóng viên: <b th:text="${detail.fullName()}">Nguyễn Thu Hà</b> • <span th:text="${t.roleLabel()}">Viết chính</span></span>
+                        <span>Phóng viên: <b th:text="${detail.fullName()}"></b> • <span th:text="${t.roleLabel()}"></span></span>
                     </div>
                 </div>
                 <div class="rp-control-actions">
-                    // Nút viết bài
                     <a class="rp-action-tile rp-action-tile--write" th:if="${t.writeHref() != null}" th:href="@{${t.writeHref()}}">
                         <svg class="rp-icon"><use href="#rp-icon-edit"></use></svg>
-                        <span><b th:text="${#strings.toUpperCase(t.writeLabel())}">VIẾT BÀI / SOẠN TIN</b>
-                            <small th:text="${t.articleUpdatedAt() == null} ? 'Mở trình soạn thảo với đề tài này' : |${t.stage().open ? 'Lưu nháp lúc' : 'Cập nhật lúc'} ${#temporals.format(t.articleUpdatedAt(), 'HH:mm dd/MM')}|">Trình soạn thảo · đã lưu nháp</small></span>
+                        <span><b th:text="${#strings.toUpperCase(t.writeLabel())}"></b>
+                            <small th:text="${t.articleUpdatedAt() == null} ? 'Mở trình soạn thảo với đề tài này' : |${t.stage().open ? 'Lưu nháp lúc' : 'Cập nhật lúc'} ${#temporals.format(t.articleUpdatedAt(), 'HH:mm dd/MM')}|"></small></span>
                     </a>
                     <a class="rp-button rp-button--success" th:if="${t.writeHref() != null and t.articleId() != null and t.stage().open}"
                        th:href="@{${t.writeHref()}}" title="Mở trình soạn thảo để nộp bài cho Trưởng ban">
@@ -63,34 +62,34 @@
             <section class="rp-card rp-topic">
                 <div class="rp-topic-head">
                     <div>
-                        <span class="rp-topic-category"><svg class="rp-icon"><use href="#rp-icon-pin"></use></svg><span th:text="${#strings.toUpperCase(t.category())}">THỜI SỰ</span></span>
-                        <h1 th:text="${t.topicTitle()}">Tác nghiệp hiện trường: Tình hình ngập sâu và công tác cứu hộ tại khu vực ven sông Q.7</h1>
+                        <span class="rp-topic-category"><svg class="rp-icon"><use href="#rp-icon-pin"></use></svg><span th:text="${#strings.toUpperCase(t.category())}"></span></span>
+                        <h1 th:text="${t.topicTitle()}"></h1>
                     </div>
                     <span class="rp-topic-badge" th:title="${t.stage().label}"><svg class="rp-icon"><use href="#rp-icon-check-circle"></use></svg></span>
                 </div>
-                <p class="rp-topic-desc" th:text="${detail.description() ?: 'Chưa có mô tả cho đề tài này.'}">Theo dõi sát đỉnh triều cường dâng cao chiều 24/10…</p>
+                <p class="rp-topic-desc" th:text="${detail.description() ?: 'Chưa có mô tả cho đề tài này.'}"></p>
 
                 <div class="rp-topic-grid">
                     <div class="rp-topic-block">
                         <h3><svg class="rp-icon"><use href="#rp-icon-clipboard"></use></svg>Yêu cầu nhiệm vụ</h3>
-                        <p class="rp-prewrap" th:text="${t.requirements() ?: 'Không có yêu cầu bổ sung.'}">Độ dài 800 - 1.200 chữ…</p>
+                        <p class="rp-prewrap" th:text="${t.requirements() ?: 'Không có yêu cầu bổ sung.'}"></p>
                     </div>
                     <div class="rp-topic-block" th:if="${detail.rationale() != null and !#strings.isEmpty(detail.rationale())}">
                         <h3><svg class="rp-icon"><use href="#rp-icon-file"></use></svg>Lý do / định hướng đề tài</h3>
-                        <p class="rp-prewrap" th:text="${detail.rationale()}">Định hướng…</p>
+                        <p class="rp-prewrap" th:text="${detail.rationale()}"></p>
                     </div>
                 </div>
 
                 <dl class="rp-meta-grid">
-                    <div><dt>Người giao việc</dt><dd th:text="${t.assignedByName()}">Trần Hoàng Hải</dd></div>
-                    <div><dt>Giao lúc</dt><dd th:text="${#temporals.format(t.assignedAt(), 'HH:mm dd/MM/yyyy')}">08:30 13/10/2026</dd></div>
-                    <div><dt>Người đề xuất đề tài</dt><dd th:text="${detail.topicCreatorName()}">Lê Thảo</dd></div>
-                    <div><dt>Ngày dự kiến đăng</dt><dd th:text="${detail.expectedDate() != null} ? ${#temporals.format(detail.expectedDate(), 'dd/MM/yyyy')} : '—'">25/10/2026</dd></div>
+                    <div><dt>Người giao việc</dt><dd th:text="${t.assignedByName()}"></dd></div>
+                    <div><dt>Giao lúc</dt><dd th:text="${#temporals.format(t.assignedAt(), 'HH:mm dd/MM/yyyy')}"></dd></div>
+                    <div><dt>Người đề xuất đề tài</dt><dd th:text="${detail.topicCreatorName()}"></dd></div>
+                    <div><dt>Ngày dự kiến đăng</dt><dd th:text="${detail.expectedDate() != null} ? ${#temporals.format(detail.expectedDate(), 'dd/MM/yyyy')} : '—'"></dd></div>
                 </dl>
                 <div class="rp-progress-row">
-                    <span>Tiến độ: <b th:text="${t.stage().label}">Đang thực hiện</b></span>
+                    <span>Tiến độ: <b th:text="${t.stage().label}"></b></span>
                     <div class="rp-progress rp-progress--lg"><span th:style="|width: ${t.stage().progress}%|"></span></div>
-                    <b th:text="|${t.stage().progress}%|">40%</b>
+                    <b th:text="|${t.stage().progress}%|"></b>
                 </div>
             </section>
 
@@ -98,7 +97,7 @@
                 <!-- Kho tư liệu -->
                 <section class="rp-card rp-media">
                     <div class="rp-card-head">
-                        <h2><svg class="rp-icon"><use href="#rp-icon-folder"></use></svg>Kho tư liệu tác nghiệp <span class="rp-count-pill" th:text="|${#lists.size(detail.sources())} tệp|">4 tệp</span></h2>
+                        <h2><svg class="rp-icon"><use href="#rp-icon-folder"></use></svg>Kho tư liệu tác nghiệp <span class="rp-count-pill" th:text="|${#lists.size(detail.sources())} tệp|"></span></h2>
                     </div>
                     <!-- Tải ảnh / video lên Cloudinary và gắn vào tư liệu của đề tài (topic_source) -->
                     <form class="rp-upload" th:if="${detail.canUploadMedia()}" method="post" enctype="multipart/form-data"
@@ -122,15 +121,15 @@
                                 <img th:if="${s.image()}" th:src="${s.fileUrl()}" th:alt="${s.title()}" loading="lazy">
                                 <video th:if="${s.video()}" th:src="${s.fileUrl()}" preload="metadata" muted playsinline></video>
                                 <svg class="rp-icon" th:unless="${s.image() or s.video()}"><use th:href="${s.type().name() == 'INTERVIEW'} ? '#rp-icon-mic' : (${s.type().name() == 'WEBSITE'} ? '#rp-icon-link' : (${s.type().name() == 'INTERNAL_DOC'} ? '#rp-icon-lock' : '#rp-icon-file'))" href="#rp-icon-file"></use></svg>
-                                <span class="rp-media-type" th:text="${#strings.toUpperCase(s.typeLabel())}">ẢNH</span>
-                                <span class="rp-media-origin" th:text="${s.origin()}">Đề tài</span>
+                                <span class="rp-media-type" th:text="${#strings.toUpperCase(s.typeLabel())}"></span>
+                                <span class="rp-media-origin" th:text="${s.origin()}"></span>
                             </div>
                             <div class="rp-media-body">
-                                <strong th:text="${s.title()}" th:title="${s.title()}">DSC_4209_RAW_HuynhTanPhat.jpg</strong>
-                                <p th:if="${s.note() != null or s.description() != null}" th:text="${s.note() ?: s.description()}">Ghi chú tư liệu</p>
+                                <strong th:text="${s.title()}" th:title="${s.title()}"></strong>
+                                <p th:if="${s.note() != null or s.description() != null}" th:text="${s.note() ?: s.description()}"></p>
                                 <span class="rp-muted">
-                                    <span th:text="${#temporals.format(s.uploadedAt(), 'HH:mm dd/MM')}">15:12 13/10</span>
-                                    <th:block th:if="${s.addedByName() != null}"> · <span th:text="${s.addedByName()}">Thu Hà</span></th:block>
+                                    <span th:text="${#temporals.format(s.uploadedAt(), 'HH:mm dd/MM')}"></span>
+                                    <th:block th:if="${s.addedByName() != null}"> · <span th:text="${s.addedByName()}"></span></th:block>
                                 </span>
                             </div>
                             <div class="rp-media-actions" th:if="${s.fileUrl() != null and !#strings.isEmpty(s.fileUrl())}">
@@ -142,7 +141,7 @@
                     <div class="rp-empty" th:if="${#lists.isEmpty(detail.sources())}">
                         <svg class="rp-icon"><use href="#rp-icon-image"></use></svg>
                         <strong>Chưa có tư liệu</strong>
-                        <span th:text="${detail.canUploadMedia()} ? 'Tải ảnh / video lên bằng khung phía trên.' : 'Tư liệu gắn với đề tài hoặc bài viết sẽ hiển thị tại đây.'">Tư liệu gắn với đề tài hoặc bài viết sẽ hiển thị tại đây.</span>
+                        <span th:text="${detail.canUploadMedia()} ? 'Tải ảnh / video lên bằng khung phía trên.' : 'Tư liệu gắn với đề tài hoặc bài viết sẽ hiển thị tại đây.'"></span>
                     </div>
                 </section>
 
@@ -151,17 +150,17 @@
                     <section class="rp-card rp-article">
                         <div class="rp-card-head"><h2><svg class="rp-icon"><use href="#rp-icon-edit"></use></svg>Bài viết</h2></div>
                         <th:block th:if="${t.articleId() != null}">
-                            <strong class="rp-article-title" th:text="${t.articleTitle()}">Ngập sâu ven sông Q.7</strong>
-                            <p class="rp-article-sapo" th:if="${detail.articleSapo() != null}" th:text="${detail.articleSapo()}">Sa-pô…</p>
+                            <strong class="rp-article-title" th:text="${t.articleTitle()}"></strong>
+                            <p class="rp-article-sapo" th:if="${detail.articleSapo() != null}" th:text="${detail.articleSapo()}"></p>
                             <dl class="rp-article-meta">
-                                <div><dt>Trạng thái</dt><dd><span class="rp-stage" th:classappend="|rp-stage--${t.stage().group}|"><i></i><span th:text="${t.stage().label}">Đang thực hiện</span></span></dd></div>
-                                <div><dt>Cập nhật</dt><dd th:text="${#temporals.format(t.articleUpdatedAt(), 'HH:mm dd/MM/yyyy')}">14:20 13/10/2026</dd></div>
-                                <div th:if="${detail.articleSubmittedAt() != null}"><dt>Nộp lúc</dt><dd th:text="${#temporals.format(detail.articleSubmittedAt(), 'HH:mm dd/MM/yyyy')}">16:40</dd></div>
+                                <div><dt>Trạng thái</dt><dd><span class="rp-stage" th:classappend="|rp-stage--${t.stage().group}|"><i></i><span th:text="${t.stage().label}"></span></span></dd></div>
+                                <div><dt>Cập nhật</dt><dd th:text="${#temporals.format(t.articleUpdatedAt(), 'HH:mm dd/MM/yyyy')}"></dd></div>
+                                <div th:if="${detail.articleSubmittedAt() != null}"><dt>Nộp lúc</dt><dd th:text="${#temporals.format(detail.articleSubmittedAt(), 'HH:mm dd/MM/yyyy')}"></dd></div>
                             </dl>
                         </th:block>
                         <div class="rp-empty rp-empty--compact" th:if="${t.articleId() == null}">
                             <strong>Chưa có bài viết</strong>
-                            <span th:text="${t.lead()} ? 'Bấm “Bắt đầu viết” để tạo bài cho đề tài này.' : 'Phóng viên viết chính chưa tạo bài.'">Chưa có bài</span>
+                            <span th:text="${t.lead()} ? 'Bấm “Bắt đầu viết” để tạo bài cho đề tài này.' : 'Phóng viên viết chính chưa tạo bài.'"></span>
                         </div>
                     </section>
 
@@ -170,8 +169,8 @@
                         <div class="rp-card-head"><h2><svg class="rp-icon"><use href="#rp-icon-users"></use></svg>Nhóm thực hiện</h2></div>
                         <ul>
                             <li th:each="m : ${detail.team()}">
-                                <span class="rp-avatar rp-avatar--sm" th:classappend="${m.me()} ? ' rp-avatar--me' : ''" th:text="${m.initials()}">TH</span>
-                                <span><strong th:text="${m.me()} ? |${m.name()} (bạn)| : ${m.name()}">Nguyễn Thu Hà</strong><small th:text="${m.roleLabel()}">Viết chính</small></span>
+                                <span class="rp-avatar rp-avatar--sm" th:classappend="${m.me()} ? ' rp-avatar--me' : ''" th:text="${m.initials()}"></span>
+                                <span><strong th:text="${m.me()} ? |${m.name()} (bạn)| : ${m.name()}"></strong><small th:text="${m.roleLabel()}"></small></span>
                             </li>
                         </ul>
                     </section>

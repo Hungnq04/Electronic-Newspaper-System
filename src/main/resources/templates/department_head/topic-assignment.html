@@ -31,8 +31,8 @@
         <header th:replace="~{department_head/dashboard :: dhTopbar(${page.fullName()}, ${page.departmentName()}, ${page.initials()}, false)}"></header>
 
         <main class="rp-main" th:with="t=${page.topic()}">
-            <div class="rp-flash rp-flash--error" th:if="${error}" th:text="${error}">Vui lòng nhập hạn hoàn thành.</div>
-            <div class="rp-flash rp-flash--ok" th:if="${message}" th:text="${message}">Đã thêm phóng viên hỗ trợ vào nhóm.</div>
+            <div class="rp-flash rp-flash--error" th:if="${error}" th:text="${error}"></div>
+            <div class="rp-flash rp-flash--ok" th:if="${message}" th:text="${message}"></div>
 
             <!-- Tiêu đề + thông tin nhanh của đề tài -->
             <div class="rp-heading-row">
@@ -40,17 +40,17 @@
                     <nav class="rp-breadcrumb" aria-label="Breadcrumb">
                         <span>PHÂN CÔNG</span><svg class="rp-icon rp-icon--tiny"><use href="#dha-icon-chevron-right"></use></svg>
                         <a th:href="@{/department-head/approved-topics}">Đề tài đã duyệt</a><svg class="rp-icon rp-icon--tiny"><use href="#dha-icon-chevron-right"></use></svg>
-                        <strong th:text="${page.editable()} ? 'Giao việc' : 'Quản lý nhóm'">Giao việc</strong>
+                        <strong th:text="${page.editable()} ? 'Giao việc' : 'Quản lý nhóm'"></strong>
                     </nav>
-                    <h1 th:text="${(page.editable() ? 'Giao việc đề tài: ' : 'Quản lý nhóm đề tài: ') + t.title()}">Giao việc đề tài: Điều tra quy hoạch quỹ đất công viên ven sông</h1>
+                    <h1 th:text="${(page.editable() ? 'Giao việc đề tài: ' : 'Quản lý nhóm đề tài: ') + t.title()}"></h1>
                     <div class="dha-meta">
-                        <span class="dht-code" th:text="|#${t.topicId()}|">#12</span>
-                        <span class="rp-priority" th:classappend="|rp-priority--${#strings.toLowerCase(t.priority())}|" th:text="${t.priorityLabel()}">Thường</span>
-                        <span>Chuyên mục: <b th:text="${t.category()}">Đô thị &amp; Môi trường</b></span>
+                        <span class="dht-code" th:text="|#${t.topicId()}|"></span>
+                        <span class="rp-priority" th:classappend="|rp-priority--${#strings.toLowerCase(t.priority())}|" th:text="${t.priorityLabel()}"></span>
+                        <span>Chuyên mục: <b th:text="${t.category()}"></b></span>
                         <span class="dha-dot">•</span>
                         <span><svg class="rp-icon"><use href="#dha-icon-calendar"></use></svg>
-                            <th:block th:text="${t.editorial()} ? 'Ngày tạo: ' : 'Ngày duyệt: '">Ngày duyệt: </th:block><b th:text="${#temporals.format(t.approvedAt(), 'dd/MM/yyyy')}">24/10/2026</b></span>
-                        <span class="dht-state" th:classappend="|dht-state--${#strings.toLowerCase(t.state())}|"><i></i><span th:text="${t.state().label}">Chờ giao nhiệm vụ</span></span>
+                            <th:block th:text="${t.editorial()} ? 'Ngày tạo: ' : 'Ngày duyệt: '"></th:block><b th:text="${#temporals.format(t.approvedAt(), 'dd/MM/yyyy')}"></b></span>
+                        <span class="dht-state" th:classappend="|dht-state--${#strings.toLowerCase(t.state())}|"><i></i><span th:text="${t.state().label}"></span></span>
                     </div>
                 </div>
                 <div class="rp-heading-actions">
@@ -70,11 +70,11 @@
                         <div class="dha-card-body">
                             <th:block th:if="${page.hasLead()}">
                                 <div class="dha-person-card">
-                                    <span class="rp-avatar dha-avatar--lg" th:text="${page.lead().initials()}">HL</span>
+                                    <span class="rp-avatar dha-avatar--lg" th:text="${page.lead().initials()}"></span>
                                     <div>
-                                        <strong th:text="${page.lead().name()}">Lê Hoàng Long</strong>
-                                        <span class="rp-muted" th:text="${page.lead().departmentName() ?: 'Chưa gán phòng ban'}">Phòng Điều tra</span>
-                                        <span class="dha-email"><svg class="rp-icon"><use href="#dha-icon-mail"></use></svg><span th:text="${page.lead().email()}">long@toasoan.vn</span></span>
+                                        <strong th:text="${page.lead().name()}"></strong>
+                                        <span class="rp-muted" th:text="${page.lead().departmentName() ?: 'Chưa gán phòng ban'}"></span>
+                                        <span class="dha-email"><svg class="rp-icon"><use href="#dha-icon-mail"></use></svg><span th:text="${page.lead().email()}"></span></span>
                                     </div>
                                 </div>
                                 <p class="dha-note" th:unless="${t.editorial()}">
@@ -94,16 +94,16 @@
                         <div class="dha-card-body">
                             <div class="rp-topic-block">
                                 <h3><svg class="rp-icon"><use href="#dha-icon-file"></use></svg>Mô tả đề tài</h3>
-                                <p class="rp-prewrap" th:text="${t.description() ?: 'Chưa có mô tả.'}">Làm rõ tình trạng lấn chiếm…</p>
+                                <p class="rp-prewrap" th:text="${t.description() ?: 'Chưa có mô tả.'}"></p>
                             </div>
                             <div class="rp-topic-block" th:if="${page.rationale() != null}">
                                 <h3><svg class="rp-icon"><use href="#dha-icon-info"></use></svg>Lý do / góc tiếp cận</h3>
-                                <p class="rp-prewrap" th:text="${page.rationale()}">Tiếp cận đa chiều…</p>
+                                <p class="rp-prewrap" th:text="${page.rationale()}"></p>
                             </div>
                             <dl class="rp-meta-grid">
-                                <div><dt>Người đề xuất</dt><dd th:text="${t.proposerName()}">Lê Hoàng Long</dd></div>
-                                <div th:if="${t.approvedByName() != null}"><dt>Thư ký duyệt</dt><dd th:text="${t.approvedByName()}">Lê Thư Ký</dd></div>
-                                <div><dt>Ngày dự kiến đăng</dt><dd th:text="${page.expectedDate() != null} ? ${#temporals.format(page.expectedDate(), 'dd/MM/yyyy')} : 'Chưa đặt'">05/11/2026</dd></div>
+                                <div><dt>Người đề xuất</dt><dd th:text="${t.proposerName()}"></dd></div>
+                                <div th:if="${t.approvedByName() != null}"><dt>Thư ký duyệt</dt><dd th:text="${t.approvedByName()}"></dd></div>
+                                <div><dt>Ngày dự kiến đăng</dt><dd th:text="${page.expectedDate() != null} ? ${#temporals.format(page.expectedDate(), 'dd/MM/yyyy')} : 'Chưa đặt'"></dd></div>
                             </dl>
                         </div>
                     </section>
@@ -117,31 +117,31 @@
                         <section class="rp-card">
                             <div class="rp-card-head">
                                 <h2><svg class="rp-icon"><use href="#dha-icon-users"></use></svg>Đội ngũ thực hiện đề tài</h2>
-                                <span class="rp-count-pill" th:text="|${page.topic().teamSize()} người đang phụ trách|">3 người đang phụ trách</span>
+                                <span class="rp-count-pill" th:text="|${page.topic().teamSize()} người đang phụ trách|"></span>
                             </div>
                             <div class="dha-card-body">
                                 <div class="dha-member dha-member--lead" th:if="${page.hasLead()}">
-                                    <span class="rp-avatar dha-avatar--md" th:text="${page.lead().initials()}">HL</span>
+                                    <span class="rp-avatar dha-avatar--md" th:text="${page.lead().initials()}"></span>
                                     <div class="dha-member-copy">
-                                        <strong th:text="${page.lead().name()}">Lê Hoàng Long</strong> <span class="dht-role">LEAD</span>
-                                        <span class="rp-muted dha-inline" th:text="${page.lead().departmentName()}">Phòng Điều tra</span>
+                                        <strong th:text="${page.lead().name()}"></strong> <span class="dht-role">LEAD</span>
+                                        <span class="rp-muted dha-inline" th:text="${page.lead().departmentName()}"></span>
                                         <span class="dha-dates">
-                                            <span th:if="${page.leadAssignedAt() != null}">Ngày giao: <b th:text="${#temporals.format(page.leadAssignedAt(), 'dd/MM/yyyy')}">24/10/2026</b></span>
-                                            <span th:if="${page.leadDeadline() != null}">Hạn: <b th:text="${#temporals.format(page.leadDeadline(), 'HH:mm dd/MM/yyyy')}">17:00 05/11/2026</b></span>
+                                            <span th:if="${page.leadAssignedAt() != null}">Ngày giao: <b th:text="${#temporals.format(page.leadAssignedAt(), 'dd/MM/yyyy')}"></b></span>
+                                            <span th:if="${page.leadDeadline() != null}">Hạn: <b th:text="${#temporals.format(page.leadDeadline(), 'HH:mm dd/MM/yyyy')}"></b></span>
                                         </span>
-                                        <p th:text="${page.leadRequirements()}">01 bài phóng sự 2000 chữ…</p>
+                                        <p th:text="${page.leadRequirements()}"></p>
                                     </div>
                                 </div>
                                 <div class="dha-member" th:each="s : ${page.supporters()}">
-                                    <span class="rp-avatar dha-avatar--md dht-avatar--support" th:text="${s.initials()}">TH</span>
+                                    <span class="rp-avatar dha-avatar--md dht-avatar--support" th:text="${s.initials()}"></span>
                                     <div class="dha-member-copy">
-                                        <strong th:text="${s.name()}">Phạm Thu Hương</strong> <span class="dha-support-tag">SUPPORTING</span>
-                                        <span class="dha-status" th:classappend="${s.removable()} ? '' : ' is-done'" th:text="${s.statusLabel()}">Đang thực hiện</span>
+                                        <strong th:text="${s.name()}"></strong> <span class="dha-support-tag">SUPPORTING</span>
+                                        <span class="dha-status" th:classappend="${s.removable()} ? '' : ' is-done'" th:text="${s.statusLabel()}"></span>
                                         <span class="dha-dates">
-                                            <span th:if="${s.assignedAt() != null}">Ngày giao: <b th:text="${#temporals.format(s.assignedAt(), 'dd/MM/yyyy')}">24/10/2026</b></span>
-                                            <span th:if="${s.deadline() != null}">Hạn: <b th:text="${#temporals.format(s.deadline(), 'HH:mm dd/MM/yyyy')}">17:00 01/11/2026</b></span>
+                                            <span th:if="${s.assignedAt() != null}">Ngày giao: <b th:text="${#temporals.format(s.assignedAt(), 'dd/MM/yyyy')}"></b></span>
+                                            <span th:if="${s.deadline() != null}">Hạn: <b th:text="${#temporals.format(s.deadline(), 'HH:mm dd/MM/yyyy')}"></b></span>
                                         </span>
-                                        <p th:text="${s.requirements()}">Bộ ảnh hiện trường</p>
+                                        <p th:text="${s.requirements()}"></p>
                                     </div>
                                     <!-- Gỡ khỏi nhóm: chỉ khi Supporting chưa hoàn thành -->
                                     <form class="dha-member-action" method="post" th:if="${s.removable()}"
@@ -161,7 +161,7 @@
                             <div class="dha-card-body">
                                 <p class="dha-note dha-note--warning" th:if="${page.blockingArticleCount() > 0}">
                                     <svg class="rp-icon"><use href="#dha-icon-lock"></use></svg>
-                                    <span>Lead hiện tại còn <b th:text="${page.blockingArticleCount()}">1</b> bài đang trong quy trình duyệt. Chờ bài duyệt xong hoặc bị trả về rồi mới đổi Lead được.</span>
+                                    <span>Lead hiện tại còn <b th:text="${page.blockingArticleCount()}"></b> bài đang trong quy trình duyệt. Chờ bài duyệt xong hoặc bị trả về rồi mới đổi Lead được.</span>
                                 </p>
                                 <form method="post" class="dha-lead-form" th:if="${page.canChangeLead()}" data-dha-confirm="Xác nhận đổi Lead? Lead hiện tại sẽ rời đề tài."
                                       th:action="@{/department-head/topics/{id}/lead(id=${t.topicId()})}">
@@ -175,7 +175,7 @@
                                             <option value="">-- Chọn phóng viên --</option>
                                             <option th:each="o : ${page.leadOptions()}" th:value="${o.accountId()}"
                                                     th:selected="${leadForm.newLeadAccountId != null and leadForm.newLeadAccountId == o.accountId()}"
-                                                    th:text="${o.name() + (o.departmentName() != null ? ' — ' + o.departmentName() : '') + (o.currentSupporter() ? ' (đang là Supporting)' : '')}">Ngô Mai Chi — Phòng Văn hóa</option>
+                                                    th:text="${o.name() + (o.departmentName() != null ? ' — ' + o.departmentName() : '') + (o.currentSupporter() ? ' (đang là Supporting)' : '')}"></option>
                                         </select>
                                     </label>
                                     <div class="dha-two-cols">
@@ -222,11 +222,11 @@
                                     <thead><tr><th>Thời gian gỡ</th><th>Phóng viên</th><th>Vai trò cũ</th><th>Ngày được giao</th><th>Người gỡ</th></tr></thead>
                                     <tbody>
                                     <tr th:each="h : ${page.history()}">
-                                        <td class="dha-mono" th:text="${h.removedAt() != null} ? ${#temporals.format(h.removedAt(), 'HH:mm dd/MM/yyyy')} : '—'">09:15 25/10/2026</td>
-                                        <td><span class="rp-person"><span class="rp-avatar dht-avatar--xs dht-avatar--support" th:text="${h.initials()}">NP</span> <span th:text="${h.name()}">Nguyễn Vũ Phong</span></span></td>
-                                        <td><span class="dha-support-tag" th:text="${h.roleLabel()}">Supporting</span></td>
-                                        <td class="dha-mono" th:text="${h.assignedAt() != null} ? ${#temporals.format(h.assignedAt(), 'dd/MM/yyyy')} : '—'">24/10/2026</td>
-                                        <td th:text="${h.removedByName() ?: '—'}">Trần Minh Tuấn</td>
+                                        <td class="dha-mono" th:text="${h.removedAt() != null} ? ${#temporals.format(h.removedAt(), 'HH:mm dd/MM/yyyy')} : '—'"></td>
+                                        <td><span class="rp-person"><span class="rp-avatar dht-avatar--xs dht-avatar--support" th:text="${h.initials()}"></span> <span th:text="${h.name()}"></span></span></td>
+                                        <td><span class="dha-support-tag" th:text="${h.roleLabel()}"></span></td>
+                                        <td class="dha-mono" th:text="${h.assignedAt() != null} ? ${#temporals.format(h.assignedAt(), 'dd/MM/yyyy')} : '—'"></td>
+                                        <td th:text="${h.removedByName() ?: '—'}"></td>
                                     </tr>
                                     </tbody>
                                 </table>
@@ -241,7 +241,7 @@
                           th:attr="data-has-lead=${page.hasLead()},data-existing-supporters=${#lists.size(page.supporters())}">
                         <div class="rp-card-head">
                             <h2><svg class="rp-icon"><use href="#dha-icon-file"></use></svg>Biểu mẫu phân công</h2>
-                            <span class="dha-assigner">Người giao việc: <b th:text="${page.fullName()}">Trần Minh Tuấn</b> (Trưởng phòng)</span>
+                            <span class="dha-assigner">Người giao việc: <b th:text="${page.fullName()}"></b> (Trưởng phòng)</span>
                         </div>
 
                         <div class="dha-card-body">
@@ -251,7 +251,7 @@
                             <fieldset class="dha-section">
                                 <legend>1. Nhiệm vụ của Lead <span class="dha-required">*</span></legend>
                                 <p class="dha-chosen-lead">Lead:
-                                    <b data-dha-lead-name th:text="${page.hasLead()} ? ${page.lead().name()} : 'Chưa chọn – chọn ở mục 3'">Lê Hoàng Long</b>
+                                    <b data-dha-lead-name th:text="${page.hasLead()} ? ${page.lead().name()} : 'Chưa chọn – chọn ở mục 3'"></b>
                                 </p>
                                 <div class="dha-two-cols">
                                     <label class="dha-input">
@@ -272,11 +272,11 @@
                             <fieldset class="dha-section" th:unless="${#lists.isEmpty(page.supporters())}">
                                 <legend>2. Supporting đang tham gia</legend>
                                 <div class="dha-member" th:each="s : ${page.supporters()}">
-                                    <span class="rp-avatar dha-avatar--md dht-avatar--support" th:text="${s.initials()}">TH</span>
+                                    <span class="rp-avatar dha-avatar--md dht-avatar--support" th:text="${s.initials()}"></span>
                                     <div class="dha-member-copy">
-                                        <strong th:text="${s.name()}">Phạm Thu Hương</strong> <span class="dha-support-tag">SUPPORTING</span>
-                                        <span class="dha-deadline" th:if="${s.deadline() != null}"><svg class="rp-icon"><use href="#dha-icon-clock"></use></svg><span th:text="${#temporals.format(s.deadline(), 'HH:mm dd/MM/yyyy')}">17:00 01/11/2026</span></span>
-                                        <p th:text="${s.requirements()}">Bộ ảnh hiện trường</p>
+                                        <strong th:text="${s.name()}"></strong> <span class="dha-support-tag">SUPPORTING</span>
+                                        <span class="dha-deadline" th:if="${s.deadline() != null}"><svg class="rp-icon"><use href="#dha-icon-clock"></use></svg><span th:text="${#temporals.format(s.deadline(), 'HH:mm dd/MM/yyyy')}"></span></span>
+                                        <p th:text="${s.requirements()}"></p>
                                     </div>
                                 </div>
                             </fieldset>
@@ -284,8 +284,8 @@
                             <!-- MỤC 3: chọn phóng viên -->
                             <fieldset class="dha-section">
                                 <legend>
-                                    <th:block th:text="${#lists.isEmpty(page.supporters())} ? '2. ' : '3. '">3. </th:block>
-                                    <th:block th:text="${page.hasLead()} ? 'Thêm phóng viên hỗ trợ (Supporting)' : 'Chọn Lead và phóng viên hỗ trợ (Supporting)'">Thêm phóng viên hỗ trợ</th:block>
+                                    <th:block th:text="${#lists.isEmpty(page.supporters())} ? '2. ' : '3. '"></th:block>
+                                    <th:block th:text="${page.hasLead()} ? 'Thêm phóng viên hỗ trợ (Supporting)' : 'Chọn Lead và phóng viên hỗ trợ (Supporting)'"></th:block>
                                     <span class="rp-count-pill">Đã chọn: <b data-dha-support-count>0</b> Supporting</span>
                                 </legend>
                                 <th:block th:replace="~{department_head/topic-assignment :: candidateList(${!page.hasLead()})}"></th:block>
@@ -294,8 +294,8 @@
                             <!-- Tóm tắt trước khi xác nhận -->
                             <div class="dha-summary">
                                 <svg class="rp-icon"><use href="#dha-icon-users"></use></svg>
-                                <span>Sau khi xác nhận, đội gồm <b data-dha-total>1</b> người: Lead <b data-dha-summary-lead th:text="${page.hasLead()} ? ${page.lead().name()} : '(chưa chọn)'">Lê Hoàng Long</b>
-                                    và <b data-dha-summary-support th:text="${#lists.size(page.supporters())}">0</b> Supporting.</span>
+                                <span>Sau khi xác nhận, đội gồm <b data-dha-total>1</b> người: Lead <b data-dha-summary-lead th:text="${page.hasLead()} ? ${page.lead().name()} : '(chưa chọn)'"></b>
+                                    và <b data-dha-summary-support th:text="${#lists.size(page.supporters())}"></b> Supporting.</span>
                             </div>
                         </div>
 
@@ -330,11 +330,11 @@
              th:classappend="${picked} ? ' is-picked' : ''"
              th:attr="data-search=${#strings.toLowerCase(c.name() + ' ' + c.email() + ' ' + (c.departmentName() ?: ''))},data-name=${c.name()}">
             <div class="dha-candidate-row">
-                <span class="rp-avatar dha-avatar--md dht-avatar--support" th:text="${c.initials()}">MC</span>
+                <span class="rp-avatar dha-avatar--md dht-avatar--support" th:text="${c.initials()}"></span>
                 <div class="dha-candidate-copy">
-                    <strong th:text="${c.name()}">Ngô Mai Chi</strong>
+                    <strong th:text="${c.name()}"></strong>
                     <span class="rp-muted">
-                        <th:block th:text="${c.departmentName() ?: 'Chưa gán phòng ban'}">Phòng Văn hóa</th:block> · <th:block th:text="${c.email()}">chi@toasoan.vn</th:block>
+                        <th:block th:text="${c.departmentName() ?: 'Chưa gán phòng ban'}"></th:block> · <th:block th:text="${c.email()}"></th:block>
                     </span>
                 </div>
                 <span class="dha-same-dept" th:if="${c.sameDepartment()}">Cùng phòng</span>

@@ -42,10 +42,10 @@
         <button class="rp-icon-button" type="button" aria-label="Thông báo"><svg class="rp-icon"><use href="#rp-icon-bell"></use></svg></button>
         <span class="rp-topbar-divider"></span>
         <div class="rp-account">
-            <span class="rp-avatar" th:text="${initials}">TH</span>
+            <span class="rp-avatar" th:text="${initials}"></span>
             <div class="rp-account-copy">
-                <strong th:text="${fullName}">Thu Hà</strong>
-                <small th:text="${departmentName != null} ? |Phóng viên · ${departmentName}| : 'Phóng viên'">Phóng viên</small>
+                <strong th:text="${fullName}"></strong>
+                <small th:text="${departmentName != null} ? |Phóng viên · ${departmentName}| : 'Phóng viên'"></small>
             </div>
         </div>
     </div>
@@ -68,8 +68,8 @@
                     </nav>
                     <h1>Danh sách nhiệm vụ phóng viên</h1>
                     <p>
-                        Phóng viên: <b th:text="${board.fullName()}">Nguyễn Thu Hà</b>
-                        <th:block th:if="${board.departmentName() != null}"> • <span th:text="${board.departmentName()}">Ban Nội chính</span></th:block>
+                        Phóng viên: <b th:text="${board.fullName()}"></b>
+                        <th:block th:if="${board.departmentName() != null}"> • <span th:text="${board.departmentName()}"></span></th:block>
                     </p>
                 </div>
                 <div class="rp-heading-actions">
@@ -80,22 +80,22 @@
             <section class="rp-stats" aria-label="Thống kê nhiệm vụ">
                 <article class="rp-stat">
                     <div class="rp-stat-head"><span>TỔNG NHIỆM VỤ</span><span class="rp-stat-icon"><svg class="rp-icon"><use href="#rp-icon-clipboard"></use></svg></span></div>
-                    <strong class="rp-stat-value" th:text="${#lists.size(board.tasks())}">12</strong>
-                    <div class="rp-stat-foot"><span><b th:text="${board.count('todo') + board.count('doing')}">4</b> việc đang mở</span><span th:text="|${board.count('todo')} chưa bắt đầu|">1 chưa bắt đầu</span></div>
+                    <strong class="rp-stat-value" th:text="${#lists.size(board.tasks())}"></strong>
+                    <div class="rp-stat-foot"><span><b th:text="${board.count('todo') + board.count('doing')}"></b> việc đang mở</span><span th:text="|${board.count('todo')} chưa bắt đầu|"></span></div>
                 </article>
                 <article class="rp-stat rp-stat--danger">
                     <div class="rp-stat-head"><span>CẦN NỘP GẤP <i class="rp-pulse" th:if="${board.urgentCount() > 0}"></i></span><span class="rp-stat-icon"><svg class="rp-icon"><use href="#rp-icon-alarm"></use></svg></span></div>
-                    <strong class="rp-stat-value" th:text="${board.urgentCount()}">2</strong>
+                    <strong class="rp-stat-value" th:text="${board.urgentCount()}"></strong>
                     <div class="rp-stat-foot"><span>Hạn dưới 24 giờ, quá hạn hoặc hỏa tốc</span></div>
                 </article>
                 <article class="rp-stat rp-stat--warning">
                     <div class="rp-stat-head"><span>ĐÃ NỘP CHỜ DUYỆT</span><span class="rp-stat-icon"><svg class="rp-icon"><use href="#rp-icon-hourglass"></use></svg></span></div>
-                    <strong class="rp-stat-value" th:text="${board.count('review')}">5</strong>
+                    <strong class="rp-stat-value" th:text="${board.count('review')}"></strong>
                     <div class="rp-stat-foot"><span>Trưởng ban đang thẩm định</span></div>
                 </article>
                 <article class="rp-stat rp-stat--success">
                     <div class="rp-stat-head"><span>HOÀN THÀNH</span><span class="rp-stat-icon"><svg class="rp-icon"><use href="#rp-icon-check-circle"></use></svg></span></div>
-                    <strong class="rp-stat-value" th:text="${board.count('done')}">3</strong>
+                    <strong class="rp-stat-value" th:text="${board.count('done')}"></strong>
                     <div class="rp-stat-foot"><span>Đã duyệt hoặc đã xuất bản</span></div>
                 </article>
             </section>
@@ -103,11 +103,11 @@
             <section class="rp-filter-panel" aria-label="Bộ lọc nhiệm vụ">
                 <div class="rp-filter-top">
                     <div class="rp-tabs" role="tablist" aria-label="Lọc theo tiến độ">
-                        <button class="rp-tab is-active" type="button" role="tab" aria-selected="true" data-rp-tab="all">Tất cả <b th:text="${#lists.size(board.tasks())}">12</b></button>
-                        <button class="rp-tab rp-tab--danger" type="button" role="tab" aria-selected="false" data-rp-tab="urgent">Cần nộp gấp <b th:text="${board.urgentCount()}">2</b></button>
-                        <button class="rp-tab" type="button" role="tab" aria-selected="false" data-rp-tab="open">Đang làm <b th:text="${board.count('todo') + board.count('doing')}">3</b></button>
-                        <button class="rp-tab" type="button" role="tab" aria-selected="false" data-rp-tab="review">Chờ duyệt <b th:text="${board.count('review')}">5</b></button>
-                        <button class="rp-tab" type="button" role="tab" aria-selected="false" data-rp-tab="done">Hoàn thành <b th:text="${board.count('done')}">2</b></button>
+                        <button class="rp-tab is-active" type="button" role="tab" aria-selected="true" data-rp-tab="all">Tất cả <b th:text="${#lists.size(board.tasks())}"></b></button>
+                        <button class="rp-tab rp-tab--danger" type="button" role="tab" aria-selected="false" data-rp-tab="urgent">Cần nộp gấp <b th:text="${board.urgentCount()}"></b></button>
+                        <button class="rp-tab" type="button" role="tab" aria-selected="false" data-rp-tab="open">Đang làm <b th:text="${board.count('todo') + board.count('doing')}"></b></button>
+                        <button class="rp-tab" type="button" role="tab" aria-selected="false" data-rp-tab="review">Chờ duyệt <b th:text="${board.count('review')}"></b></button>
+                        <button class="rp-tab" type="button" role="tab" aria-selected="false" data-rp-tab="done">Hoàn thành <b th:text="${board.count('done')}"></b></button>
                     </div>
                     <label class="rp-filter-search">
                         <svg class="rp-icon"><use href="#rp-icon-search"></use></svg>
@@ -118,7 +118,7 @@
                     <label class="rp-select-field"><span><svg class="rp-icon"><use href="#rp-icon-folder"></use></svg>ĐỀ TÀI:</span>
                         <select data-rp-filter="category">
                             <option value="">Tất cả chuyên mục</option>
-                            <option th:each="c : ${board.categories()}" th:value="${c}" th:text="${c}">Thời sự</option>
+                            <option th:each="c : ${board.categories()}" th:value="${c}" th:text="${c}"></option>
                         </select><svg class="rp-icon rp-select-chevron"><use href="#rp-icon-chevron-down"></use></svg></label>
                     <label class="rp-select-field"><span><svg class="rp-icon"><use href="#rp-icon-users"></use></svg>VAI TRÒ:</span>
                         <select data-rp-filter="role">
@@ -146,7 +146,7 @@
             <!-- Dạng bảng -->
             <section class="rp-card" data-rp-panel="table">
                 <div class="rp-card-head">
-                    <h2>Danh sách nhiệm vụ đang thực hiện <span class="rp-count-pill"><b data-rp-visible-count th:text="${#lists.size(board.tasks())}">12</b> bản ghi</span></h2>
+                    <h2>Danh sách nhiệm vụ đang thực hiện <span class="rp-count-pill"><b data-rp-visible-count th:text="${#lists.size(board.tasks())}"></b> bản ghi</span></h2>
                     <span class="rp-sort-note">Sắp xếp: Hạn nộp gần nhất</span>
                 </div>
                 <div class="rp-table-wrap">
@@ -166,40 +166,40 @@
                             th:classappend="${t.urgent()} ? ' is-urgent' : ''"
                             th:attr="data-group=${t.stage().group},data-urgent=${t.urgent()},data-category=${t.category()},data-role=${t.role()},data-bucket=${t.deadlineBucket()},data-search=${#strings.toLowerCase(t.topicTitle() + ' ' + t.category() + ' ' + t.assignedByName() + ' ' + (t.requirements() ?: ''))}">
                             <td class="rp-col-task">
-                                <span class="rp-priority" th:classappend="|rp-priority--${#strings.toLowerCase(t.priority())}|" th:text="${t.priorityLabel()}">Ưu tiên cao</span>
-                                <a class="rp-task-title" th:href="@{/reporter/tasks/{id}(id=${t.assignmentId()})}" th:text="${t.topicTitle()}">Triều cường dâng cao ngập tuyến đường Huỳnh Tấn Phát</a>
-                                <span class="rp-task-category"><svg class="rp-icon"><use href="#rp-icon-folder"></use></svg><span th:text="${t.category()}">Môi trường &amp; Đô thị</span></span>
+                                <span class="rp-priority" th:classappend="|rp-priority--${#strings.toLowerCase(t.priority())}|" th:text="${t.priorityLabel()}"></span>
+                                <a class="rp-task-title" th:href="@{/reporter/tasks/{id}(id=${t.assignmentId()})}" th:text="${t.topicTitle()}"></a>
+                                <span class="rp-task-category"><svg class="rp-icon"><use href="#rp-icon-folder"></use></svg><span th:text="${t.category()}"></span></span>
                             </td>
                             <td class="rp-col-req">
                                 <div class="rp-source-chips">
-                                    <span class="rp-source-chip" th:if="${t.imageCount() > 0}"><svg class="rp-icon"><use href="#rp-icon-image"></use></svg><b th:text="${t.imageCount()}">8</b> ảnh</span>
-                                    <span class="rp-source-chip" th:if="${t.documentCount() > 0}"><svg class="rp-icon"><use href="#rp-icon-file"></use></svg><b th:text="${t.documentCount()}">2</b> tài liệu</span>
-                                    <span class="rp-source-chip" th:if="${t.otherSourceCount() > 0}"><svg class="rp-icon"><use href="#rp-icon-link"></use></svg><b th:text="${t.otherSourceCount()}">1</b> nguồn khác</span>
+                                    <span class="rp-source-chip" th:if="${t.imageCount() > 0}"><svg class="rp-icon"><use href="#rp-icon-image"></use></svg><b th:text="${t.imageCount()}"></b> ảnh</span>
+                                    <span class="rp-source-chip" th:if="${t.documentCount() > 0}"><svg class="rp-icon"><use href="#rp-icon-file"></use></svg><b th:text="${t.documentCount()}"></b> tài liệu</span>
+                                    <span class="rp-source-chip" th:if="${t.otherSourceCount() > 0}"><svg class="rp-icon"><use href="#rp-icon-link"></use></svg><b th:text="${t.otherSourceCount()}"></b> nguồn khác</span>
                                     <span class="rp-source-chip rp-source-chip--empty" th:if="${t.sourceCount() == 0}">Chưa có tư liệu</span>
                                 </div>
-                                <p class="rp-requirements" th:text="${t.requirements() ?: 'Không có yêu cầu bổ sung.'}">Độ dài 800 - 1.200 chữ, kèm ảnh hiện trường.</p>
+                                <p class="rp-requirements" th:text="${t.requirements() ?: 'Không có yêu cầu bổ sung.'}"></p>
                                 <div class="rp-progress" th:title="|Tiến độ: ${t.stage().label}|"><span th:style="|width: ${t.stage().progress}%|"></span></div>
                             </td>
                             <td class="rp-col-people">
-                                <div class="rp-person"><span class="rp-avatar rp-avatar--sm" th:text="${t.assignedByInitials()}">TH</span><strong th:text="${t.assignedByName()}">Trần Hoàng Hải</strong></div>
-                                <span class="rp-role" th:classappend="${t.lead()} ? ' rp-role--lead' : ''" th:text="${t.roleLabel()}">Viết chính</span>
-                                <small class="rp-muted" th:text="|Giao lúc: ${#temporals.format(t.assignedAt(), 'HH:mm dd/MM/yyyy')}|">Giao lúc: 08:30</small>
+                                <div class="rp-person"><span class="rp-avatar rp-avatar--sm" th:text="${t.assignedByInitials()}"></span><strong th:text="${t.assignedByName()}"></strong></div>
+                                <span class="rp-role" th:classappend="${t.lead()} ? ' rp-role--lead' : ''" th:text="${t.roleLabel()}"></span>
+                                <small class="rp-muted" th:text="|Giao lúc: ${#temporals.format(t.assignedAt(), 'HH:mm dd/MM/yyyy')}|"></small>
                             </td>
                             <td class="rp-col-deadline">
                                 <th:block th:if="${t.deadline() != null}">
                                     <span class="rp-deadline" th:classappend="${t.overdue()} ? ' is-overdue' : (${t.urgent()} ? ' is-urgent' : '')">
                                         <svg class="rp-icon"><use href="#rp-icon-clock"></use></svg>
-                                        <span><b th:text="${#temporals.format(t.deadline(), 'HH:mm')}">15:30</b> <span th:text="${#temporals.format(t.deadline(), 'dd/MM/yyyy')}">13/10/2026</span></span>
+                                        <span><b th:text="${#temporals.format(t.deadline(), 'HH:mm')}"></b> <span th:text="${#temporals.format(t.deadline(), 'dd/MM/yyyy')}"></span></span>
                                     </span>
                                     <span class="rp-deadline-tag" th:if="${t.deadlineText() != null}"
                                           th:classappend="${t.overdue()} ? ' is-overdue' : (${t.urgent()} ? ' is-urgent' : (${t.stage().open} ? '' : ' is-done'))"
-                                          th:text="${t.deadlineText()}">Còn 45 phút</span>
+                                          th:text="${t.deadlineText()}"></span>
                                 </th:block>
                                 <span class="rp-muted" th:if="${t.deadline() == null}">Chưa đặt hạn</span>
                             </td>
                             <td class="rp-col-status">
-                                <span class="rp-stage" th:classappend="|rp-stage--${t.stage().group}|"><i></i><span th:text="${t.stage().label}">Đang thực hiện</span></span>
-                                <small class="rp-muted" th:if="${t.articleUpdatedAt() != null}" th:text="|Cập nhật: ${#temporals.format(t.articleUpdatedAt(), 'HH:mm dd/MM')}|">Cập nhật: 14:20</small>
+                                <span class="rp-stage" th:classappend="|rp-stage--${t.stage().group}|"><i></i><span th:text="${t.stage().label}"></span></span>
+                                <small class="rp-muted" th:if="${t.articleUpdatedAt() != null}" th:text="|Cập nhật: ${#temporals.format(t.articleUpdatedAt(), 'HH:mm dd/MM')}|"></small>
                             </td>
                             <td class="rp-col-actions">
                                 <div class="rp-actions">
@@ -207,7 +207,7 @@
                                     <a class="rp-button rp-button--ghost rp-button--small" th:href="@{/reporter/tasks/{id}(id=${t.assignmentId()})}"><svg class="rp-icon"><use href="#rp-icon-eye"></use></svg>Chi tiết</a>
                                     <a class="rp-button rp-button--small" th:if="${t.writeHref() != null}"
                                        th:classappend="${t.stage().open} ? (${t.urgent()} ? ' rp-button--danger' : ' rp-button--primary') : ' rp-button--outline'"
-                                       th:href="@{${t.writeHref()}}"><svg class="rp-icon"><use href="#rp-icon-edit"></use></svg><span th:text="${t.writeLabel()}">Tiếp tục viết</span></a>
+                                       th:href="@{${t.writeHref()}}"><svg class="rp-icon"><use href="#rp-icon-edit"></use></svg><span th:text="${t.writeLabel()}"></span></a>
                                 </div>
                             </td>
                         </tr>
@@ -216,7 +216,7 @@
                 </div>
                 <div class="rp-empty" data-rp-empty th:hidden="${!#lists.isEmpty(board.tasks())}">
                     <svg class="rp-icon"><use href="#rp-icon-clipboard"></use></svg>
-                    <strong th:text="${#lists.isEmpty(board.tasks())} ? 'Bạn chưa được giao nhiệm vụ nào' : 'Không có nhiệm vụ phù hợp bộ lọc'">Không có nhiệm vụ phù hợp bộ lọc</strong>
+                    <strong th:text="${#lists.isEmpty(board.tasks())} ? 'Bạn chưa được giao nhiệm vụ nào' : 'Không có nhiệm vụ phù hợp bộ lọc'"></strong>
                     <span>Nhiệm vụ mới sẽ xuất hiện khi Trưởng ban giao đề tài đã được duyệt.</span>
                 </div>
             </section>
@@ -224,19 +224,19 @@
             <!-- Dạng Kanban -->
             <section class="rp-kanban" data-rp-panel="kanban" hidden>
                 <div class="rp-kanban-col" th:each="col : ${board.columns()}" th:classappend="|rp-kanban-col--${col.key()}|">
-                    <div class="rp-kanban-head"><span class="rp-stage" th:classappend="|rp-stage--${col.key()}|"><i></i><span th:text="${col.label()}">Đang thực hiện</span></span><b data-rp-column-count th:text="${#lists.size(col.tasks())}">3</b></div>
+                    <div class="rp-kanban-head"><span class="rp-stage" th:classappend="|rp-stage--${col.key()}|"><i></i><span th:text="${col.label()}"></span></span><b data-rp-column-count th:text="${#lists.size(col.tasks())}"></b></div>
                     <a class="rp-kanban-card" th:each="t : ${col.tasks()}" data-rp-item
                        th:href="@{/reporter/tasks/{id}(id=${t.assignmentId()})}"
                        th:classappend="${t.urgent()} ? ' is-urgent' : ''"
                        th:attr="data-group=${t.stage().group},data-urgent=${t.urgent()},data-category=${t.category()},data-role=${t.role()},data-bucket=${t.deadlineBucket()},data-search=${#strings.toLowerCase(t.topicTitle() + ' ' + t.category() + ' ' + t.assignedByName() + ' ' + (t.requirements() ?: ''))}">
-                        <span class="rp-priority" th:classappend="|rp-priority--${#strings.toLowerCase(t.priority())}|" th:text="${t.priorityLabel()}">Thường</span>
-                        <strong th:text="${t.topicTitle()}">Tiến độ giải phóng mặt bằng Vành đai 3</strong>
-                        <span class="rp-task-category"><svg class="rp-icon"><use href="#rp-icon-folder"></use></svg><span th:text="${t.category()}">Hạ tầng</span></span>
+                        <span class="rp-priority" th:classappend="|rp-priority--${#strings.toLowerCase(t.priority())}|" th:text="${t.priorityLabel()}"></span>
+                        <strong th:text="${t.topicTitle()}"></strong>
+                        <span class="rp-task-category"><svg class="rp-icon"><use href="#rp-icon-folder"></use></svg><span th:text="${t.category()}"></span></span>
                         <div class="rp-kanban-meta">
-                            <span class="rp-role" th:classappend="${t.lead()} ? ' rp-role--lead' : ''" th:text="${t.roleLabel()}">Viết chính</span>
+                            <span class="rp-role" th:classappend="${t.lead()} ? ' rp-role--lead' : ''" th:text="${t.roleLabel()}"></span>
                             <span class="rp-deadline-tag" th:if="${t.deadlineText() != null}"
                                   th:classappend="${t.overdue()} ? ' is-overdue' : (${t.urgent()} ? ' is-urgent' : (${t.stage().open} ? '' : ' is-done'))"
-                                  th:text="${t.deadlineText()}">Còn 3 giờ</span>
+                                  th:text="${t.deadlineText()}"></span>
                         </div>
                         <div class="rp-progress"><span th:style="|width: ${t.stage().progress}%|"></span></div>
                     </a>

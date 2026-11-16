@@ -28,7 +28,7 @@
             <!-- Nhiệm vụ viết chính còn hiệu lực: điểm bắt đầu duy nhất để viết bài mới -->
             <section class="rp-card" style="margin-bottom:16px">
                 <div class="rp-card-head">
-                    <h2>Nhiệm vụ viết chính <span class="rp-count-pill"><b th:text="${#lists.size(page.assignments())}">2</b> nhiệm vụ</span></h2>
+                    <h2>Nhiệm vụ viết chính <span class="rp-count-pill"><b th:text="${#lists.size(page.assignments())}"></b> nhiệm vụ</span></h2>
                     <span class="rp-sort-note">Chọn nhiệm vụ để viết bài mới</span>
                 </div>
                 <div class="rp-empty rp-empty--compact" th:if="${page.assignments().isEmpty()}">
@@ -44,17 +44,17 @@
                         <tbody>
                         <tr th:each="a : ${page.assignments()}">
                             <td class="rp-col-task">
-                                <a class="rp-task-title" th:href="@{/reporter/tasks/{id}(id=${a.assignmentId()})}" th:text="${a.title()}">Đề tài</a>
-                                <span class="rp-task-category"><svg class="rp-icon"><use href="#rp-icon-folder"></use></svg><span th:text="${a.category()}">Chuyên mục</span></span>
+                                <a class="rp-task-title" th:href="@{/reporter/tasks/{id}(id=${a.assignmentId()})}" th:text="${a.title()}"></a>
+                                <span class="rp-task-category"><svg class="rp-icon"><use href="#rp-icon-folder"></use></svg><span th:text="${a.category()}"></span></span>
                             </td>
                             <td class="rp-col-deadline">
                                 <span class="rp-deadline" th:if="${a.deadline() != null}">
                                     <svg class="rp-icon"><use href="#rp-icon-clock"></use></svg>
-                                    <span><b th:text="${#temporals.format(a.deadline(), 'HH:mm')}">15:30</b> <span th:text="${#temporals.format(a.deadline(), 'dd/MM/yyyy')}">13/10/2026</span></span>
+                                    <span><b th:text="${#temporals.format(a.deadline(), 'HH:mm')}"></b> <span th:text="${#temporals.format(a.deadline(), 'dd/MM/yyyy')}"></span></span>
                                 </span>
                                 <span class="rp-muted" th:if="${a.deadline() == null}">Chưa đặt hạn</span>
                             </td>
-                            <td><span class="rp-muted" th:text="${a.articleCount() == 0} ? 'Chưa có bài' : |${a.articleCount()} bài|">0</span></td>
+                            <td><span class="rp-muted" th:text="${a.articleCount() == 0} ? 'Chưa có bài' : |${a.articleCount()} bài|"></span></td>
                             <td class="rp-col-actions">
                                 <div class="rp-actions">
                                     <a class="rp-button rp-button--ghost rp-button--small" th:href="@{/reporter/tasks/{id}(id=${a.assignmentId()})}"><svg class="rp-icon"><use href="#rp-icon-eye"></use></svg>Chi tiết</a>
@@ -69,7 +69,7 @@
 
             <section class="rp-card">
                 <div class="rp-card-head">
-                    <h2>Bài viết <span class="rp-count-pill"><b th:text="${#lists.size(page.articles())}">3</b> bản ghi</span></h2>
+                    <h2>Bài viết <span class="rp-count-pill"><b th:text="${#lists.size(page.articles())}"></b> bản ghi</span></h2>
                     <span class="rp-sort-note">Sắp xếp: Cập nhật gần nhất</span>
                 </div>
                 <div class="rp-empty rp-empty--compact" th:if="${page.articles().isEmpty()}">
@@ -83,11 +83,11 @@
                         </thead>
                         <tbody>
                         <tr th:each="a : ${page.articles()}">
-                            <td class="rp-col-task"><a class="rp-task-title" th:href="@{/articles/{id}/edit(id=${a.id()})}" th:text="${a.title()}">Tiêu đề</a></td>
-                            <td th:text="${a.topicTitle()}">Đề tài</td>
-                            <td><span class="rp-task-category"><svg class="rp-icon"><use href="#rp-icon-folder"></use></svg><span th:text="${a.category()}">Chuyên mục</span></span></td>
-                            <td class="rp-col-status"><span class="rp-stage" th:classappend="|rp-stage--${a.statusGroup()}|"><i></i><span th:text="${a.statusLabel()}">Bản thảo</span></span></td>
-                            <td><span class="rp-muted" th:text="${#temporals.format(a.updatedAt(), 'HH:mm dd/MM/yyyy')}">14:20</span></td>
+                            <td class="rp-col-task"><a class="rp-task-title" th:href="@{/articles/{id}/edit(id=${a.id()})}" th:text="${a.title()}"></a></td>
+                            <td th:text="${a.topicTitle()}"></td>
+                            <td><span class="rp-task-category"><svg class="rp-icon"><use href="#rp-icon-folder"></use></svg><span th:text="${a.category()}"></span></span></td>
+                            <td class="rp-col-status"><span class="rp-stage" th:classappend="|rp-stage--${a.statusGroup()}|"><i></i><span th:text="${a.statusLabel()}"></span></span></td>
+                            <td><span class="rp-muted" th:text="${#temporals.format(a.updatedAt(), 'HH:mm dd/MM/yyyy')}"></span></td>
                             <td class="rp-col-actions">
                                 <div class="rp-actions">
                                     <a class="rp-button rp-button--outline rp-button--small" th:href="@{/articles/{id}/edit(id=${a.id()})}"><svg class="rp-icon"><use href="#rp-icon-edit"></use></svg>Mở bài</a>

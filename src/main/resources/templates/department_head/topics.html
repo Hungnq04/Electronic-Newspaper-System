@@ -43,22 +43,22 @@
             <section class="rp-stats" aria-label="Thống kê đề tài">
                 <article class="rp-stat">
                     <div class="rp-stat-head"><span>TỔNG ĐỀ TÀI</span><span class="rp-stat-icon"><svg class="rp-icon"><use href="#dht-icon-folder"></use></svg></span></div>
-                    <strong class="rp-stat-value" th:text="${#lists.size(board.topics())}">24</strong>
+                    <strong class="rp-stat-value" th:text="${#lists.size(board.topics())}"></strong>
                     <div class="rp-stat-foot">Đề tài ACTIVE bạn đang phụ trách</div>
                 </article>
                 <article class="rp-stat rp-stat--danger">
                     <div class="rp-stat-head"><span>CHƯA CÓ LEAD</span><span class="rp-stat-icon"><svg class="rp-icon"><use href="#dht-icon-user-alert"></use></svg></span></div>
-                    <strong class="rp-stat-value" th:text="${board.count('NO_LEAD')}">2</strong>
+                    <strong class="rp-stat-value" th:text="${board.count('NO_LEAD')}"></strong>
                     <div class="rp-stat-foot">Thư ký giao xuống, cần chọn Lead</div>
                 </article>
                 <article class="rp-stat rp-stat--warning">
                     <div class="rp-stat-head"><span>CHỜ GIAO NHIỆM VỤ</span><span class="rp-stat-icon"><svg class="rp-icon"><use href="#dht-icon-hourglass"></use></svg></span></div>
-                    <strong class="rp-stat-value" th:text="${board.count('LEAD_PENDING')}">4</strong>
+                    <strong class="rp-stat-value" th:text="${board.count('LEAD_PENDING')}"></strong>
                     <div class="rp-stat-foot">Đã có Lead, chưa có nhiệm vụ / deadline</div>
                 </article>
                 <article class="rp-stat rp-stat--success">
                     <div class="rp-stat-head"><span>ĐÃ GIAO</span><span class="rp-stat-icon"><svg class="rp-icon"><use href="#dht-icon-check-circle"></use></svg></span></div>
-                    <strong class="rp-stat-value" th:text="${board.count('ASSIGNED')}">18</strong>
+                    <strong class="rp-stat-value" th:text="${board.count('ASSIGNED')}"></strong>
                     <div class="rp-stat-foot">Lead đã có nhiệm vụ và deadline</div>
                 </article>
             </section>
@@ -67,10 +67,10 @@
             <section class="rp-filter-panel" aria-label="Bộ lọc đề tài">
                 <div class="rp-filter-top">
                     <div class="rp-tabs" role="tablist" aria-label="Lọc theo tình trạng giao việc">
-                        <button class="rp-tab is-active" type="button" role="tab" aria-selected="true" data-dht-tab="all">Tất cả <b th:text="${#lists.size(board.topics())}">24</b></button>
-                        <button class="rp-tab" type="button" role="tab" aria-selected="false" data-dht-tab="NO_LEAD">Chưa có Lead <b th:text="${board.count('NO_LEAD')}">2</b></button>
-                        <button class="rp-tab" type="button" role="tab" aria-selected="false" data-dht-tab="LEAD_PENDING">Chờ giao nhiệm vụ <b th:text="${board.count('LEAD_PENDING')}">4</b></button>
-                        <button class="rp-tab" type="button" role="tab" aria-selected="false" data-dht-tab="ASSIGNED">Đã giao <b th:text="${board.count('ASSIGNED')}">18</b></button>
+                        <button class="rp-tab is-active" type="button" role="tab" aria-selected="true" data-dht-tab="all">Tất cả <b th:text="${#lists.size(board.topics())}"></b></button>
+                        <button class="rp-tab" type="button" role="tab" aria-selected="false" data-dht-tab="NO_LEAD">Chưa có Lead <b th:text="${board.count('NO_LEAD')}"></b></button>
+                        <button class="rp-tab" type="button" role="tab" aria-selected="false" data-dht-tab="LEAD_PENDING">Chờ giao nhiệm vụ <b th:text="${board.count('LEAD_PENDING')}"></b></button>
+                        <button class="rp-tab" type="button" role="tab" aria-selected="false" data-dht-tab="ASSIGNED">Đã giao <b th:text="${board.count('ASSIGNED')}"></b></button>
                     </div>
                     <label class="rp-filter-search">
                         <svg class="rp-icon"><use href="#dht-icon-search"></use></svg>
@@ -81,7 +81,7 @@
                     <label class="rp-select-field"><span><svg class="rp-icon"><use href="#dht-icon-folder"></use></svg>CHUYÊN MỤC:</span>
                         <select data-dht-filter="category">
                             <option value="">Tất cả chuyên mục</option>
-                            <option th:each="c : ${board.categories()}" th:value="${c}" th:text="${c}">Thời sự</option>
+                            <option th:each="c : ${board.categories()}" th:value="${c}" th:text="${c}"></option>
                         </select><svg class="rp-icon rp-select-chevron"><use href="#dht-icon-chevron-down"></use></svg></label>
                     <label class="rp-select-field"><span><svg class="rp-icon"><use href="#dht-icon-flag"></use></svg>ĐỘ ƯU TIÊN:</span>
                         <select data-dht-filter="priority">
@@ -97,7 +97,7 @@
 
             <section class="rp-card">
                 <div class="rp-card-head">
-                    <h2>Đề tài đang phụ trách <span class="rp-count-pill"><b data-dht-visible-count th:text="${#lists.size(board.topics())}">24</b> đề tài</span></h2>
+                    <h2>Đề tài đang phụ trách <span class="rp-count-pill"><b data-dht-visible-count th:text="${#lists.size(board.topics())}"></b> đề tài</span></h2>
                     <span class="rp-sort-note">Sắp xếp: Cần giao việc trước, mới duyệt trước</span>
                 </div>
                 <div class="rp-table-wrap">
@@ -119,50 +119,50 @@
                             th:attr="data-state=${t.state()},data-category=${t.category()},data-priority=${t.priority()},data-search=${t.searchText()}">
                             <td class="dht-col-topic">
                                 <div class="dht-tags">
-                                    <span class="dht-code" th:text="|#${t.topicId()}|">#12</span>
-                                    <span class="rp-priority" th:classappend="|rp-priority--${#strings.toLowerCase(t.priority())}|" th:text="${t.priorityLabel()}">Ưu tiên cao</span>
-                                    <span class="dht-category" th:text="${t.category()}">Nội chính &amp; Pháp luật</span>
+                                    <span class="dht-code" th:text="|#${t.topicId()}|"></span>
+                                    <span class="rp-priority" th:classappend="|rp-priority--${#strings.toLowerCase(t.priority())}|" th:text="${t.priorityLabel()}"></span>
+                                    <span class="dht-category" th:text="${t.category()}"></span>
                                 </div>
-                                <strong class="dht-topic-title" th:text="${t.title()}">Loạt bài điều tra trật tự xây dựng ven sông Hồng</strong>
-                                <p class="dht-topic-desc" th:if="${t.description() != null}" th:text="${t.description()}">Phản ánh dấu hiệu bao che công trình vượt tầng…</p>
+                                <strong class="dht-topic-title" th:text="${t.title()}"></strong>
+                                <p class="dht-topic-desc" th:if="${t.description() != null}" th:text="${t.description()}"></p>
                             </td>
                             <td class="dht-col-proposer">
-                                <strong th:text="${t.proposerName()}">Nguyễn Văn Hùng</strong>
-                                <span class="rp-muted" th:text="${t.editorial()} ? 'Thư ký giao xuống' : 'Phóng viên đề xuất'">Phóng viên đề xuất</span>
+                                <strong th:text="${t.proposerName()}"></strong>
+                                <span class="rp-muted" th:text="${t.editorial()} ? 'Thư ký giao xuống' : 'Phóng viên đề xuất'"></span>
                                 <span class="dht-approved">
                                     <svg class="rp-icon"><use href="#dht-icon-verified"></use></svg>
-                                    <span th:text="${(t.editorial() ? 'Tạo: ' : 'Duyệt: ') + #temporals.format(t.approvedAt(), 'dd/MM/yyyy')}">Duyệt: 24/10/2026</span>
+                                    <span th:text="${(t.editorial() ? 'Tạo: ' : 'Duyệt: ') + #temporals.format(t.approvedAt(), 'dd/MM/yyyy')}"></span>
                                 </span>
-                                <span class="rp-muted" th:if="${t.approvedByName() != null}" th:text="|bởi ${t.approvedByName()}|">bởi Lê Thư Ký</span>
+                                <span class="rp-muted" th:if="${t.approvedByName() != null}" th:text="|bởi ${t.approvedByName()}|"></span>
                             </td>
                             <td class="dht-col-lead">
                                 <div class="rp-person" th:if="${t.lead() != null}">
-                                    <span class="rp-avatar rp-avatar--sm" th:text="${t.lead().initials()}">VH</span>
-                                    <div><strong th:text="${t.lead().name()}">Nguyễn Văn Hùng</strong><span class="dht-role">LEAD</span></div>
+                                    <span class="rp-avatar rp-avatar--sm" th:text="${t.lead().initials()}"></span>
+                                    <div><strong th:text="${t.lead().name()}"></strong><span class="dht-role">LEAD</span></div>
                                 </div>
                                 <span class="rp-muted" th:if="${t.lead() == null}">Chưa chọn Lead</span>
                             </td>
                             <td class="dht-col-team">
                                 <div class="dht-avatars" th:if="${t.teamSize() > 0}">
-                                    <span class="rp-avatar dht-avatar--xs" th:if="${t.lead() != null}" th:title="|${t.lead().name()} (Lead)|" th:text="${t.lead().initials()}">VH</span>
-                                    <span class="rp-avatar dht-avatar--xs dht-avatar--support" th:each="s : ${t.supporters()}" th:title="|${s.name()} (Supporting)|" th:text="${s.initials()}">TL</span>
+                                    <span class="rp-avatar dht-avatar--xs" th:if="${t.lead() != null}" th:title="|${t.lead().name()} (Lead)|" th:text="${t.lead().initials()}"></span>
+                                    <span class="rp-avatar dht-avatar--xs dht-avatar--support" th:each="s : ${t.supporters()}" th:title="|${s.name()} (Supporting)|" th:text="${s.initials()}"></span>
                                 </div>
                                 <span class="dht-team-note" th:if="${t.teamSize() > 0}"
-                                      th:text="|${t.teamSize()} người (${t.lead() != null ? 1 : 0} Lead, ${#lists.size(t.supporters())} Supporting)|">3 người (1 Lead, 2 Supporting)</span>
+                                      th:text="|${t.teamSize()} người (${t.lead() != null ? 1 : 0} Lead, ${#lists.size(t.supporters())} Supporting)|"></span>
                                 <span class="rp-muted" th:if="${t.teamSize() == 0}">Chưa có ai</span>
                             </td>
                             <td class="dht-col-deadline">
                                 <th:block th:if="${t.leadDeadline() != null}">
                                     <span class="rp-deadline" th:classappend="${t.overdue()} ? ' is-overdue' : ''">
                                         <svg class="rp-icon"><use href="#dht-icon-clock"></use></svg>
-                                        <span><b th:text="${#temporals.format(t.leadDeadline(), 'HH:mm')}">17:00</b> <span th:text="${#temporals.format(t.leadDeadline(), 'dd/MM/yyyy')}">30/10/2026</span></span>
+                                        <span><b th:text="${#temporals.format(t.leadDeadline(), 'HH:mm')}"></b> <span th:text="${#temporals.format(t.leadDeadline(), 'dd/MM/yyyy')}"></span></span>
                                     </span>
-                                    <span class="rp-deadline-tag" th:classappend="${t.overdue()} ? ' is-overdue' : ''" th:text="${t.deadlineText()}">Còn 6 ngày</span>
+                                    <span class="rp-deadline-tag" th:classappend="${t.overdue()} ? ' is-overdue' : ''" th:text="${t.deadlineText()}"></span>
                                 </th:block>
                                 <span class="rp-muted" th:if="${t.leadDeadline() == null}">Chưa đặt hạn</span>
                             </td>
                             <td class="dht-col-state">
-                                <span class="dht-state" th:classappend="|dht-state--${#strings.toLowerCase(t.state())}|"><i></i><span th:text="${t.state().label}">Chưa có Lead</span></span>
+                                <span class="dht-state" th:classappend="|dht-state--${#strings.toLowerCase(t.state())}|"><i></i><span th:text="${t.state().label}"></span></span>
                             </td>
                             <td class="dht-col-actions">
                                 <!-- Mở trang giao việc (FL-03); đề tài đã giao xong thì trang đó là phần quản lý nhóm -->
@@ -170,7 +170,7 @@
                                    th:classappend="${t.state().name() == 'ASSIGNED'} ? ' rp-button--outline' : ' rp-button--primary'">
                                     <svg class="rp-icon" th:if="${t.state().name() != 'ASSIGNED'}"><use href="#dht-icon-assign"></use></svg>
                                     <svg class="rp-icon" th:if="${t.state().name() == 'ASSIGNED'}"><use href="#dht-icon-users"></use></svg>
-                                    <span th:text="${t.state().name() == 'ASSIGNED'} ? 'Quản lý nhóm' : 'Giao việc'">Giao việc</span>
+                                    <span th:text="${t.state().name() == 'ASSIGNED'} ? 'Quản lý nhóm' : 'Giao việc'"></span>
                                 </a>
                             </td>
                         </tr>
@@ -179,7 +179,7 @@
                 </div>
                 <div class="rp-empty" data-dht-empty th:hidden="${!#lists.isEmpty(board.topics())}">
                     <svg class="rp-icon"><use href="#dht-icon-folder"></use></svg>
-                    <strong th:text="${#lists.isEmpty(board.topics())} ? 'Bạn chưa phụ trách đề tài nào' : 'Không có đề tài phù hợp bộ lọc'">Không có đề tài phù hợp bộ lọc</strong>
+                    <strong th:text="${#lists.isEmpty(board.topics())} ? 'Bạn chưa phụ trách đề tài nào' : 'Không có đề tài phù hợp bộ lọc'"></strong>
                     <span>Đề tài xuất hiện ở đây khi Thư ký duyệt đề xuất bạn đã duyệt cấp phòng, hoặc giao Editorial Topic cho bạn.</span>
                 </div>
             </section>

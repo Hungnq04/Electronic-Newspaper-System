@@ -27,26 +27,21 @@
     workspace.current / workspace.previous = VersionViewDTO       (bản đang duyệt / bản liền trước)
     block (trong th:each)    = ContentBlockDTO      (một khối thân bài: đoạn chữ, ảnh, video, bảng)
     source (trong th:each)   = SourceItemDTO        (một tư liệu)
-    comment, reply (th:each) = ReviewCommentDTO     (một góp ý / một câu trả lời của Lead)
+    comment (trong th:each)  = ReviewCommentDTO     (một góp ý)
     version (trong th:each)  = VersionViewDTO       (một phiên bản, dùng cho ô chọn và so sánh)
 
   CÁC NÚT -> METHOD XỬ LÝ (tất cả là form POST, xử lý xong redirect lại trang này kèm toast):
     Bôi đen chữ + "Thêm góp ý"   -> form ẩn #comment-form      -> DepartmentHeadController.addComment()      -> service.addComment()
     "Thêm góp ý chung"           -> form .ws-general-form      -> DepartmentHeadController.addComment()      -> service.addComment()
     "Xóa" trên thẻ góp ý         -> form .../comments/{c}/delete  -> deleteComment()   -> service.deleteComment()
-    "Đã sửa" / "Chưa sửa"        -> form .../comments/{c}/resolve -> resolveComment()  -> service.setPreviousCommentResolved()
     "Xác nhận duyệt"             -> form trong #modal-approve  -> approve()          -> service.approve()
     "Gửi trả bài"                -> form trong #modal-revise   -> requestRevision()  -> service.requestRevision()
     Các nút KHÔNG gửi gì lên server (chỉ JS chạy trên trình duyệt): "So sánh phiên bản", đổi tab, "Xem vị trí →",
     mở / đóng hộp thoại, gợi ý nhanh.
 -->
 <!-- th:fragment="reviewWorkspaceContent": đặt tên cho khối này để layout/app.html chèn vào
-     (controller: model.addAttribute("contentFragment", "reviewWorkspaceContent")).
-     th:with tạo biến dùng trong khối:
-       openPrev = số góp ý vòng trước Lead CHƯA sửa (dùng trong hộp thoại Duyệt / Yêu cầu sửa).
-                  Cú pháp .?[!resolved] = lọc danh sách, giữ phần tử có resolved = false; #lists.size đếm số phần tử. -->
-<th:block th:fragment="reviewWorkspaceContent"
-          th:with="openPrev=${#lists.size(workspace.previousComments.?[!resolved])}">
+     (controller: model.addAttribute("contentFragment", "reviewWorkspaceContent")). -->
+<th:block th:fragment="reviewWorkspaceContent">
 
     <!-- Bộ icon SVG của màn này. Cách dùng: <svg class="rp-icon"><use href="#ws-icon-ten"></use></svg> -->
     <svg class="rp-svg-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
@@ -114,6 +109,10 @@
                         <svg class="rp-icon ws-icon-maroon"><use href="#ws-icon-compare"></use></svg><span id="btn-compare-label">So sánh phiên bản</span>
                     </button>
                 </div>
+                          <!-- Mở màn Lịch sử phiên bản (luôn hiện, kể cả bài mới có 1 phiên bản) -->
+                <a class="ws-btn ws-btn--white ws-history-link" th:href="@{/department-head/articles/{id}/versions(id=${workspace.articleId})}">
+                    <svg class="rp-icon ws-icon-maroon"><use href="#ws-icon-file"></use></svg><span>Lịch sử phiên bản</span>
+                </a>
             </div>
 
             <!-- Bố cục 2 cột: bài viết bên trái, góp ý bên phải -->
@@ -325,7 +324,6 @@
                                 </div>
                                 <p class="ws-quote" th:if="${comment.quotedText != null}" th:text="|“${comment.quotedText}”|">“trích dẫn”</p>
                                 <p class="ws-comment-text" th:text="${comment.content}">Nội dung góp ý</p>
-                                <div class="ws-reply" th:each="reply : ${comment.replies}"><b th:text="|${reply.authorName}:|">Lead:</b> <span th:text="${reply.content}">trả lời</span></div>
                                 <div class="ws-comment-foot">
                                     <button th:if="${comment.anchorField != null}" data-goto class="ws-link" type="button">Xem vị trí →</button>
                                     <span th:unless="${comment.anchorField != null}"></span>
@@ -353,36 +351,22 @@
                             </form>
                         </div>
 
-                        <!-- Tab "Vòng trước": góp ý trên phiên bản liền trước + góp ý CHƯA SỬA của các phiên bản cũ hơn.
-                             Trưởng ban xác nhận Lead đã sửa hay chưa (comment.status: RESOLVED = đã sửa, OPEN = chưa sửa).
-                             Ẩn sẵn, bấm tab thì JS hiện ra. Dữ liệu: workspace.previousComments (service tạo bằng earlierComments()).
-                             Nút "Đã sửa" / "Chưa sửa": POST .../comments/{c}/resolve?resolved=true|false
-                             -> DepartmentHeadController.resolveComment() -> service.setPreviousCommentResolved() -->
+                        <!-- Tab "Vòng trước": CHỈ ĐỂ ĐỌC lại các góp ý đã viết trên những phiên bản cũ (của Trưởng ban và Thư ký).
+                             Không có trạng thái "đã sửa / chưa sửa", không có nút. Ẩn sẵn, bấm tab thì JS hiện ra.
+                             Dữ liệu: workspace.previousComments (service tạo bằng earlierComments()), phiên bản mới hơn đứng trước. -->
 
                         <div th:if="${workspace.previous != null}" id="tab-prev" class="ws-tab-panel" hidden>
-                            <p class="ws-note">Góp ý trên <b th:text="|v${workspace.previous.label}|">v1.0</b> và góp ý chưa sửa của các phiên bản cũ hơn. Kiểm tra bản mới rồi đánh dấu đã sửa hay chưa.</p>
+                            <p class="ws-note">Góp ý trên các phiên bản trước. Đối chiếu với bản mới để xem Lead đã sửa theo góp ý chưa.</p>
                             <p class="ws-note" th:if="${#lists.isEmpty(workspace.previousComments)}"><i>Vòng trước không có góp ý.</i></p>
-                            <div class="ws-comment ws-comment--prev" th:each="comment : ${workspace.previousComments}" th:classappend="${comment.resolved} ? 'is-resolved'">
+                            <div class="ws-comment ws-comment--prev" th:each="comment : ${workspace.previousComments}">
                                 <div class="ws-comment-top">
                                     <b th:text="${comment.anchorLabel}">Đoạn 1</b>
-                                    <!-- Góp ý từ phiên bản cũ hơn bản liền trước: ghi rõ phiên bản để khỏi nhầm -->
-                                    <span class="ws-badge" th:if="${comment.versionLabel != null and comment.versionLabel != workspace.previous.label}"
-                                          th:text="|Từ v${comment.versionLabel}|">Từ v1.0</span>
-                                    <span th:if="${comment.resolved}" class="ws-badge ws-badge--done">Đã sửa</span>
-                                    <span th:unless="${comment.resolved}" class="ws-badge ws-badge--open">Chưa sửa</span>
+                                    <!-- Phiên bản chứa góp ý, ví dụ "v1.0" -->
+                                    <span class="ws-badge" th:if="${comment.versionLabel != null}" th:text="|v${comment.versionLabel}|">v1.0</span>
                                 </div>
                                 <p class="ws-quote" th:if="${comment.quotedText != null}" th:text="|“${comment.quotedText}”|">“trích dẫn”</p>
                                 <p class="ws-comment-text" th:text="${comment.content}">Nội dung góp ý</p>
                                 <span class="ws-comment-author" th:text="|${comment.authorName} · ${comment.timeText}|">Người góp ý</span>
-                                <div class="ws-reply" th:each="reply : ${comment.replies}"><b th:text="|${reply.authorName}:|">Lead:</b> <span th:text="${reply.content}">Đã sửa.</span></div>
-                                <div class="ws-resolve-buttons" th:if="${workspace.reviewable}">
-                                    <form method="post" th:action="@{/department-head/articles/{a}/comments/{c}/resolve(a=${workspace.articleId},c=${comment.id},resolved=true)}">
-                                        <button class="ws-btn ws-btn--green ws-btn--small" type="submit"><svg class="rp-icon"><use href="#ws-icon-check"></use></svg>Đã sửa</button>
-                                    </form>
-                                    <form method="post" th:action="@{/department-head/articles/{a}/comments/{c}/resolve(a=${workspace.articleId},c=${comment.id},resolved=false)}">
-                                        <button class="ws-btn ws-btn--grey ws-btn--small" type="submit">Chưa sửa</button>
-                                    </form>
-                                </div>
                             </div>
                         </div>
                     </section>
@@ -437,11 +421,10 @@
                 <h3>Yêu cầu sửa bài</h3>
                 <label for="revise-feedback">Nhận xét chung <span class="ws-required">*</span></label>
                 <textarea id="revise-feedback" class="ws-textarea" name="feedback" rows="4" required placeholder="Tóm tắt những gì Lead cần sửa..."></textarea>
-                <p class="ws-modal-subtitle">Kèm theo <span th:text="${#lists.size(workspace.comments)}">0</span> góp ý trong bài<span th:if="${openPrev > 0}" th:text="| và ${openPrev} góp ý vòng trước chưa sửa|"></span>:</p>
+                <p class="ws-modal-subtitle">Kèm theo <span th:text="${#lists.size(workspace.comments)}">0</span> góp ý trong bài:</p>
                 <ul class="ws-modal-list">
                     <li th:each="comment : ${workspace.comments}"><b th:text="${comment.anchorLabel}">Đoạn 1</b> – <span th:text="${comment.content}">nội dung</span></li>
-                    <li th:each="comment : ${workspace.previousComments}" th:if="${!comment.resolved}"><b>Vòng trước, chưa sửa</b> – <span th:text="${comment.content}">nội dung</span></li>
-                    <li th:if="${#lists.isEmpty(workspace.comments) and openPrev == 0}" class="is-empty">Không có góp ý trong bài, chỉ gửi nhận xét chung.</li>
+                    <li th:if="${#lists.isEmpty(workspace.comments)}" class="is-empty">Không có góp ý trong bài, chỉ gửi nhận xét chung.</li>
                 </ul>
                 <div class="ws-modal-actions">
                     <button data-close class="ws-btn ws-btn--grey" type="button">Hủy</button>
@@ -460,10 +443,10 @@
             <form class="ws-modal ws-modal--small" method="post" th:action="@{/department-head/articles/{a}/approve(a=${workspace.articleId})}">
                 <h3>Duyệt bài cấp phòng?</h3>
                 <p>Bài <span th:text="|v${workspace.current.label}|">v1.0</span> sẽ chuyển sang Thư ký tòa soạn duyệt cuối.</p>
-                <!-- Cảnh báo khi vẫn còn góp ý chưa xử lý -->
-                <div class="ws-warning" th:if="${openPrev > 0 or !#lists.isEmpty(workspace.comments)}">
+                <!-- Nhắc khi vòng này đã có góp ý mà vẫn bấm Duyệt (góp ý vẫn được lưu, Lead xem được trong lịch sử phiên bản) -->
+                <div class="ws-warning" th:if="${!#lists.isEmpty(workspace.comments)}">
                     <svg class="rp-icon"><use href="#ws-icon-warning"></use></svg>
-                    <span th:text="|Còn ${openPrev} góp ý vòng trước chưa xác nhận đã sửa và ${#lists.size(workspace.comments)} góp ý ở vòng này. Vẫn duyệt?|">Cảnh báo</span>
+                    <span th:text="|Bạn đã viết ${#lists.size(workspace.comments)} góp ý ở vòng này. Vẫn duyệt?|">Cảnh báo</span>
                 </div>
                 <label for="approve-feedback">Ghi chú (không bắt buộc)</label>
                 <textarea id="approve-feedback" class="ws-textarea" name="feedback" rows="2"></textarea>

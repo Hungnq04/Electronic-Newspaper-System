@@ -1,12 +1,11 @@
 package com.group6.electronic_drafting_system.dto.DepartmentHead;
 
-import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
 
-// Một góp ý gốc của người duyệt, kèm các câu trả lời của Lead (nếu có)
+// Một góp ý gốc của người duyệt (Trưởng ban hoặc Thư ký)
 //
-// TẠO Ở ĐÂU: ReviewWorkspaceMapper.toComment(comment, replies) (mapper/DepartmentHead/ReviewWorkspaceMapper.java dòng 68),
+// TẠO Ở ĐÂU: ReviewWorkspaceMapper.toComment(comment) (mapper/DepartmentHead/ReviewWorkspaceMapper.java),
 //            được DepartmentHeadReviewServiceImpl.rootComments() gọi cho từng góp ý gốc.
 // NẰM TRONG: ReviewWorkspaceDTO.comments (vòng này) và ReviewWorkspaceDTO.previousComments (vòng trước)
 // HTML ĐỌC:  th:each="comment : ${workspace.comments}" (tab "Vòng này") và th:each="comment : ${workspace.previousComments}" (tab "Vòng trước")
@@ -29,8 +28,6 @@ public class ReviewCommentDTO {
     private String content;            // nội dung góp ý -> ${comment.content}
     private String authorName;         // người viết
     private String timeText;           // thời gian, đã định dạng sẵn
-    private boolean resolved;          // true = Lead đã sửa (comment.status = RESOLVED) -> nhãn "Đã sửa" / "Chưa sửa" ở tab "Vòng trước"
-    private String versionLabel;       // góp ý nằm trên phiên bản nào, ví dụ "1.0" -> tab "Vòng trước" ghi rõ "Từ v1.0"
-    // Các câu trả lời của góp ý này (mỗi câu cũng là một ReviewCommentDTO). HTML: th:each="reply : ${comment.replies}"
-    private List<ReviewCommentDTO> replies;
+    private String versionLabel;       // góp ý nằm trên phiên bản nào, ví dụ "1.0" -> tab "Vòng trước" ghi "v1.0"
+    // Không có trạng thái "đã sửa / chưa sửa" và không có câu trả lời: màn này chỉ hiện lại góp ý đã viết.
 }

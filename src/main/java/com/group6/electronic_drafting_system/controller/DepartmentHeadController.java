@@ -246,14 +246,13 @@ public class DepartmentHeadController {
 
     // =====================================================================================================
     // ===== MÀN THẨM ĐỊNH BÀI VIẾT (workspace review, FL-05) =====
-    // Gồm 1 method GET (mở trang) + 5 method POST (các nút bấm trên trang). Tất cả gọi DepartmentHeadReviewService
+    // Gồm 1 method GET (mở trang) + 4 method POST (các nút bấm trên trang). Tất cả gọi DepartmentHeadReviewService
     // (object thật: service/impl/DepartmentHeadReviewServiceImpl.java).
     //
     //   URL                                                        Method              Gọi service
     //   GET  /department-head/articles/{id}/review                 reviewWorkspace()   departmentHeadReviewService.openWorkspace()
     //   POST /department-head/articles/{id}/comments               addComment()        departmentHeadReviewService.addComment()
     //   POST /department-head/articles/{id}/comments/{c}/delete    deleteComment()     departmentHeadReviewService.deleteComment()
-    //   POST /department-head/articles/{id}/comments/{c}/resolve   resolveComment()    departmentHeadReviewService.setPreviousCommentResolved()
     //   POST /department-head/articles/{id}/approve                approve()           departmentHeadReviewService.approve()
     //   POST /department-head/articles/{id}/request-revision       requestRevision()   departmentHeadReviewService.requestRevision()
     //
@@ -264,7 +263,24 @@ public class DepartmentHeadController {
     //   4. Trình duyệt tự gửi GET lại trang -> reviewWorkspace() chạy lại -> trang hiện dữ liệu MỚI + thông báo nhỏ (toast)
     //   Nhờ redirect, bấm F5 sau khi gửi form sẽ không gửi lại form lần nữa.
     // =====================================================================================================
-
+    
+    // ===== Màn "Lịch sử phiên bản" (UC-23): GET /department-head/articles/{articleId}/versions =====
+    // AI ĐƯA REQUEST TỚI ĐÂY?
+    //   - Nút "Lịch sử phiên bản" trên thanh trạng thái của màn thẩm định (workspacereview.html)
+    //   - Nút "Phiên bản" ở mỗi dòng của màn Lịch sử duyệt (review-history.html)
+    // Chỉ XEM. Sai quyền / không thấy bài -> service ném ApplicationException -> handleError() trả 403 / 404.
+    @GetMapping("/articles/{articleId}/versions")
+    public String versionHistory(@PathVariable Integer articleId, Authentication authentication, Model model) {
+        model.addAttribute("versionHistory", departmentHeadReviewService.getVersionHistory(currentEmail(authentication), articleId));
+        model.addAttribute("pageTitle", "Lịch sử phiên bản – Trưởng ban");
+        // layout/app.html chèn fragment "versionHistoryContent" của templates/department_head/version-history.html
+        model.addAttribute("contentView", "department_head/version-history");
+        model.addAttribute("contentFragment", "versionHistoryContent");
+        model.addAttribute("pageCss", List.of("/reporter/css/reporter-tasks.css", "/department_head/css/department-head-version-history.css"));
+        // Sidebar vẫn sáng mục "Duyệt bản thảo"
+        model.addAttribute("activePath", "/department-head/dashboard");
+        return "layout/app";
+    }
     // Mở trang thẩm định. Ai đưa tới đây? Trên dashboard, bấm tiêu đề bài hoặc nút "Đọc & Thẩm định chi tiết"
     // (link th:href="@{/department-head/articles/{id}/review(...)}" trong department_head/dashboard.html).
     // Màn thẩm định nằm trong layout chung (sidebar + nội dung), giống màn dashboard
@@ -317,16 +333,6 @@ public class DepartmentHeadController {
                                 Authentication authentication, RedirectAttributes flash) {
         return runAndReturn(articleId, flash, "Đã xóa góp ý.",
                 () -> departmentHeadReviewService.deleteComment(currentEmail(authentication), articleId, commentId));
-    }
-
-    // ----- Nút "Đã sửa" / "Chưa sửa" trên góp ý của VÒNG TRƯỚC (tab "Vòng trước") -----
-    // Hai form khác nhau ở tham số ?resolved=true hoặc ?resolved=false trên URL.
-    // @RequestParam boolean resolved: lấy giá trị sau dấu ? trong URL.
-    @PostMapping("/articles/{articleId}/comments/{commentId}/resolve")
-    public String resolveComment(@PathVariable Integer articleId, @PathVariable Integer commentId,
-                                 @RequestParam boolean resolved, Authentication authentication, RedirectAttributes flash) {
-        return runAndReturn(articleId, flash, resolved ? "Đã đánh dấu: Lead đã sửa." : "Đã đánh dấu: Lead chưa sửa.",
-                () -> departmentHeadReviewService.setPreviousCommentResolved(currentEmail(authentication), articleId, commentId, resolved));
     }
 
     // ----- Nút "Xác nhận duyệt" trong hộp thoại "Duyệt bài cấp phòng?" (id="modal-approve") -----

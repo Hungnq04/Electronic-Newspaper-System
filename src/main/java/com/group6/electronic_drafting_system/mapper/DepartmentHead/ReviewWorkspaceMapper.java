@@ -10,7 +10,6 @@ import com.group6.electronic_drafting_system.entity.ArticleVersion;
 import com.group6.electronic_drafting_system.entity.Comment;
 import com.group6.electronic_drafting_system.entity.Source;
 import com.group6.electronic_drafting_system.entity.enums.AnchorField;
-import com.group6.electronic_drafting_system.entity.enums.CommentStatus;
 import com.group6.electronic_drafting_system.entity.enums.SourceType;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -64,8 +63,8 @@ public class ReviewWorkspaceMapper {
                 .build();
     }
 
-    // replies: các câu trả lời (comment có parent) thuộc comment này
-    public ReviewCommentDTO toComment(Comment comment, List<Comment> replies) {
+    // Đổi một góp ý (entity Comment) thành ReviewCommentDTO để hiển thị. Không có trạng thái, không có câu trả lời.
+    public ReviewCommentDTO toComment(Comment comment) {
         return ReviewCommentDTO.builder()
                 .id(comment.getId())
                 .anchorLabel(anchorLabel(comment.getAnchorField(), comment.getAnchorParagraph()))
@@ -77,10 +76,8 @@ public class ReviewWorkspaceMapper {
                 .content(comment.getContent())
                 .authorName(comment.getCreator().getFullName())
                 .timeText(comment.getCreatedAt() != null ? comment.getCreatedAt().format(TIME) : "")
-                .resolved(comment.getStatus() == CommentStatus.RESOLVED)
                 // Phiên bản chứa góp ý (comment -> lượt duyệt -> version), ví dụ "1.0"
                 .versionLabel(comment.getReview().getVersion().getVersionLabel())
-                .replies(replies.stream().map(reply -> toComment(reply, List.of())).toList())
                 .build();
     }
 

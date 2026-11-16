@@ -348,23 +348,16 @@
             <h4><i data-lucide="messages-square"></i>Góp ý trên bài (<span th:text="${v.comments().size()}">0</span>)</h4>
             <ul class="comment-list">
                 <!-- data-*: vị trí góp ý, article-feedback.js dùng để tô vàng chữ trong nội dung phiên bản bên dưới -->
-                <li th:each="c : ${v.comments()}" class="fb-old-comment" th:classappend="${c.isOpen()} ? 'open' : 'resolved'"
+                <!-- Chỉ hiện lại góp ý (không trạng thái "cần xử lý / đã xử lý", không câu trả lời) -->
+                <li th:each="c : ${v.comments()}" class="fb-old-comment"
                     th:attr="data-comment-id=${c.id()},data-field=${c.anchorField()},data-paragraph=${c.anchorParagraph()},data-start=${c.anchorStart()},data-end=${c.anchorEnd()}">
                     <div class="comment-head">
                         <span class="vtag" th:text="${c.anchorLabel()}"></span>
-                        <span class="vtag" th:classappend="${c.isOpen()} ? 'request_revision' : 'approved'"
-                              th:text="${c.isOpen()} ? 'Cần xử lý' : 'Đã xử lý'"></span>
                         <span class="fb-click-hint" th:if="${c.hasAnchor()}">Bấm để xem vị trí</span>
                     </div>
                     <blockquote class="comment-quote" th:if="${c.quotedText() != null}" th:text="${c.quotedText()}"></blockquote>
                     <p class="pre-wrap" th:text="${c.content()}"></p>
                     <small th:text="${c.authorName()} + ' (' + ${c.stageLabel()} + ') · ' + ${#temporals.format(c.createdAt(), 'HH:mm dd/MM/yyyy')}"></small>
-                    <div class="comment-replies" th:unless="${c.replies().isEmpty()}">
-                        <div th:each="r : ${c.replies()}">
-                            <p class="pre-wrap" th:text="${r.content()}"></p>
-                            <small th:text="${r.authorName()} + ' · ' + ${#temporals.format(r.createdAt(), 'HH:mm dd/MM/yyyy')}"></small>
-                        </div>
-                    </div>
                 </li>
             </ul>
         </section>

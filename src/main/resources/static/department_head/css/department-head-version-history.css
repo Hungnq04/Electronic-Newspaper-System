@@ -1,0 +1,29 @@
+/* Màn "Lịch sử phiên bản" (templates/department_head/version-history.html).
+   Phần lớn giao diện dùng chung reporter-tasks.css (class rp-). File này chỉ thêm phần riêng (tiền tố vh-). */
+
+.vh-list { list-style: none; margin: 0; padding: 16px 20px; display: grid; gap: 14px; }
+.vh-item { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px; background: #fff; }
+.vh-item.is-latest { border-color: #6b0119; }
+
+.vh-item-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 12px; }
+.vh-version { font-family: var(--rp-mono); font-size: 14px; font-weight: 700; color: var(--rp-ink); }
+.vh-latest-tag { padding: 2px 8px; border-radius: 999px; background: #f7e8eb; color: #6b0119; font-size: 11px; font-weight: 700; }
+
+.vh-summary { margin: 10px 0 0; font-size: 13px; white-space: pre-line; }
+
+.vh-reviews { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; }
+.vh-reviews li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.vh-reviewer { color: var(--rp-muted); font-size: 12px; }
+.vh-feedback { flex-basis: 100%; margin: 0; padding: 8px 10px; border-left: 3px solid #e5e7eb;
+    background: #fafafa; font-size: 12px; white-space: pre-line; }
+.vh-no-review { margin: 12px 0 0; font-size: 12px; }
+
+.vh-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
+.vh-comment-count { display: flex; align-items: center; gap: 4px; color: var(--rp-muted); font-size: 11px; }
+.vh-comment-count .rp-icon { width: 12px; height: 12px; }
+
+.vh-content { margin-top: 10px; font-size: 13px; }
+.vh-content summary { cursor: pointer; color: #6b0119; font-weight: 600; }
+.vh-content h3 { margin: 10px 0 4px; font-size: 16px; }
+.vh-subtitle { margin: 0 0 6px; color: var(--rp-muted); }
+.vh-sapo { font-style: italic; }

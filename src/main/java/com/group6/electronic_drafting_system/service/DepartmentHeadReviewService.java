@@ -2,7 +2,7 @@ package com.group6.electronic_drafting_system.service;
 
 import com.group6.electronic_drafting_system.dto.DepartmentHead.CommentRequestDTO;
 import com.group6.electronic_drafting_system.dto.DepartmentHead.ReviewWorkspaceDTO;
-
+import com.group6.electronic_drafting_system.dto.DepartmentHead.VersionHistoryPageDTO;
 // Trưởng phòng thẩm định một bài viết (FL-05): xem, góp ý, duyệt hoặc trả bài cho Lead
 //
 // Đây là INTERFACE = "menu": chỉ liệt kê có những việc gì, không có code bên trong.
@@ -21,12 +21,14 @@ public interface DepartmentHeadReviewService {
     // Xóa góp ý của chính mình trong lượt duyệt đang mở. Gọi từ: DepartmentHeadController.deleteComment()
     void deleteComment(String email, Integer articleId, Integer commentId);
 
-    // Đánh dấu góp ý VÒNG TRƯỚC là Lead đã sửa (RESOLVED) hay chưa (OPEN). Gọi từ: DepartmentHeadController.resolveComment()
-    void setPreviousCommentResolved(String email, Integer articleId, Integer commentId, boolean resolved);
-
     // Duyệt cấp phòng: DEPARTMENT_REVIEW -> DEPARTMENT_APPROVED. Gọi từ: DepartmentHeadController.approve()
     void approve(String email, Integer articleId, String feedback);
 
     // Trả bài cho Lead: DEPARTMENT_REVIEW -> REVISION_REQUIRED, bắt buộc có nhận xét. Gọi từ: DepartmentHeadController.requestRevision()
     void requestRevision(String email, Integer articleId, String feedback);
+    
+    // Màn "Lịch sử phiên bản" (UC-23): mọi phiên bản của bài + các lượt duyệt đã chốt. Chỉ đọc, không tạo lượt duyệt.
+    // Gọi từ: DepartmentHeadController.versionHistory()  (GET /department-head/articles/{id}/versions)
+    VersionHistoryPageDTO getVersionHistory(String email, Integer articleId);
+    
 }

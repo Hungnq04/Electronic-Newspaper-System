@@ -68,7 +68,6 @@
          th:attr="data-comment-id=${c.id()},data-field=${c.anchorField()},data-quote=${c.quotedText()}">
         <div class="fb-comment-top">
             <span class="fb-anchor" th:text="${c.anchorLabel()}">Đoạn 2</span>
-            <span class="fb-status" th:classappend="${c.isOpen()} ? 'open' : 'done'" th:text="${c.isOpen()} ? 'Cần xử lý' : 'Đã xử lý'">Cần xử lý</span>
         </div>
         <blockquote class="fb-quote" th:if="${c.quotedText() != null}" th:text="|“${c.quotedText()}”|">“trích dẫn”</blockquote>
         <p class="fb-text" th:text="${c.content()}">Nội dung góp ý</p>
@@ -78,7 +77,6 @@
             <span class="fb-role" th:classappend="|fb-role--${c.roleClass()}|" th:text="${c.stageLabel()}">Trưởng ban</span>
             <span th:text="${#temporals.format(c.createdAt(), 'HH:mm dd/MM')}">08:42 11/10</span>
         </div>
-        <div class="fb-reply" th:each="reply : ${c.replies()}"><b th:text="|${reply.authorName()}:|">Lead:</b> <span th:text="${reply.content()}">trả lời</span></div>
         <div class="fb-actions">
             <button type="button" class="fb-link" data-fb-find th:if="${c.quotedText() != null}">Tìm trong bài →</button>
             <!-- data-open: editor.js mở popup phiên bản cũ; article-feedback.js cuộn tới chữ được tô vàng -->

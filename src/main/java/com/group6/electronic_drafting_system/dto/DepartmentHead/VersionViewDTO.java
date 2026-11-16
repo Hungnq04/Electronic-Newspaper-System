@@ -3,6 +3,7 @@ package com.group6.electronic_drafting_system.dto.DepartmentHead;
 import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
 // Một phiên bản bài (article_version) đã tách nội dung thành từng đoạn để hiển thị và so sánh
 //
@@ -26,4 +27,12 @@ public class VersionViewDTO {
     // Thân bài theo đúng bố cục phóng viên sắp xếp (đoạn, ảnh, video, bảng)
     // HTML lặp: th:each="block : ${workspace.current.blocks}" rồi th:switch theo block.kind để in đoạn chữ / ảnh / video / bảng.
     private List<ContentBlockDTO> blocks;
+    
+    // ===== 2 ô chỉ dùng cho màn "Lịch sử phiên bản" (UC-23); màn thẩm định không dùng nên để trống =====
+    // @Setter: Lombok tự sinh hàm setReviewNotes(...) / setCommentCount(...), để service điền vào SAU khi mapper tạo xong object.
+    // Các lượt duyệt ĐÃ CHỐT trên phiên bản này, mỗi lượt là MỘT dòng chữ đã ghép sẵn, ví dụ:
+    //   "Thư ký Trần B · Yêu cầu sửa · 09:30 07/11/2026: Thiếu số liệu"
+    @Setter private List<String> reviewNotes;
+    // Số góp ý trên phiên bản này (của Trưởng phòng + Thư ký)
+    @Setter private int commentCount;
 }

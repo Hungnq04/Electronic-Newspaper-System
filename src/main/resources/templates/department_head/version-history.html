@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  Màn "Lịch sử phiên bản" của Trưởng phòng (UC-23, FL-05). Chỉ XEM, không có nút ghi dữ liệu.
+  Dữ liệu: ${versionHistory} (VersionHistoryPageDTO) do DepartmentHeadController.versionHistory() truyền vào.
+  Mỗi phiên bản là một VersionViewDTO (giống màn thẩm định), MỚI NHẤT ĐỨNG ĐẦU danh sách.
+  Khung "Xem nội dung" dùng thẻ <details> có sẵn của HTML (bấm để mở / đóng), không cần JS.
+-->
+<th:block th:fragment="versionHistoryContent">
+    <svg class="rp-svg-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+        <symbol id="vh-icon-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+        <symbol id="vh-icon-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+        <symbol id="vh-icon-compare" viewBox="0 0 24 24"><path d="M8 3v18M16 3v18M3 8h5M16 16h5"/></symbol>
+    </svg>
+
+    <section class="rp-page vh-page" aria-label="Lịch sử phiên bản">
+        <header th:replace="~{department_head/dashboard :: dhTopbar(${versionHistory.displayName}, ${versionHistory.departmentName}, ${versionHistory.userInitials}, false)}"></header>
+
+        <main class="rp-main">
+            <div class="rp-heading-row">
+                <div class="rp-heading">
+                    <nav class="rp-breadcrumb" aria-label="Breadcrumb">
+                        <span>QUY TRÌNH CẤP 2</span><svg class="rp-icon rp-icon--tiny"><use href="#vh-icon-chevron-right"></use></svg>
+                        <span th:text="|Bài #${versionHistory.articleCode}|">Bài #BT-15</span><svg class="rp-icon rp-icon--tiny"><use href="#vh-icon-chevron-right"></use></svg>
+                        <strong>Lịch sử phiên bản</strong>
+                    </nav>
+                    <h1 th:text="${versionHistory.articleTitle}">Tít bài</h1>
+                    <p>
+                        Đề tài: <strong th:text="${versionHistory.topicTitle}">Đề tài</strong>
+                        · Chuyên mục: <strong th:text="${versionHistory.category}">Kinh tế</strong>
+                        · Lead: <strong th:text="${versionHistory.leadName}">Nguyễn Văn A</strong>
+                    </p>
+                </div>
+                <div class="rp-heading-actions">
+                    <a class="rp-button rp-button--outline" th:href="@{/department-head/articles/{id}/review(id=${versionHistory.articleId})}">Về màn thẩm định</a>
+                </div>
+            </div>
+
+            <section class="rp-card">
+                <div class="rp-card-head">
+                    <h2>Các phiên bản <span class="rp-count-pill"><b th:text="${#lists.size(versionHistory.versions)}">3</b> phiên bản</span></h2>
+                    <span class="rp-sort-note" th:text="|Trạng thái bài: ${versionHistory.statusText}|">Trạng thái bài: ...</span>
+                </div>
+
+                <!-- th:each="version, row : ..." : version = phiên bản đang lặp, row = thông tin vòng lặp.
+                     row.first = true ở dòng đầu tiên = phiên bản MỚI NHẤT; row.size = tổng số phiên bản. -->
+                <ol class="vh-list">
+                    <li class="vh-item" th:each="version, row : ${versionHistory.versions}" th:classappend="${row.first} ? 'is-latest'">
+                        <div class="vh-item-head">
+                            <span class="vh-version" th:text="|v${version.label}|">v1.1</span>
+                            <span class="vh-latest-tag" th:if="${row.first}">Mới nhất</span>
+                            <span class="rp-muted" th:text="|Nộp lúc ${version.createdAtText}|">Nộp lúc ...</span>
+                        </div>
+
+                        <!-- Ghi chú "đã sửa gì" (chỉ có từ lần nộp lại trở đi) -->
+                        <p class="vh-summary" th:if="${version.changeSummary != null}"><b>Đã sửa gì:</b> <span th:text="${version.changeSummary}">...</span></p>
+                        <p class="vh-summary rp-muted" th:if="${version.changeSummary == null}">Lần nộp đầu tiên.</p>
+
+                        <!-- Các lượt duyệt đã chốt: mỗi lượt là một dòng chữ service đã ghép sẵn -->
+                        <ul class="vh-reviews" th:unless="${#lists.isEmpty(version.reviewNotes)}">
+                            <li th:each="note : ${version.reviewNotes}" th:text="${note}">Trưởng phòng ... · Yêu cầu sửa · ...</li>
+                        </ul>
+                        <p class="vh-no-review rp-muted" th:if="${#lists.isEmpty(version.reviewNotes)}">Chưa có lượt duyệt nào được chốt trên phiên bản này.</p>
+
+                        <div class="vh-actions">
+                            <small class="vh-comment-count"><svg class="rp-icon"><use href="#vh-icon-message"></use></svg><span th:text="|${version.commentCount} góp ý|">2 góp ý</span></small>
+
+                            <!-- Nút So sánh: mở màn thẩm định với ?compare=nhãn -> JS mở sẵn khung so sánh.
+                                 Màn thẩm định luôn so "bản được chọn" với bản MỚI NHẤT (versions[0]), nên:
+                                 - Dòng mới nhất: so với bản liền trước (versions[1]); chỉ hiện khi bài có từ 2 phiên bản. -->
+                            <a class="rp-button rp-button--outline rp-button--small" th:if="${row.first and row.size > 1}"
+                               th:href="@{/department-head/articles/{id}/review(id=${versionHistory.articleId},compare=${versionHistory.versions[1].label})}">
+                                <svg class="rp-icon"><use href="#vh-icon-compare"></use></svg>
+                                <span th:text="|So sánh với v${versionHistory.versions[1].label}|">So sánh</span>
+                            </a>
+                            <!-- - Các dòng cũ: so chính phiên bản đó với bản mới nhất. -->
+                            <a class="rp-button rp-button--outline rp-button--small" th:unless="${row.first}"
+                               th:href="@{/department-head/articles/{id}/review(id=${versionHistory.articleId},compare=${version.label})}">
+                                <svg class="rp-icon"><use href="#vh-icon-compare"></use></svg>
+                                <span th:text="|So sánh với v${versionHistory.versions[0].label}|">So sánh</span>
+                            </a>
+                        </div>
+
+                        <details class="vh-content">
+                            <summary>Xem nội dung phiên bản</summary>
+                            <h3 th:text="${version.title}">Tít</h3>
+                            <p class="vh-subtitle" th:if="${!#strings.isEmpty(version.subtitle)}" th:text="${version.subtitle}">Tít phụ</p>
+                            <p class="vh-sapo" th:text="${version.sapo}">Sapo</p>
+                            <p th:each="paragraph : ${version.paragraphs}" th:text="${paragraph}">Đoạn</p>
+                        </details>
+                    </li>
+                </ol>
+            </section>
+        </main>
+    </section>
+</th:block>
+</body>
+</html>

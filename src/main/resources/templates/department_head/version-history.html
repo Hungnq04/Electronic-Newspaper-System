@@ -69,13 +69,6 @@
                             <a class="rp-button rp-button--outline rp-button--small"
                                th:href="@{/department-head/articles/{a}/versions/{v}(a=${versionHistory.articleId},v=${version.versionId})}">Xem chi tiết</a>
                         </div>
-                        <details class="vh-content">
-                            <summary>Xem nội dung phiên bản</summary>
-                            <h3 th:text="${version.title}">Tít</h3>
-                            <p class="vh-subtitle" th:if="${!#strings.isEmpty(version.subtitle)}" th:text="${version.subtitle}">Tít phụ</p>
-                            <p class="vh-sapo" th:text="${version.sapo}">Sapo</p>
-                            <p th:each="paragraph : ${version.paragraphs}" th:text="${paragraph}">Đoạn</p>
-                        </details>
                     </li>
                 </ol>
             </section>

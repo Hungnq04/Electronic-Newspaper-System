@@ -37,7 +37,6 @@
                     </div>
                 </div>
                 <div class="rp-control-actions">
-                    // Nút viết bài
                     <a class="rp-action-tile rp-action-tile--write" th:if="${t.writeHref() != null}" th:href="@{${t.writeHref()}}">
                         <svg class="rp-icon"><use href="#rp-icon-edit"></use></svg>
                         <span><b th:text="${#strings.toUpperCase(t.writeLabel())}">VIẾT BÀI / SOẠN TIN</b>

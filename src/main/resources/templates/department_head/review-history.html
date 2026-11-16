@@ -138,6 +138,8 @@
                                 <div class="rp-actions">
                                     <!-- Mở màn thẩm định: bài không còn chờ duyệt nên tự ở chế độ CHỈ XEM (reviewable = false) -->
                                     <a class="rp-button rp-button--outline rp-button--small" th:href="@{/department-head/articles/{id}/review(id=${item.articleId})}"><svg class="rp-icon"><use href="#rh-icon-eye"></use></svg>Xem bài</a>
+                                                                        <!-- Mở màn Lịch sử phiên bản của bài này -->
+                                    <a class="rp-button rp-button--outline rp-button--small" th:href="@{/department-head/articles/{id}/versions(id=${item.articleId})}">Phiên bản</a>
                                 </div>
                             </td>
                         </tr>

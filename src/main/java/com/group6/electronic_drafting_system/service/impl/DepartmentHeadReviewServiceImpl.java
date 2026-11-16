@@ -1,4 +1,5 @@
 package com.group6.electronic_drafting_system.service.impl;
+import com.group6.electronic_drafting_system.dto.DepartmentHead.VersionHistoryPageDTO;
 
 import com.group6.electronic_drafting_system.dto.DepartmentHead.CommentRequestDTO;
 import com.group6.electronic_drafting_system.dto.DepartmentHead.ReviewCommentDTO;
@@ -15,7 +16,6 @@ import com.group6.electronic_drafting_system.entity.enums.AnchorField;
 import com.group6.electronic_drafting_system.entity.enums.ArticleReviewDecision;
 import com.group6.electronic_drafting_system.entity.enums.ArticleStatus;
 import com.group6.electronic_drafting_system.entity.enums.AssignmentRole;
-import com.group6.electronic_drafting_system.entity.enums.CommentStatus;
 import com.group6.electronic_drafting_system.entity.enums.ReviewKind;
 import com.group6.electronic_drafting_system.entity.enums.ReviewStage;
 import com.group6.electronic_drafting_system.exception.ApplicationException;
@@ -31,6 +31,8 @@ import com.group6.electronic_drafting_system.repository.CommentRepository;
 import com.group6.electronic_drafting_system.service.DepartmentHeadReviewService;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -75,6 +77,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional(readOnly = true)
 public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewService {
+        // Định dạng ngày giờ hiển thị, giống ReviewWorkspaceMapper: "09:30 07/11/2026"
+    private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
     // 8 "dụng cụ", Spring điền vào qua constructor bên dưới (Dependency Injection).
     private final AccountRepository accounts;            // bảng account
     private final ArticleRepository articles;            // bảng article (+ article_source)
@@ -261,30 +265,6 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
     }
 
     // =====================================================================================================
-    // ĐÁNH DẤU GÓP Ý VÒNG TRƯỚC "ĐÃ SỬA" / "CHƯA SỬA". Gọi từ DepartmentHeadController.resolveComment().
-    // =====================================================================================================
-    @Override
-    @Transactional
-    public void setPreviousCommentResolved(String email, Integer articleId, Integer commentId, boolean resolved) {
-        Account head = currentHead(email);
-        ArticleReview review = myOpenReview(head, findArticle(articleId));
-        Comment comment = comments.findWithReview(commentId)
-                .orElseThrow(() -> new ApplicationException(ErrorCode.COMMENT_NOT_FOUND));
-        // Góp ý phải thuộc một version CŨ của chính bài này (vòng trước)
-        //   - version của góp ý phải thuộc bài này
-        //   - KHÔNG được là version đang duyệt (góp ý vòng này thì không có nút "Đã sửa")
-        //   - phải là góp ý gốc (parent == null), không phải câu trả lời
-        ArticleVersion version = comment.getReview().getVersion();
-        if (!version.getArticle().getId().equals(articleId) || version.getId().equals(review.getVersion().getId())
-                || comment.getParent() != null) {
-            throw new ApplicationException(ErrorCode.COMMENT_INVALID);
-        }
-        // Chỉ cần đổi giá trị trong object: vì đang trong @Transactional, Hibernate tự UPDATE xuống DB khi method kết thúc
-        // (không cần gọi save).
-        comment.setStatus(resolved ? CommentStatus.RESOLVED : CommentStatus.OPEN);
-    }
-
-    // =====================================================================================================
     // DUYỆT CẤP PHÒNG. Gọi từ DepartmentHeadController.approve().
     // =====================================================================================================
     // DEPARTMENT_REVIEW -> DEPARTMENT_APPROVED (CLAUDE.md mục 6.2). Đây KHÔNG phải Final Approve; bài sang hàng chờ Thư ký
@@ -322,7 +302,98 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
         article.setStatus(ArticleStatus.REVISION_REQUIRED);
         article.setCompletedAt(null); // ck_article_completed: bài chưa APPROVED thì completed_at phải NULL
     }
+   
+    // =====================================================================================================
+    // LỊCH SỬ PHIÊN BẢN (UC-23). Gọi từ DepartmentHeadController.versionHistory().
+    // CHỈ ĐỌC: khác openWorkspace, ở đây KHÔNG tạo lượt duyệt (article_review), nên dùng readOnly của class.
+    // =====================================================================================================
+    @Override
+    public VersionHistoryPageDTO getVersionHistory(String email, Integer articleId) {
+        // ===== BƯỚC 1: kiểm tra quyền XEM, giống hệt màn thẩm định =====
+        // Cùng phòng HOẶC được giao, và không phải Lead (BR-34). Sai quyền -> lỗi 403 (controller handleError).
+        Account head = currentHead(email);
+        Article article = findArticle(articleId);
+        checkCanReview(head, article);
 
+        // ===== BƯỚC 2: mọi version của bài, xếp tăng dần [v1.0, v1.1, ...] =====
+        List<ArticleVersion> allVersions = versions.findByArticleIdOrderByVersionNumberAsc(articleId);
+        if (allVersions.isEmpty()) throw new ApplicationException(ErrorCode.ARTICLE_NOT_SUBMITTED);
+
+        // ===== BƯỚC 3: mọi lượt duyệt trên các version này (1 câu SQL), chỉ giữ lượt ĐÃ CHỐT (decision khác NULL) =====
+        List<ArticleReview> decidedReviews = new ArrayList<>();
+        for (ArticleReview review : articleReviews.findByVersionIn(allVersions)) {
+            if (review.getDecision() != null) {
+                decidedReviews.add(review);
+            }
+        }
+        // Xếp theo thời điểm chốt, cũ trước mới sau (ví dụ: Trưởng phòng duyệt rồi mới tới Thư ký)
+        decidedReviews.sort(Comparator.comparing(ArticleReview::getReviewedAt));
+
+        // ===== BƯỚC 4: đổi từng version thành VersionViewDTO, đi LÙI để phiên bản mới nhất đứng đầu =====
+        List<VersionViewDTO> versionRows = new ArrayList<>();
+        for (int i = allVersions.size() - 1; i >= 0; i--) {
+            ArticleVersion version = allVersions.get(i);
+            // mapper của màn thẩm định: nhãn, ngày nộp, ghi chú, tít, sapo, các đoạn
+            VersionViewDTO row = mapper.toVersionView(version);
+            // Điền thêm 2 ô riêng của màn này
+            row.setReviewNotes(reviewNotesOf(version, decidedReviews));
+            row.setCommentCount(rootComments(version).size());   // dùng lại hàm phụ rootComments có sẵn
+            versionRows.add(row);
+        }
+
+        // ===== BƯỚC 5: đóng gói cả trang =====
+        return VersionHistoryPageDTO.builder()
+                .articleId(article.getId())
+                .articleCode("BT-" + article.getId())
+                .articleTitle(article.getTitle())
+                .topicTitle(article.getTopic().getTitle())
+                .category(article.getCategory())
+                .leadName(article.getLead().getFullName())
+                .statusText(statusText(article.getStatus()))
+                .versions(versionRows)
+                .displayName(head.getFullName())
+                .departmentName(head.getDepartment() != null ? head.getDepartment().getDepartmentName() : null)
+                .userInitials(entryMapper.initials(head.getFullName()))
+                .build();
+    }
+    
+    // =====================================================================================================
+    // CHI TIẾT PHIÊN BẢN (UC-23). Gọi từ DepartmentHeadController.versionDetail(). Chỉ đọc, không ghi DB.
+    // =====================================================================================================
+    @Override
+    public VersionHistoryPageDTO getVersionDetail(String email, Integer articleId, Integer versionId) {
+        // BƯỚC 1: dùng lại getVersionHistory: đã kiểm tra quyền XEM + có sẵn mọi phiên bản (MỚI NHẤT TRƯỚC),
+        //         mỗi phiên bản đã có nội dung, ảnh (blocks), lượt duyệt (reviewNotes), số góp ý.
+        VersionHistoryPageDTO page = getVersionHistory(email, articleId);
+        List<VersionViewDTO> list = page.getVersions();
+
+        // BƯỚC 2: tìm phiên bản cần xem TRONG CHÍNH bài này (rule R22).
+        // Gõ versionId của bài khác -> không tìm thấy trong danh sách -> lỗi 404.
+        int index = -1;
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i).getVersionId().equals(versionId)) {
+                index = i;
+                break;
+            }
+        }
+        if (index == -1) throw new ApplicationException(ErrorCode.ARTICLE_VERSION_NOT_FOUND);
+
+        // BƯỚC 3: góp ý GỐC trên phiên bản này (của Trưởng phòng và Thư ký). SQL -> CommentRepository.findByVersion
+        List<ReviewCommentDTO> selectedComments = new ArrayList<>();
+        for (Comment comment : comments.findByVersion(versionId)) {
+            if (comment.getParent() == null) {
+                selectedComments.add(mapper.toComment(comment));
+            }
+        }
+
+        // BƯỚC 4: điền 4 ô của màn chi tiết.
+        // Danh sách xếp MỚI NHẤT TRƯỚC, nên bản CŨ hơn nằm ở index + 1, bản MỚI hơn nằm ở index - 1.
+        page.setSelectedVersion(list.get(index));
+        page.setSelectedComments(selectedComments);
+        page.setOlderVersion(index + 1 < list.size() ? list.get(index + 1) : null);
+        page.setNewerVersion(index > 0 ? list.get(index - 1) : null);
+        return page;
+    }
     // ---------- Kiểm tra quyền ----------
     // Các hàm dưới đây được gọi ở ĐẦU mọi method public bên trên. Kiểm tra quyền ở backend
     // nên dù ai đó tự gõ URL hay tự gửi form cũng bị chặn.
@@ -391,6 +462,41 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
     }
 
     // ---------- Hàm phụ ----------
+    // Ghép các lượt duyệt đã chốt của MỘT version thành từng dòng chữ, ví dụ:
+    //   "Thư ký Trần B · Yêu cầu sửa · 09:30 07/11/2026: Thiếu số liệu"
+    // decidedReviews: mọi lượt đã chốt của bài; ở đây chỉ lấy những lượt thuộc ĐÚNG version này.
+    private List<String> reviewNotesOf(ArticleVersion version, List<ArticleReview> decidedReviews) {
+        List<String> notes = new ArrayList<>();
+        for (ArticleReview review : decidedReviews) {
+            if (!review.getVersion().getId().equals(version.getId())) {
+                continue;   // lượt này thuộc version khác -> bỏ qua
+            }
+            String stage = review.getReviewStage() == ReviewStage.DEPARTMENT ? "Trưởng phòng" : "Thư ký";
+            String note = stage + " " + review.getReviewer().getFullName()
+                    + " · " + decisionText(review)
+                    + " · " + review.getReviewedAt().format(DATE_TIME);
+            // Có nhận xét thì nối thêm vào cuối dòng
+            if (review.getFeedback() != null) {
+                note = note + ": " + review.getFeedback();
+            }
+            notes.add(note);
+        }
+        return notes;
+    }
+
+    // Chữ hiển thị cho kết quả một lượt duyệt
+    private static String decisionText(ArticleReview review) {
+        if (review.getDecision() == ArticleReviewDecision.APPROVED) {
+            return review.getReviewStage() == ReviewStage.DEPARTMENT ? "Duyệt cấp phòng" : "Duyệt cuối";
+        }
+        // REQUEST_REVISION: phân biệt theo review_kind (CLAUDE.md mục 7)
+        return switch (review.getReviewKind()) {
+            case RETURN_TO_LEAD -> "Trả lại Lead (bài đã duyệt)";
+            case CANCEL_SCHEDULE -> "Hủy lịch đăng, trả Lead";
+            default -> "Yêu cầu sửa";
+        };
+    }
+
 
     // Tạo object lượt duyệt cấp DEPARTMENT mới (chưa lưu; nơi gọi sẽ articleReviews.save). decision để trống = "đang duyệt".
     private static ArticleReview newDepartmentReview(ArticleVersion version, Account head) {
@@ -410,34 +516,27 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
         review.setReviewedAt(OffsetDateTime.now().truncatedTo(ChronoUnit.SECONDS));
     }
 
-    // Góp ý gốc của mọi lượt duyệt trên một version, mỗi góp ý kèm các câu trả lời của nó
+    // Góp ý GỐC của mọi lượt duyệt trên một version (của Trưởng ban và Thư ký).
+    // Câu trả lời (comment có parent) KHÔNG lấy: hệ thống không có chức năng trả lời góp ý.
     private List<ReviewCommentDTO> rootComments(ArticleVersion version) {
-        // SQL -> CommentRepository.findByVersion: mọi comment (cả góp ý gốc lẫn câu trả lời) trên version này
-        List<Comment> all = comments.findByVersion(version.getId());
-        return all.stream()
-                // Giữ lại góp ý GỐC (không có parent)
-                .filter(c -> c.getParent() == null)
-                // Với mỗi góp ý gốc: tìm các câu trả lời của nó (parent = góp ý gốc này),
-                // rồi mapper.toComment (ReviewWorkspaceMapper dòng 68) đổi thành ReviewCommentDTO kèm danh sách replies
-                .map(root -> mapper.toComment(root, all.stream()
-                        .filter(c -> c.getParent() != null && c.getParent().getId().equals(root.getId())).toList()))
-                .toList();
+        // SQL -> CommentRepository.findByVersion: mọi comment trên version này
+        List<ReviewCommentDTO> result = new ArrayList<>();
+        for (Comment comment : comments.findByVersion(version.getId())) {
+            if (comment.getParent() == null) {          // chỉ giữ góp ý gốc
+                result.add(mapper.toComment(comment));  // ReviewWorkspaceMapper.toComment: đổi thành ReviewCommentDTO
+            }
+        }
+        return result;
     }
 
-    // Góp ý của các vòng trước cho tab "Vòng trước" (UC-21, FR-08 "các Comment chưa RESOLVED"):
-    //   - version LIỀN TRƯỚC: lấy hết (cả đã sửa lẫn chưa sửa) để Trưởng ban đối chiếu với bản mới
-    //   - các version CŨ HƠN: chỉ lấy góp ý còn OPEN (chưa sửa), để không bị sót qua nhiều vòng
+    // Góp ý của các vòng trước cho tab "Vòng trước": MỌI góp ý trên MỌI version cũ, chỉ để đọc lại.
     // allVersions xếp tăng dần [v1.0, v1.1, ..., bản đang duyệt]; version đang duyệt không tính.
+    // Đi lùi từ version liền trước về v1.0, nên góp ý của phiên bản mới hơn đứng trước.
     private List<ReviewCommentDTO> earlierComments(List<ArticleVersion> allVersions) {
         List<ReviewCommentDTO> result = new ArrayList<>();
         int previousIndex = allVersions.size() - 2;   // vị trí version liền trước; < 0 nghĩa là bài mới nộp 1 lần
-        if (previousIndex < 0) return result;
-        result.addAll(rootComments(allVersions.get(previousIndex)));
-        // Đi lùi từ version cũ hơn liền kề về v1.0
-        for (int i = previousIndex - 1; i >= 0; i--) {
-            for (ReviewCommentDTO comment : rootComments(allVersions.get(i))) {
-                if (!comment.isResolved()) result.add(comment);
-            }
+        for (int i = previousIndex; i >= 0; i--) {
+            result.addAll(rootComments(allVersions.get(i)));
         }
         return result;
     }

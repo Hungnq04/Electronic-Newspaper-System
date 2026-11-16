@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  Màn "Chi tiết phiên bản" của Trưởng phòng (UC-23, FL-05). Chỉ XEM, không có nút ghi dữ liệu.
+  Dữ liệu: ${versionHistory} (VersionHistoryPageDTO) do DepartmentHeadController.versionDetail() truyền vào:
+    versionHistory.selectedVersion  = phiên bản đang xem (VersionViewDTO: tít, sapo, blocks, reviewNotes...)
+    versionHistory.selectedComments = góp ý trên phiên bản này (danh sách ReviewCommentDTO)
+    versionHistory.olderVersion / newerVersion = phiên bản liền trước / liền sau (null nếu không có) -> nút lật
+  Phần hiện nội dung bài copy từ workspacereview.html và dùng chung CSS ws- của màn thẩm định.
+  th:with="v=..." : đặt tên ngắn "v" cho phiên bản đang xem để bên dưới viết gọn.
+-->
+<th:block th:fragment="versionDetailContent" th:with="v=${versionHistory.selectedVersion}">
+    <section class="rp-page ws-page" aria-label="Chi tiết phiên bản">
+        <header th:replace="~{department_head/dashboard :: dhTopbar(${versionHistory.displayName}, ${versionHistory.departmentName}, ${versionHistory.userInitials}, false)}"></header>
+
+        <main class="ws-main">
+            <!-- Đường dẫn: quay lại Lịch sử phiên bản -->
+            <nav class="ws-crumb" aria-label="Breadcrumb">
+                <a class="ws-crumb-back" th:href="@{/department-head/articles/{id}/versions(id=${versionHistory.articleId})}">‹ Lịch sử phiên bản</a>
+                <span>/</span>
+                <span th:text="|Bài #${versionHistory.articleCode}|">Bài #BT-15</span>
+                <span>/</span>
+                <strong th:text="|v${v.label}|">v1.1</strong>
+            </nav>
+
+            <!-- Thanh lật phiên bản: ‹ bản trước | phiên bản đang xem | bản sau ›
+                 Không có bản trước / sau thì in thẻ <span> rỗng để giữ bố cục 3 cột. -->
+            <div class="vd-nav">
+                <a class="rp-button rp-button--outline rp-button--small" th:if="${versionHistory.olderVersion != null}"
+                   th:href="@{/department-head/articles/{a}/versions/{v}(a=${versionHistory.articleId},v=${versionHistory.olderVersion.versionId})}"
+                   th:text="|‹ v${versionHistory.olderVersion.label}|">‹ v1.0</a>
+                <span th:if="${versionHistory.olderVersion == null}"></span>
+
+                <strong class="vd-nav-current" th:text="|Phiên bản v${v.label} · nộp lúc ${v.createdAtText}|">Phiên bản v1.1</strong>
+
+                <a class="rp-button rp-button--outline rp-button--small" th:if="${versionHistory.newerVersion != null}"
+                   th:href="@{/department-head/articles/{a}/versions/{v}(a=${versionHistory.articleId},v=${versionHistory.newerVersion.versionId})}"
+                   th:text="|v${versionHistory.newerVersion.label} ›|">v1.2 ›</a>
+                <span th:if="${versionHistory.newerVersion == null}"></span>
+            </div>
+
+            <!-- Thông tin vòng này: ghi chú "đã sửa gì" của Lead + kết quả các lượt duyệt -->
+            <section class="rp-card vd-info">
+                <p class="vh-summary" th:if="${v.changeSummary != null}"><b>Đã sửa gì:</b> <span th:text="${v.changeSummary}">...</span></p>
+                <p class="vh-summary rp-muted" th:if="${v.changeSummary == null}">Lần nộp đầu tiên.</p>
+                <ul class="vh-reviews" th:unless="${#lists.isEmpty(v.reviewNotes)}">
+                    <li th:each="note : ${v.reviewNotes}" th:text="${note}">Trưởng phòng ... · Yêu cầu sửa · ...</li>
+                </ul>
+                <p class="vh-no-review rp-muted" th:if="${#lists.isEmpty(v.reviewNotes)}">Chưa có lượt duyệt nào được chốt trên phiên bản này.</p>
+            </section>
+
+            <!-- Bố cục 2 cột giống màn thẩm định: nội dung bên trái, góp ý bên phải -->
+            <div class="ws-layout">
+                <section class="ws-main-col">
+                    <article class="ws-article">
+                        <h1 class="ws-title" th:text="${v.title}">Tít bài</h1>
+                        <p class="ws-subtitle" th:if="${!#strings.isEmpty(v.subtitle)}" th:text="${v.subtitle}">Tít phụ</p>
+                        <hr class="ws-divider">
+                        <div class="ws-sapo">
+                            <span class="ws-sapo-label">Sapo</span>
+                            <p class="ws-sapo-text" th:text="${v.sapo}">Sapo</p>
+                        </div>
+                        <!-- Thân bài theo đúng thứ tự Lead sắp xếp (copy từ workspacereview.html, bỏ các data-field vì không góp ý ở đây) -->
+                        <div class="ws-body">
+                            <th:block th:each="block : ${v.blocks}" th:switch="${block.kind.name()}">
+                                <div th:case="'TEXT'" class="ws-text" th:classappend="|ws-${block.tag}|" th:utext="${block.html}">Đoạn nội dung</div>
+                                <figure th:case="'IMAGE'" class="ws-figure">
+                                    <img th:src="${block.url}" th:alt="${block.caption}" alt="" loading="lazy">
+                                    <figcaption th:if="${block.caption != null}" th:text="${block.caption}">Chú thích ảnh</figcaption>
+                                </figure>
+                                <figure th:case="'VIDEO'" class="ws-figure">
+                                    <video th:src="${block.url}" controls preload="metadata" playsinline></video>
+                                    <figcaption th:if="${block.caption != null}" th:text="${block.caption}">Chú thích video</figcaption>
+                                </figure>
+                                <div th:case="'TABLE'" class="ws-table" th:utext="${block.html}">Bảng</div>
+                            </th:block>
+                        </div>
+                    </article>
+                </section>
+
+                <!-- Cột phải: góp ý trên phiên bản này (chỉ đọc), copy kiểu thẻ góp ý "Vòng trước" của màn thẩm định -->
+                <aside class="ws-side">
+                    <section class="rp-card">
+                        <div class="rp-card-head">
+                            <h2>Góp ý trên <span th:text="|v${v.label}|">v1.1</span>
+                                <span class="rp-count-pill" th:text="${#lists.size(versionHistory.selectedComments)}">0</span></h2>
+                        </div>
+                        <div class="ws-tab-panel">
+                            <p class="ws-note" th:if="${#lists.isEmpty(versionHistory.selectedComments)}"><i>Phiên bản này không có góp ý.</i></p>
+                            <div class="ws-comment ws-comment--prev" th:each="comment : ${versionHistory.selectedComments}">
+                                <div class="ws-comment-top">
+                                    <b th:text="${comment.anchorLabel}">Đoạn 2</b>
+                                </div>
+                                <p class="ws-quote" th:if="${comment.quotedText != null}" th:text="|“${comment.quotedText}”|">“trích dẫn”</p>
+                                <p class="ws-comment-text" th:text="${comment.content}">Nội dung góp ý</p>
+                                <span class="ws-comment-author" th:text="|${comment.authorName} · ${comment.timeText}|">Người góp ý</span>
+                            </div>
+                        </div>
+                    </section>
+                </aside>
+            </div>
+        </main>
+    </section>
+</th:block>
+</body>
+</html>

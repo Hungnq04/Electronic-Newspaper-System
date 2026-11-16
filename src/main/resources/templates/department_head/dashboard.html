@@ -90,7 +90,6 @@
                 <div class="rp-filter-top">
                     <div class="rp-tabs" role="tablist" aria-label="Loại nội dung cần duyệt">
                         <button class="rp-tab is-active" id="dh-tab-articles" type="button" role="tab" aria-selected="true" data-dh-tab="article"><svg class="rp-icon"><use href="#dh-icon-file-check"></use></svg>Duyệt bản thảo bài viết <b th:text="${dashboard.articleCount}">12</b></button>
-                        <button class="rp-tab" id="dh-tab-topics" type="button" role="tab" aria-selected="false" data-dh-tab="topic"><svg class="rp-icon"><use href="#dh-icon-book-open"></use></svg>Duyệt đề cương / Đề tài <b th:text="${dashboard.topicCount}">7</b></button>
                     </div>
                     <label class="rp-filter-search">
                         <svg class="rp-icon"><use href="#dh-icon-search"></use></svg>
@@ -103,12 +102,6 @@
                             <option value="all">Toàn bộ chuyên mục</option>
                             <option th:each="category : ${dashboard.categories}" th:value="${category}" th:text="${category}">Kinh tế</option>
                         </select><svg class="rp-icon rp-select-chevron"><use href="#dh-icon-chevron-down"></use></svg></label>
-                    <div class="rp-select-field"><span><svg class="rp-icon"><use href="#dh-icon-flame"></use></svg>ƯU TIÊN:</span>
-                        <div class="rp-view-switch" role="group" aria-label="Lọc theo ưu tiên">
-                            <button class="is-active" type="button" data-dh-priority="all">Tất cả <b th:text="${dashboard.articleCount}">12</b></button>
-                            <button type="button" data-dh-priority="urgent">Hỏa tốc <b th:text="${dashboard.urgentCount}">3</b></button>
-                        </div>
-                    </div>
                     <div class="rp-select-field"><span><svg class="rp-icon"><use href="#dh-icon-sort"></use></svg>SẮP XẾP:</span>
                         <div class="rp-view-switch" role="group" aria-label="Sắp xếp">
                             <button class="is-active" type="button" data-dh-sort="deadline">Gần hạn chót</button>

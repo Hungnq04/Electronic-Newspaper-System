@@ -26,6 +26,7 @@ import com.group6.electronic_drafting_system.entity.enums.RoleName;
 import com.group6.electronic_drafting_system.entity.enums.SourceType;
 import com.group6.electronic_drafting_system.exception.ApplicationException;
 import com.group6.electronic_drafting_system.exception.ErrorCode;
+import com.group6.electronic_drafting_system.mapper.DepartmentHead.ReviewWorkspaceMapper;
 import com.group6.electronic_drafting_system.repository.AccountRepository;
 import com.group6.electronic_drafting_system.repository.ArticleRepository;
 import com.group6.electronic_drafting_system.repository.ArticleReviewRepository;
@@ -37,7 +38,6 @@ import com.group6.electronic_drafting_system.service.FinalReviewService;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -58,10 +58,14 @@ public class FinalReviewServiceImpl implements FinalReviewService {
     private final CommentRepository comments;
     private final AssignmentRepository assignments;
     private final ArticleSourceRepository articleSources;
+    // Dùng chung bộ tách + lọc HTML thân bài với màn Trưởng phòng (TV3), để bài hiển thị giống nhau và an toàn
+    private final ReviewWorkspaceMapper contentMapper;
 
     public FinalReviewServiceImpl(AccountRepository accounts, ArticleRepository articles, ArticleVersionRepository versions,
                                   ArticleReviewRepository reviews, CommentRepository comments,
-                                  AssignmentRepository assignments, ArticleSourceRepository articleSources) {
+                                  AssignmentRepository assignments, ArticleSourceRepository articleSources,
+                                  ReviewWorkspaceMapper contentMapper) {
+        this.contentMapper = contentMapper;
         this.accounts = accounts;
         this.articles = articles;
         this.versions = versions;
@@ -226,7 +230,8 @@ public class FinalReviewServiceImpl implements FinalReviewService {
                 .title(version.getTitle())
                 .subtitle(version.getSubtitle())
                 .sapo(version.getSapo())
-                .paragraphs(splitParagraphs(version.getContent()))
+                // Nội dung là HTML của trình soạn thảo: tách thành từng khối (đoạn chữ / ảnh / video / bảng) đã lọc thẻ nguy hiểm
+                .blocks(contentMapper.blocks(version.getContent()))
                 .category(article.getCategory())
                 .featuredImageUrl(featured == null ? null : featured.getSource().getFileUrl())
                 .featuredImageCaption(featured == null ? null : featured.getCaption())
@@ -290,12 +295,6 @@ public class FinalReviewServiceImpl implements FinalReviewService {
                 .filter(r -> Objects.equals(r.getVersion().getId(), version.getId()) && r.getReviewStage() == stage
                         && r.getDecision() == decision)
                 .findFirst().orElse(null);
-    }
-
-    // Các đoạn văn cách nhau bằng một dòng trống (quy ước của bảng article_version)
-    private static List<String> splitParagraphs(String content) {
-        if (content == null || content.isBlank()) return List.of();
-        return Arrays.stream(content.strip().split("\\R\\s*\\R")).map(String::strip).filter(p -> !p.isEmpty()).toList();
     }
 
     private static boolean sameAccount(Account a, Account b) {

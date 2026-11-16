@@ -1,6 +1,7 @@
 package com.group6.electronic_drafting_system.dto.Topic;
 
 import com.group6.electronic_drafting_system.entity.enums.Priority;
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -20,7 +21,10 @@ public class EditorialTopicForm {
     private String category;
     @Size(max = 4000, message = "Định hướng tối đa 4000 ký tự.")
     private String rationale;
+    // Ngày dự kiến đăng: bắt buộc, phải là hôm nay hoặc sau hôm nay
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    @NotNull(message = "Vui lòng chọn ngày dự kiến.")
+    @FutureOrPresent(message = "Ngày dự kiến không được ở quá khứ.")
     private LocalDate expectedDate;
     @NotNull(message = "Vui lòng chọn mức ưu tiên.")
     private Priority priority = Priority.NORMAL;

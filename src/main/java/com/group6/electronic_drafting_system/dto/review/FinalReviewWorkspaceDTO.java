@@ -1,5 +1,6 @@
 package com.group6.electronic_drafting_system.dto.review;
 
+import com.group6.electronic_drafting_system.dto.DepartmentHead.ContentBlockDTO;
 import java.time.OffsetDateTime;
 import java.util.List;
 import lombok.Builder;
@@ -17,7 +18,8 @@ public class FinalReviewWorkspaceDTO {
     String title;
     String subtitle;
     String sapo;
-    List<String> paragraphs;
+    // Thân bài đã tách thành khối (đoạn chữ / ảnh / video / bảng), HTML đã lọc ở ReviewWorkspaceMapper.blocks()
+    List<ContentBlockDTO> blocks;
     String category;
     String featuredImageUrl;
     String featuredImageCaption;

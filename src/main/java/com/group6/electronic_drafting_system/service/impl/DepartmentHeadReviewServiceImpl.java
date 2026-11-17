@@ -42,38 +42,6 @@ import org.jsoup.Jsoup;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// Service của màn THẨM ĐỊNH BÀI VIẾT (workspace review, FL-05). Code thật của interface DepartmentHeadReviewService.
-//
-// AI GỌI? DepartmentHeadController (6 method: reviewWorkspace, addComment, deleteComment, resolveComment, approve, requestRevision).
-//
-// QUY TẮC QUYỀN (cách A, giống luồng tập code):
-//   XEM bài   (checkCanReview): Topic thuộc PHÒNG mình HOẶC được GIAO cho mình; và mình không phải Lead của bài (BR-34)
-//   THAO TÁC  (myOpenReview)  : góp ý / xóa / đánh dấu / duyệt / trả bài thì PHẢI được giao (rule R09 trong DB),
-//                               không phải Lead, và bài đang DEPARTMENT_REVIEW
-//   Người cùng phòng nhưng không được giao: chỉ xem, không có nút thao tác (reviewable = false).
-//
-// BẢN ĐỒ CÁC BẢNG LIÊN QUAN (để dễ hình dung):
-//   article          : bài viết (status: DEPARTMENT_REVIEW, REVISION_REQUIRED...)
-//   article_version  : mỗi lần Lead nộp bài là 1 version (1.0, 1.1, 1.2...). Version KHÔNG được sửa / xóa.
-//   article_review   : một LƯỢT DUYỆT của một cấp (DEPARTMENT / SECRETARY) trên MỘT version.
-//                      decision = NULL nghĩa là "đang duyệt, chưa quyết"; APPROVED / REQUEST_REVISION là đã chốt.
-//   comment          : góp ý, thuộc một lượt duyệt (article_review). Có thể gắn vị trí trong bài (anchor_...).
-//
-// CÁC "THỢ PHỤ" ĐƯỢC GỌI (repository = hỏi DB, mapper = đổi entity thành DTO):
-//   accounts     -> repository/AccountRepository.java         : findByEmailIgnoreCase (dòng 12)
-//   articles     -> repository/ArticleRepository.java         : findWithLeadAndTopic (dòng 34), findSources (dòng 38)
-//   versions     -> repository/ArticleVersionRepository.java  : findByArticleIdOrderByVersionNumberAsc (dòng 17)
-//   articleReviews -> repository/ArticleReviewRepository.java : findOpenReview (dòng 43), save (có sẵn của JpaRepository)
-//   comments     -> repository/CommentRepository.java         : findByVersion (dòng 19), findWithReview (dòng 22), save, delete
-//   assignments  -> repository/AssignmentRepository.java      : isActiveOnTopic (dòng 38), findActiveByTopicAndRole (dòng 43)
-//   mapper       -> mapper/DepartmentHead/ReviewWorkspaceMapper.java:
-//                   toVersionView (dòng 52), toComment (dòng 68), toSource (dòng 86), mediaUrls (dòng 102), anchorText (dòng 212)
-//   entryMapper  -> mapper/DepartmentHead/DraftEntryMapper.java : initials (dòng 67)
-//   (Số dòng ở các file khác có thể lệch nếu sau này file đó bị sửa; khi đó tìm theo tên method.)
-//
-// @Transactional(readOnly = true) ở class: mặc định mọi method chỉ đọc.
-// Method nào GHI vào DB thì có thêm @Transactional riêng (không readOnly) để ghi được.
-// Transaction = "làm hết hoặc không làm gì": nếu lỗi giữa chừng, mọi thay đổi trong method bị hủy.
 @Service
 @Transactional(readOnly = true)
 public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewService {
@@ -148,10 +116,6 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
         }
         // reviewable = false -> trong HTML, các khối th:if="${workspace.reviewable}" bị ẩn (khung góp ý, nút Duyệt, nút Yêu cầu sửa...)
 
-        // ===== BƯỚC 4: chuẩn bị nội dung bài và tư liệu =====
-        // Thân bài theo bố cục phóng viên; link ảnh / video trong bài dùng để đánh dấu tư liệu "Có trong bài"
-        // mapper.toVersionView (ReviewWorkspaceMapper dòng 52): đổi version thành VersionViewDTO
-        //   (tít, sapo, danh sách đoạn để so sánh, danh sách khối nội dung để hiển thị).
         VersionViewDTO currentView = mapper.toVersionView(current);
         // mapper.mediaUrls (dòng 102): gom link mọi ảnh / video đang nằm trong thân bài.
         Set<String> bodyUrls = mapper.mediaUrls(currentView.getBlocks());
@@ -253,9 +217,6 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
         Comment comment = comments.findWithReview(commentId)
                 .orElseThrow(() -> new ApplicationException(ErrorCode.COMMENT_NOT_FOUND));
         // Chỉ xóa được góp ý của chính mình, trong lượt duyệt chưa chốt và chưa có ai trả lời
-        //   - comment.getReview() khác lượt đang mở     -> góp ý của vòng khác, không được xóa
-        //   - comment.getCreator() không phải mình      -> góp ý của người khác
-        //   - comment.getReplies() không rỗng           -> đã có người trả lời, xóa sẽ mất cuộc trao đổi
         if (!comment.getReview().getId().equals(review.getId()) || !comment.getCreator().getId().equals(head.getId())
                 || !comment.getReplies().isEmpty()) {
             throw new ApplicationException(ErrorCode.COMMENT_INVALID);

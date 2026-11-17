@@ -98,17 +98,11 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
         // previous = version LIỀN TRƯỚC (phần tử áp chót); null nếu bài mới có 1 version (lần nộp đầu)
         ArticleVersion previous = allVersions.size() > 1 ? allVersions.get(allVersions.size() - 2) : null;
 
-        // ===== BƯỚC 3: mở lượt duyệt (article_review) nếu đủ điều kiện, quyết định "được thao tác hay chỉ xem" =====
-        // Chỉ mở lượt duyệt khi CẢ HAI đúng:
-        //   - bài đang DEPARTMENT_REVIEW (bài đã duyệt / đã trả thì chỉ xem)
-        //   - mình được GIAO Topic này (người cùng phòng nhưng không được giao thì chỉ xem; tạo lượt duyệt cho họ sẽ vi phạm R09)
+        // ===== BƯỚC 3: kiểm tra quyền THAO TÁC (góp ý / duyệt / trả bài) =====        
         boolean assignedToMe = assignments.isActiveOnTopic(
                 article.getTopic().getId(), head.getId(), AssignmentRole.DEPARTMENT_HEAD);
         boolean reviewable = false;
         if (article.getStatus() == ArticleStatus.DEPARTMENT_REVIEW && assignedToMe) {
-            // Tìm lượt duyệt cấp DEPARTMENT đang mở (decision = NULL) trên bản này. Có rồi thì dùng lại,
-            // chưa có thì tạo mới (newDepartmentReview, phần "Hàm phụ") rồi save = INSERT vào article_review.
-            // Nhờ vậy mở lại trang nhiều lần (F5) KHÔNG tạo thêm lượt duyệt mới.
             ArticleReview openReview = articleReviews.findOpenReview(current.getId(), ReviewStage.DEPARTMENT)
                     .orElseGet(() -> articleReviews.save(newDepartmentReview(current, head)));
             // Được thao tác (góp ý / duyệt / trả bài) chỉ khi lượt duyệt đang mở là CỦA MÌNH.

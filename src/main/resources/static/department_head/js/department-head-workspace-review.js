@@ -198,9 +198,7 @@ if (popover) {
   const popoverText = byId('popover-text');
   const popoverSave = byId('popover-save');
 
-  // Nhả chuột sau khi bôi đen trong bài -> mở khung góp ý ngay dưới chỗ bôi đen
-  // Người dùng nhả chuột trong vùng này thì chạy đoạn code bên trong:
-  // "Khi nhả chuột trong article-card, chạy hàm bên trong." event là thông tin về cú nhả chuột đó (nhả ở đâu, trúng phần tử nào).
+
   articleCard.addEventListener('mouseup', function (event) {
     if (popover.contains(event.target)) return;          // bấm bên trong khung góp ý thì bỏ qua
     // setTimeout(..., 0): đợi trình duyệt cập nhật xong vùng bôi đen rồi mới đọc
@@ -224,13 +222,9 @@ if (popover) {
       // Ghi nhớ vị trí để gửi lên server khi bấm "Thêm góp ý"
       // (lưu thông tin về vị trí vừa bôi đen vào biến pendingAnchor)
       pendingAnchor = {
-        // Lấy giá trị của thuộc tính data-field của thẻ <p> chứa chữ vừa bôi đen
         field: startAnchor.dataset.field,
-        // Lấy giá trị của thuộc tính data-paragraph của thẻ <p> chứa chữ vừa bôi đen
         paragraph: startAnchor.dataset.paragraph,
-        // offsetIn(<p>, mẩu 2, 0) đo từ đầu <p> đến đầu mẩu 2, chữ nằm giữa là "Giá vàng ", dài 9
         start: offsetIn(startAnchor, range.startContainer, range.startOffset),
-        // offsetIn(<p>, mẩu 2, 9) đo từ đầu <p> đến cuối "tăng mạnh", chữ nằm giữa là "Giá vàng tăng mạnh", dài 18
         end: offsetIn(startAnchor, range.endContainer, range.endOffset)
       };
       byId('popover-anchor').textContent = startAnchor.dataset.anchor;
@@ -245,8 +239,7 @@ if (popover) {
       popover.style.top = (selectionBox.bottom - cardBox.top + 10) + 'px';
       const maxLeft = cardBox.width - popover.offsetWidth - 16;   // không cho khung tràn ra ngoài bên phải
       popover.style.left = Math.max(16, Math.min(selectionBox.left - cardBox.left, maxLeft)) + 'px';
-      // Bôi đen gần cuối màn hình thì cuộn lên một chút để khung góp ý không bị thanh nút ở đáy che
-      // (khoảng chừa ra là scroll-margin-bottom trong CSS của .ws-popover)
+
       popover.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       popoverText.focus({ preventScroll: true });
     }, 0);

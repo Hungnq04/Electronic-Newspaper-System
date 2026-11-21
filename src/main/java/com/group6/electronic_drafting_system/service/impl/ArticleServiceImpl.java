@@ -171,6 +171,16 @@ public class ArticleServiceImpl implements ArticleService {
         ArticleEditorDTO.Version returnedVersion = article.getStatus() == ArticleStatus.REVISION_REQUIRED
                 && !history.isEmpty() ? history.get(0) : null;
 
+        // Đổi mã version vừa khôi phục (vd 15) thành nhãn người đọc hiểu (vd "1.0").
+        // Chưa khôi phục thì restoredFromVersionId = null -> không khớp version nào -> nhãn để null.
+        String restoredFromLabel = null;
+        for (ArticleEditorDTO.Version v : history) {
+            if (v.id().equals(article.getRestoredFromVersionId())) {
+                restoredFromLabel = v.label();
+                break;
+            }
+        }
+
         // //1. Vế 1: lead != null → Check xem BẠN CÓ CÒN LÀ NGƯỜI VIẾT CHÍNH KHÔNG?
         // lead là phân công vai trò của bạn trên Đề tài (Topic).
         // Nếu bạn từng viết bài này, nhưng sau đó Trưởng ban gỡ bạn ra hoặc chuyển vai
@@ -202,6 +212,7 @@ public class ArticleServiceImpl implements ArticleService {
                         .map(articleMapper::toReviewItem).orElse(null),
                 history,
                 returnedVersion,
+                restoredFromLabel,
                 articleSources.findByArticleOrdered(articleId).stream().map(articleMapper::toSourceItem).toList(),
                 topicMedia(topicId));
     }
@@ -443,6 +454,9 @@ public class ArticleServiceImpl implements ArticleService {
                 .map(ArticleVersion::getVersionNumber).orElse(0) + 1, changeSummary));
         article.setStatus(ArticleStatus.DEPARTMENT_REVIEW);
         article.setSubmittedAt(OffsetDateTime.now().truncatedTo(ChronoUnit.SECONDS));
+        // Đã nộp thì lần khôi phục coi như dùng xong: xóa đi để lần sau không hiện nhầm
+        // ghi chú "Khôi phục từ version X"
+        article.setRestoredFromVersionId(null);
     }
 
     private void applyDraft(Article article, ArticleDraftRequestDTO request) {

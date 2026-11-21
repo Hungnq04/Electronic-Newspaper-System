@@ -211,8 +211,11 @@
                 </div>
                 <th:block th:if="${article.editable}">
                     <label class="label" for="changeSummary">Ghi chú cho bản nộp</label>
+                    <!-- Có ghi chú cũ (nộp lỗi bị trả lại) thì giữ nguyên; không có mà vừa khôi phục
+                         thì điền sẵn "Khôi phục từ version X"; còn lại để trống -->
                     <textarea id="changeSummary" name="changeSummary" rows="3" class="note-input"
-                              placeholder="Tóm tắt thay đổi / lời nhắn cho Trưởng ban…" th:text="${changeSummary}"></textarea>
+                              placeholder="Tóm tắt thay đổi / lời nhắn cho Trưởng ban…"
+                              th:text="${changeSummary != null ? changeSummary : (article.restoredFromLabel() != null ? 'Khôi phục từ version ' + article.restoredFromLabel() : '')}"></textarea>
                     <button type="submit" name="action" value="submit" class="btn primary block"><i data-lucide="send"></i>Nộp bản thảo duyệt bài</button>
                     <p class="hint">Mỗi lần nộp sẽ tạo một phiên bản mới; bài bị khóa chỉnh sửa cho tới khi được trả về.</p>
                 </th:block>

@@ -57,7 +57,6 @@ public class DepartmentHeadController {
         model.addAttribute("contentView", "department_head/workspacereview");
         model.addAttribute("contentFragment", "reviewWorkspace");
         model.addAttribute("comments", departmentHeadReviewService.getComments(email, articleId));
-        model.addAttribute("pageJs", List.of("/department_head/js/workspacereview.js"));
         return "layout/app";
     }
 
@@ -77,16 +76,12 @@ public class DepartmentHeadController {
         return "redirect:/department-head/dashboard";
     }
 
+    // Thêm góp ý chung cho cả bài. content: chữ trong ô name="content" của form
     @PostMapping("/articles/{articleId}/comments")
     public String addComment(@PathVariable Integer articleId,
-                         @RequestParam(required = false) String content,
-                         @RequestParam(required = false) String anchorField,
-                         @RequestParam(required = false) Integer anchorParagraph,
-                         @RequestParam(required = false) Integer anchorStart,
-                         @RequestParam(required = false) Integer anchorEnd,
-                         Authentication authentication) {
-    departmentHeadReviewService.addComment(currentEmail(authentication), articleId, content,
-            anchorField, anchorParagraph, anchorStart, anchorEnd);
+                             @RequestParam(required = false) String content,
+                             Authentication authentication) {
+        departmentHeadReviewService.addComment(currentEmail(authentication), articleId, content);
         return "redirect:/department-head/articles/" + articleId + "/review";
     }
 

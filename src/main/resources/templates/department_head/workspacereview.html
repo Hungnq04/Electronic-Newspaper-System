@@ -8,44 +8,52 @@
 <body>
     <th:block th:fragment="reviewWorkspace">
         <h1>Đang thẩm định bài số <span th:text="${articleId}">0</span></h1>
+        <p>Phiên bản đang duyệt: v<span th:text="${version.label}">1.0</span></p>
+        <p th:if="${version.changeSummary != null}">
+            Ghi chú của Lead khi nộp: <b th:text="${version.changeSummary}">...</b>
+        </p>
         <a th:href="@{/department-head/dashboard}">Quay lại trang tổng quan</a>
 
-        <!--Bọc nội dung bài viết trong thẻ <article> để dễ dàng style -->
-        <article id="article-card" style="position: relative;">
-            <h2 data-field="TITLE" data-paragraph="1" th:text="${version.title}">Tít bài</h2>
+        <!-- Nội dung bài: tít, tít phụ, sapo, rồi thân bài theo đúng thứ tự phóng viên sắp xếp -->
+        <article>
+            <h2 th:text="${version.title}">Tít bài</h2>
             <h3 th:if="${version.subtitle != null and !#strings.isEmpty(version.subtitle)}"
-                th:text="${version.subtitle}" data-field="SUBTITLE" data-paragraph="1">
-                Tít phụ</h3>
-            <p><i data-field="SAPO" data-paragraph="1" th:text="${version.sapo}">Sapo</i></p>
-            <p th:each="paragraph, it : ${version.paragraphs}" data-field="CONTENT" th:attr="data-paragraph=${it.count}"
-                th:text="${paragraph}">Đoạn nội dung</p>
-            <!--form thêm góp ý-->
-            <form id="comment-popover" class="ws-popover" method="post"
-                th:action="@{/department-head/articles/{a}/comments(a=${articleId})}"
-                style="position: absolute; background: white; border: 1px solid #ccc; padding: 8px;" hidden>
-                <input type="hidden" name="anchorField">
-                <input type="hidden" name="anchorParagraph">
-                <input type="hidden" name="anchorStart">
-                <input type="hidden" name="anchorEnd">
-                <p id="popover-quote"></p>
-                <textarea id="popover-text" name="content" rows="3" placeholder="Nội dung góp ý..."></textarea>
-                <button id="popover-cancel" type="button">Hủy</button>
-                <button id="popover-save" type="submit" disabled>Thêm góp ý</button>
-            </form>
+                th:text="${version.subtitle}">Tít phụ</h3>
+            <p><i th:text="${version.sapo}">Sapo</i></p>
+
+            <!-- Thân bài = danh sách khối (ContentBlockDTO). th:switch giống switch trong Java:
+                 tùy loại khối (kind) mà in ra thẻ khác nhau -->
+            <th:block th:each="block : ${version.blocks}" th:switch="${block.kind.name()}">
+                <!-- Đoạn chữ: th:utext in HTML để giữ in đậm / nghiêng
+                     (an toàn vì mapper đã lọc, chỉ giữ thẻ định dạng chữ) -->
+                <p th:case="'TEXT'" th:utext="${block.html}">Đoạn chữ</p>
+                <!-- Ảnh + chú thích -->
+                <figure th:case="'IMAGE'">
+                    <img th:src="${block.url}" style="max-width: 100%;" alt="">
+                    <figcaption th:if="${block.caption != null}" th:text="${block.caption}">Chú thích</figcaption>
+                </figure>
+                <!-- Video + chú thích -->
+                <figure th:case="'VIDEO'">
+                    <video th:src="${block.url}" controls style="max-width: 100%;"></video>
+                    <figcaption th:if="${block.caption != null}" th:text="${block.caption}">Chú thích</figcaption>
+                </figure>
+                <!-- Bảng: in nguyên HTML bảng (mapper đã lọc) -->
+                <div th:case="'TABLE'" th:utext="${block.html}">Bảng</div>
+            </th:block>
         </article>
-        <!--Hiển thị các góp ý-->
+
+        <!-- Danh sách góp ý của lượt duyệt đang mở -->
         <h3>Góp ý</h3>
         <p th:if="${#lists.isEmpty(comments)}">Chưa có góp ý nào.</p>
-        <div th:each="comment : ${comments}" class="comment-card"
-            th:attr="data-cid=${comment.id},data-field=${comment.anchorField},data-paragraph=${comment.anchorParagraph},data-start=${comment.anchorStart},data-end=${comment.anchorEnd}">
-            <b th:text="${comment.authorName}">Người viết</b>:
-            <i th:if="${comment.quotedText != null}" th:text="|“${comment.quotedText}”|">trích dẫn</i>
+        <div th:each="comment : ${comments}">
             <span th:text="${comment.content}">Nội dung</span>
+            <small th:text="'— ' + ${comment.authorName}">Người viết</small>
         </div>
-        <!--form để thêm góp ý-->
+
+        <!-- Form thêm góp ý chung cho cả bài -->
         <form method="post" th:action="@{/department-head/articles/{id}/comments(id=${articleId})}">
-            <textarea name="content" required></textarea>
-            <button type="submit">Thêm góp ý chung</button>
+            <textarea name="content" required placeholder="Nội dung góp ý..."></textarea>
+            <button type="submit">Thêm góp ý</button>
         </form>
         <!--form để duyệt bài-->
         <form method="post" th:action="@{/department-head/articles/{id}/approve(id=${articleId})}">

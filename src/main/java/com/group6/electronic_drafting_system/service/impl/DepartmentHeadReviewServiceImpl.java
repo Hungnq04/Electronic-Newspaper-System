@@ -23,7 +23,6 @@ import com.group6.electronic_drafting_system.entity.enums.ArticleStatus;
 import com.group6.electronic_drafting_system.entity.enums.ReviewKind;
 import com.group6.electronic_drafting_system.entity.enums.ReviewStage;
 import com.group6.electronic_drafting_system.repository.ArticleReviewRepository;
-import com.group6.electronic_drafting_system.entity.enums.AnchorField;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -85,7 +84,8 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
             articleReviews.findOpenReview(current.getId(), ReviewStage.DEPARTMENT)
                     .orElseGet(() -> articleReviews.save(newDepartmentReview(current, head)));
         }
-        // 5. Đổi version thành DTO để hiển thị
+        // 5. Đổi version thành DTO để hiển thị. Mapper của nhóm cắt nội dung thành các khối
+        //    (chữ / ảnh / video / bảng) đúng thứ tự phóng viên sắp xếp -> VersionViewDTO.blocks
         return mapper.toVersionView(current);
     }
 
@@ -133,46 +133,23 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
 
     @Override
     @Transactional
-    public void addComment(String email, Integer articleId, String content, String anchorField, Integer anchorParagraph,
-            Integer anchorStart, Integer anchorEnd) {
+    // Thêm góp ý chung cho cả bài (không gắn vị trí: các cột anchor_* để NULL)
+    public void addComment(String email, Integer articleId, String content) {
         if (content == null || content.isBlank()) {
-            throw new ApplicationException(ErrorCode.COMMENT_INVALID); // ① lỗi "góp ý không hợp lệ"
+            throw new ApplicationException(ErrorCode.COMMENT_INVALID);   // nội dung rỗng
         }
         Account head = accounts.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new ApplicationException(ErrorCode.AUTH_ACCOUNT_NOT_REGISTERED)); // giống approve()
+                .orElseThrow(() -> new ApplicationException(ErrorCode.AUTH_ACCOUNT_NOT_REGISTERED));
         Article article = articles.findWithLeadAndTopic(articleId)
-                .orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_NOT_FOUND)); // giống approve()
+                .orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_NOT_FOUND));
+        // Kiểm tra quyền GHI: được giao, không phải Lead, bài đang chờ duyệt; lấy lượt duyệt đang mở
         ArticleReview review = myOpenReview(head, article);
 
         Comment comment = new Comment();
-        comment.setReview(review); // ② thuộc lượt duyệt nào
-        comment.setCreator(head); // ③ ai viết
+        comment.setReview(review);       // thuộc lượt duyệt nào
+        comment.setCreator(head);        // ai viết
         comment.setContent(content.trim());
-        // Góp ý gắn vị trí: kiểm tra vị trí có thật, quoted_text lấy từ DB (không tin
-        // chữ gửi lên)
-        if (anchorField != null && !anchorField.isBlank()) {
-            AnchorField field;
-            try {
-                field = AnchorField.valueOf(anchorField); // "CONTENT" (chữ) → AnchorField.CONTENT (enum)
-            } catch (IllegalArgumentException ex) {
-                throw new ApplicationException(ErrorCode.COMMENT_INVALID);
-            }
-            int paragraph = anchorParagraph == null ? 0 : anchorParagraph;
-
-            // Lấy chữ THẬT của đoạn đó trong version đang duyệt
-            String text = mapper.anchorText(review.getVersion(), field, paragraph);
-            if (text == null || anchorStart == null || anchorEnd == null
-                    || anchorStart < 0 || anchorEnd <= anchorStart || anchorEnd > text.length()) {
-                throw new ApplicationException(ErrorCode.COMMENT_INVALID);
-            }
-
-            comment.setAnchorField(field);
-            comment.setAnchorParagraph(paragraph);
-            comment.setAnchorStart(anchorStart); // ①
-            comment.setAnchorEnd(anchorEnd); // ②
-            comment.setQuotedText(text.substring(anchorStart, anchorEnd)); // cắt đúng đoạn chữ từ DB
-        }
-        comments.save(comment);  
+        comments.save(comment);   // INSERT vào bảng comment
     }
 
     @Override

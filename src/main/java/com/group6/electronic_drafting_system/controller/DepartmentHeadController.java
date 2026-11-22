@@ -270,84 +270,89 @@ public class DepartmentHeadController {
         model.addAttribute("contentFragment", "reviewWorkspaceContent");
         // Phông Newsreader có chữ nghiêng (cho sapo) + giao diện chung của /reporter/tasks + CSS riêng của màn thẩm định
         model.addAttribute("pageCss", List.of(NEWSREADER_FONT, "/reporter/css/reporter-tasks.css", "/department_head/css/department-head-workspace-review.css"));
-        model.addAttribute("pageJs", List.of("/department_head/js/department-head-workspace-review.js"));
+        // Màn này không còn file JS riêng: góp ý, xóa, duyệt, trả bài đều là form thường; so sánh dùng thẻ <details>
         // Đang thẩm định một bài thì sidebar vẫn sáng mục "Duyệt bản thảo"
         // (ghi đè giá trị activePath mà SidebarAdvice đã đặt sẵn trước khi method này chạy)
         model.addAttribute("activePath", "/department-head/dashboard");
         return "layout/app";
     }
 
+    // ===== Các nút trên màn thẩm định (đều là form POST) =====
+    // Mẫu chung của 4 method dưới đây:
+    //   try   { gọi service; thành công -> flash "message" (chữ xanh) }
+    //   catch { service ném ApplicationException (không có quyền, thiếu nhận xét...) -> flash "error" (chữ đỏ) }
+    //   cuối cùng redirect về màn thẩm định -> reviewWorkspace() chạy lại với dữ liệu mới.
+    // RedirectAttributes redirect: "túi" chứa thông báo sống qua đúng 1 lần redirect (flash attribute).
+    //   workspacereview.html đọc ${message} / ${error} ngay dưới thanh breadcrumb.
+
     // ----- Nút "Thêm góp ý chung" -----
-    // Form gửi tới đây (workspacereview.html): form class="ws-general-form", chỉ có ô name="content".
-    // @ModelAttribute CommentRequestDTO: Spring tạo CommentRequestDTO và đổ ô form vào THEO TÊN
-    //   (textarea name="content" -> setContent(...)).
-    // RedirectAttributes flash: "túi" chứa thông báo sống qua đúng 1 lần redirect (dùng cho toast).
+    // Form class="ws-general-form", chỉ có ô name="content".
+    // @ModelAttribute CommentRequestDTO: Spring tạo CommentRequestDTO và đổ ô form vào THEO TÊN (name="content" -> setContent).
     @PostMapping("/articles/{articleId}/comments")
     public String addComment(@PathVariable Integer articleId, @ModelAttribute CommentRequestDTO commentRequest,
-                             Authentication authentication, RedirectAttributes flash) {
-        // runAndReturn: chạy đoạn "() -> ..." (gọi service), thành công thì toast "Đã lưu góp ý.", lỗi thì toast lỗi,
-        // rồi redirect về trang thẩm định.
-        // "() -> departmentHeadReviewService.addComment(...)" là lambda = một đoạn code được ĐƯA cho runAndReturn để nó tự chạy bên trong try.
-        return runAndReturn(articleId, flash, "Đã lưu góp ý.",
-                () -> departmentHeadReviewService.addComment(currentEmail(authentication), articleId, commentRequest));
+                             Authentication authentication, RedirectAttributes redirect) {
+        try {
+            departmentHeadReviewService.addComment(currentEmail(authentication), articleId, commentRequest);
+            redirect.addFlashAttribute("message", "Đã lưu góp ý.");
+        } catch (ApplicationException ex) {
+            redirect.addFlashAttribute("error", ex.getMessage());   // câu báo lỗi tiếng Việt lấy từ ErrorCode
+        }
+        return "redirect:/department-head/articles/" + articleId + "/review";
     }
 
-    // ----- Nút "Xóa" trên một thẻ góp ý của vòng này -----
-    // Form: <form data-confirm="Xóa góp ý này?" th:action="@{/department-head/articles/{a}/comments/{c}/delete(...)}">
-    // JS hỏi lại "Xóa góp ý này?" trước khi gửi. Hai @PathVariable: articleId và commentId đều lấy từ đường dẫn.
+    // ----- Nút "Xóa" trên một thẻ góp ý -----
+    // Form có onsubmit="return confirm('Xóa góp ý này?')": trình duyệt hỏi lại trước khi gửi.
+    // Hai @PathVariable: articleId và commentId đều lấy từ đường dẫn.
     @PostMapping("/articles/{articleId}/comments/{commentId}/delete")
     public String deleteComment(@PathVariable Integer articleId, @PathVariable Integer commentId,
-                                Authentication authentication, RedirectAttributes flash) {
-        return runAndReturn(articleId, flash, "Đã xóa góp ý.",
-                () -> departmentHeadReviewService.deleteComment(currentEmail(authentication), articleId, commentId));
+                                Authentication authentication, RedirectAttributes redirect) {
+        try {
+            departmentHeadReviewService.deleteComment(currentEmail(authentication), articleId, commentId);
+            redirect.addFlashAttribute("message", "Đã xóa góp ý.");
+        } catch (ApplicationException ex) {
+            redirect.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/department-head/articles/" + articleId + "/review";
     }
 
-    // ----- Nút "Xác nhận duyệt" trong hộp thoại "Duyệt bài cấp phòng?" (id="modal-approve") -----
+    // ----- Nút "Duyệt, chuyển Thư ký" trong khung "Quyết định" -----
     // @RequestParam(required = false) String feedback: ô ghi chú name="feedback", không bắt buộc.
     // Service đổi bài DEPARTMENT_REVIEW -> DEPARTMENT_APPROVED (chưa phải Final Approve; bài sang hàng chờ Thư ký).
     @PostMapping("/articles/{articleId}/approve")
     public String approve(@PathVariable Integer articleId, @RequestParam(required = false) String feedback,
-                          Authentication authentication, RedirectAttributes flash) {
-        return runAndReturn(articleId, flash, "Đã duyệt cấp phòng. Bài chuyển sang Thư ký tòa soạn.",
-                () -> departmentHeadReviewService.approve(currentEmail(authentication), articleId, feedback));
+                          Authentication authentication, RedirectAttributes redirect) {
+        try {
+            departmentHeadReviewService.approve(currentEmail(authentication), articleId, feedback);
+            redirect.addFlashAttribute("message", "Đã duyệt cấp phòng. Bài chuyển sang Thư ký tòa soạn.");
+        } catch (ApplicationException ex) {
+            redirect.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/department-head/articles/" + articleId + "/review";
     }
 
-    // ----- Nút "Gửi trả bài" trong hộp thoại "Yêu cầu sửa bài" (id="modal-revise") -----
+    // ----- Nút "Yêu cầu sửa" trong khung "Quyết định" -----
     // feedback ở đây là BẮT BUỘC (BR-12). Ghi required = false để Spring không tự báo lỗi 400;
-    // việc kiểm tra "có nhận xét chưa" do service làm, báo lỗi bằng toast cho dễ hiểu.
+    // việc kiểm tra "có nhận xét chưa" do service làm, báo lỗi bằng chữ đỏ cho dễ hiểu.
     // Service đổi bài DEPARTMENT_REVIEW -> REVISION_REQUIRED (trả về Lead).
     @PostMapping("/articles/{articleId}/request-revision")
     public String requestRevision(@PathVariable Integer articleId, @RequestParam(required = false) String feedback,
-                                  Authentication authentication, RedirectAttributes flash) {
-        return runAndReturn(articleId, flash, "Đã trả bài cho Lead chỉnh sửa.",
-                () -> departmentHeadReviewService.requestRevision(currentEmail(authentication), articleId, feedback));
+                                  Authentication authentication, RedirectAttributes redirect) {
+        try {
+            departmentHeadReviewService.requestRevision(currentEmail(authentication), articleId, feedback);
+            redirect.addFlashAttribute("message", "Đã trả bài cho Lead chỉnh sửa.");
+        } catch (ApplicationException ex) {
+            redirect.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/department-head/articles/" + articleId + "/review";
     }
 
     // Lỗi khi MỞ trang (không có quyền, không tìm thấy bài...): trả đúng mã HTTP của ErrorCode (403, 404...)
     // @ExceptionHandler: nếu BẤT KỲ method nào trong controller này ném ApplicationException mà không tự bắt,
-    // Spring gọi method này thay vì hiện trang lỗi 500. Thực tế chỉ xảy ra ở reviewWorkspace(),
-    // vì các method POST đã tự bắt lỗi trong runAndReturn().
+    // Spring gọi method này thay vì hiện trang lỗi 500. Thực tế chỉ xảy ra ở các trang GET (ví dụ reviewWorkspace()),
+    // vì 4 method POST ở trên đã tự bắt lỗi bằng try/catch.
     @ExceptionHandler(ApplicationException.class)
     public void handleError(ApplicationException ex, HttpServletResponse response) throws IOException {
         response.sendError(ex.getErrorCode().getStatusCode().value(), ex.getMessage());
-    }
-
-    // Chạy một thao tác rồi quay lại trang workspace, kèm thông báo thành công hoặc lỗi (hiện dạng toast)
-    // Dùng chung cho cả 5 method POST ở trên để khỏi viết lại try/catch 5 lần.
-    //   action         = đoạn code gọi service (lambda truyền vào)
-    //   successMessage = câu thông báo khi thành công
-    private static String runAndReturn(Integer articleId, RedirectAttributes flash, String successMessage, Runnable action) {
-        try {
-            // Chạy đoạn code gọi service. Nếu service phát hiện sai (không có quyền, thiếu nhận xét...) nó ném ApplicationException.
-            action.run();
-            // Thành công: gửi kèm "toast" -> workspacereview.html đọc ${toast} ở thẻ id="toast" (cuối file) -> JS hiện thông báo
-            flash.addFlashAttribute("toast", successMessage);
-        } catch (ApplicationException ex) {
-            // Thất bại: gửi kèm "toastError" (message tiếng Việt lấy từ ErrorCode) -> hiện thông báo màu đỏ
-            flash.addFlashAttribute("toastError", ex.getMessage());
-        }
-        // Dù thành công hay lỗi đều quay lại trang thẩm định -> reviewWorkspace() chạy lại với dữ liệu mới
-        return "redirect:/department-head/articles/" + articleId + "/review";
     }
 
     // Hàm phụ, được gọi ở dòng đầu của dashboard() (và các màn thẩm định) để lấy email người đang đăng nhập.

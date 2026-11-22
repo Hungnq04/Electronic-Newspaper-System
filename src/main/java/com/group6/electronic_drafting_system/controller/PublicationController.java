@@ -16,6 +16,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 // FL-07 Iter2: Approved Article List + Publication Detail (kèm pop-up Đăng ngay / Hẹn giờ) của Thư ký tòa soạn.
 // Iter3: thêm pop-up Trả bài về Lead trên Publication Detail.
+// Sau hội đồng: thêm pop-up Gỡ bài đã đăng (bài PUBLISHED -> trả về Lead).
 // SecurityConfig đã chỉ cho Thư ký vào /secretary/**; service kiểm tra quyền thêm một lần nữa.
 @Controller
 @RequestMapping("/secretary/publications")
@@ -102,6 +103,24 @@ public class PublicationController {
             return backToDetail(articleId, ex.getErrorCode(), null, redirect);
         } catch (Exception ex) {
             log.error("Return to lead failed for article {}", articleId, ex);
+            return backToDetail(articleId, ErrorCode.UNCATEGORIZED_EXCEPTION, null, redirect);
+        }
+    }
+
+    // Gỡ bài (thêm sau góp ý hội đồng) - pop-up "Gỡ bài khỏi trang công khai" -> bấm "Gỡ bài và trả về Lead"
+    @PostMapping("/{articleId}/unpublish")
+    public String unpublish(@PathVariable Integer articleId, @RequestParam(required = false) String reason,
+                            Principal principal, RedirectAttributes redirect) {
+        try {
+            publicationService.unpublish(articleId, principal.getName(), reason);
+            redirect.addFlashAttribute("message", "Đã gỡ bài khỏi trang công khai và trả về Lead Reporter.");
+            return LIST;
+        } catch (ApplicationException ex) {
+            // Giữ lại lý do đã gõ để mở lại pop-up, người dùng không phải gõ lại
+            redirect.addFlashAttribute("unpublishReason", reason == null ? "" : reason);
+            return backToDetail(articleId, ex.getErrorCode(), null, redirect);
+        } catch (Exception ex) {
+            log.error("Unpublish failed for article {}", articleId, ex);
             return backToDetail(articleId, ErrorCode.UNCATEGORIZED_EXCEPTION, null, redirect);
         }
     }

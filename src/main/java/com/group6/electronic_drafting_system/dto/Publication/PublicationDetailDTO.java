@@ -43,6 +43,8 @@ public class PublicationDetailDTO {
     boolean canCancel;
     // Iter3: true khi bài SCHEDULED đã đến giờ nhưng job chưa kịp đăng
     boolean due;
+    // Gỡ bài (thêm sau góp ý hội đồng): true khi bài đang PUBLISHED: hiện nút Gỡ bài
+    boolean canUnpublish;
     // Giá trị nhỏ nhất cho ô chọn giờ (định dạng yyyy-MM-ddTHH:mm, giờ Việt Nam)
     String minScheduleAt;
 }

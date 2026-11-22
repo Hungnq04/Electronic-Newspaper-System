@@ -133,7 +133,8 @@ public enum ErrorCode {
     PUBLICATION_SCHEDULE_TIME_TOO_SOON(1904, "Thời điểm đăng phải sau thời điểm hiện tại ít nhất 5 phút.", HttpStatus.BAD_REQUEST),
     PUBLICATION_REASON_REQUIRED(1905, "Vui lòng nhập lý do trả bài về Lead Reporter.", HttpStatus.BAD_REQUEST),
     PUBLICATION_NOT_SCHEDULED(1906, "Bài viết không còn ở trạng thái hẹn giờ đăng (có thể đã được đăng hoặc đã hủy lịch).", HttpStatus.CONFLICT),
-    PUBLICATION_SCHEDULE_ALREADY_DUE(1907, "Đã đến giờ đăng nên không thể hủy lịch nữa. Bài sẽ được hệ thống tự đăng.", HttpStatus.CONFLICT);
+    PUBLICATION_SCHEDULE_ALREADY_DUE(1907, "Đã đến giờ đăng nên không thể hủy lịch nữa. Bài sẽ được hệ thống tự đăng.", HttpStatus.CONFLICT),
+    PUBLICATION_NOT_PUBLISHED(1908, "Bài viết không còn ở trạng thái đã đăng (có thể đã được gỡ trước đó).", HttpStatus.CONFLICT);
 
     private final int code;
     private final String message;

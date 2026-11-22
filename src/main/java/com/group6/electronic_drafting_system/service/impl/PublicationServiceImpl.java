@@ -45,6 +45,7 @@ public class PublicationServiceImpl implements PublicationService {
     // Mọi thời điểm lưu theo giờ Việt Nam (+07:00), đúng quy ước cột DATETIMEOFFSET của DB
     private static final ZoneOffset VN = ZoneOffset.ofHours(7);
     private static final DateTimeFormatter INPUT_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+    private static final DateTimeFormatter DISPLAY_FORMAT = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
     // Tách nội dung HTML của trình soạn thảo thành các khối (đoạn, ảnh, bảng); dùng chung bộ tách của màn duyệt
     private static final ReviewWorkspaceMapper CONTENT_MAPPER = new ReviewWorkspaceMapper();
 
@@ -186,6 +187,7 @@ public class PublicationServiceImpl implements PublicationService {
                 .canPublish(article.getStatus() == ArticleStatus.APPROVED)
                 .canCancel(scheduled && !due)
                 .due(due)
+                .canUnpublish(article.getStatus() == ArticleStatus.PUBLISHED && publication != null)
                 .minScheduleAt(now().plusMinutes(MIN_SCHEDULE_MINUTES + 1).truncatedTo(ChronoUnit.MINUTES).format(INPUT_FORMAT))
                 .build();
     }
@@ -318,6 +320,37 @@ public class PublicationServiceImpl implements PublicationService {
         publications.delete(publication);
 
         // Đổi trạng thái: SCHEDULED -> REVISION_REQUIRED, bài quay về Lead
+        returnArticleToLead(article);
+    }
+
+    // ------------------------------------------------------------------ Gỡ bài đã đăng (thêm sau góp ý hội đồng)
+
+    @Override
+    @Transactional   // ghi 3 bảng (article_review + publication + article): lỗi giữa chừng thì hủy tất cả
+    public void unpublish(Integer articleId, String secretaryEmail, String reason) {
+        Account me = requireSecretary(secretaryEmail);
+        String feedback = requireReason(reason);              // bài không đăng nữa thì trả về Lead kèm lý do (BR-30)
+
+        // Khóa dòng bài rồi mới kiểm tra: hai Thư ký cùng bấm Gỡ bài thì người sau bị chặn
+        Article article = articles.findByIdForUpdate(articleId)
+                .orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_NOT_FOUND));
+        if (article.getStatus() != ArticleStatus.PUBLISHED)
+            throw new ApplicationException(ErrorCode.PUBLICATION_NOT_PUBLISHED);
+        Publication publication = publications.findByArticle_Id(articleId)
+                .orElseThrow(() -> new ApplicationException(ErrorCode.PUBLICATION_NOT_PUBLISHED));
+
+        // DB chỉ có 3 loại review_kind (REVIEW / RETURN_TO_LEAD / CANCEL_SCHEDULE), không có loại "gỡ bài",
+        // nên ghi loại RETURN_TO_LEAD và ghi rõ trong lý do: đây là gỡ bài đã đăng, đã đăng lúc nào.
+        // Nhờ vậy dù xóa dòng publication, vẫn truy vết được bài từng được đăng.
+        String publishedAtText = publication.getPublishedAt().withOffsetSameInstant(VN).format(DISPLAY_FORMAT);
+        String note = "Gỡ bài đã đăng (đăng lúc " + publishedAtText + "). Lý do: " + feedback;
+        saveReturnReview(publication.getVersion(), me, ReviewKind.RETURN_TO_LEAD, note);
+
+        // Xóa dòng publication cùng transaction (nếu không v_rule_violations báo R06): bài biến khỏi trang công khai
+        article.setPublication(null);
+        publications.delete(publication);
+
+        // Đổi trạng thái: PUBLISHED -> REVISION_REQUIRED, bài quay về Lead
         returnArticleToLead(article);
     }
 

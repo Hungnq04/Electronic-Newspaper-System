@@ -24,6 +24,9 @@
             <a th:if="${currentUser == null}" th:href="@{/login}">Đăng nhập</a>
             <form th:if="${currentUser != null}" method="post" th:action="@{/logout}">
                 <span class="user" th:text="${currentUser}">user</span>
+                <!-- Người dùng nội bộ đã đăng nhập: quay lại màn làm việc của mình mà không phải đăng xuất.
+                     /dashboard (DashboardController) tự chuyển tới màn chính đúng vai trò (Thư ký, Trưởng phòng, Phóng viên, Admin). -->
+                <a class="workspace-link" th:href="@{/dashboard}">Vào trang làm việc</a>
                 <button type="submit" class="link">Đăng xuất</button>
             </form>
         </div>

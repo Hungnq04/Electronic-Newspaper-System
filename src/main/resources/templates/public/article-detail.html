@@ -1,10 +1,18 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org" th:with="activeNav='detail', activeCategory=${article.category}">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:with="activeNav='detail', activeCategory=${article.category}">
 <head th:replace="~{public/layout :: pageHead(${article.title})}"></head>
 <body>
 <header th:replace="~{public/layout :: siteHeader}"></header>
 
 <main class="wrap">
+    <!-- Chỉ Thư ký đã đăng nhập mới thấy thanh này (độc giả không thấy): mở màn quản lý bài để gỡ bài.
+         Ẩn ở đây chỉ để gọn giao diện; quyền thật được kiểm tra ở backend (SecurityConfig + PublicationServiceImpl). -->
+    <div class="staff-bar" sec:authorize="hasRole('EDITORIAL_SECRETARY')">
+        <span>Bạn đang xem với vai trò <strong>Thư ký tòa soạn</strong>.</span>
+        <a th:href="@{/secretary/publications/{id}(id=${article.articleId})}">Quản lý bài này (gỡ bài)</a>
+    </div>
+
     <nav class="crumbs" aria-label="Đường dẫn">
         <a th:href="@{/}">Trang chủ</a> ›
         <a th:href="@{/news(category=${article.category})}" th:text="${article.category}">Chuyên mục</a>

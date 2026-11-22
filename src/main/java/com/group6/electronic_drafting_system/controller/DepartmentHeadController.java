@@ -277,13 +277,10 @@ public class DepartmentHeadController {
         return "layout/app";
     }
 
-    // ----- Nút "Thêm góp ý" (gắn vị trí) và "Thêm góp ý chung" -----
-    // Form gửi tới đây (workspacereview.html):
-    //   - Góp ý gắn vị trí: form ẩn id="comment-form". JS (popoverSave trong department-head-workspace-review.js)
-    //     điền anchorField / anchorParagraph / anchorStart / anchorEnd / content rồi gửi.
-    //   - Góp ý chung: form class="ws-general-form", chỉ có ô content (anchorField để trống).
-    // @ModelAttribute CommentRequestDTO: Spring tạo CommentRequestDTO và đổ các ô form vào THEO TÊN
-    //   (input name="content" -> setContent(...), name="anchorField" -> setAnchorField(...)...).
+    // ----- Nút "Thêm góp ý chung" -----
+    // Form gửi tới đây (workspacereview.html): form class="ws-general-form", chỉ có ô name="content".
+    // @ModelAttribute CommentRequestDTO: Spring tạo CommentRequestDTO và đổ ô form vào THEO TÊN
+    //   (textarea name="content" -> setContent(...)).
     // RedirectAttributes flash: "túi" chứa thông báo sống qua đúng 1 lần redirect (dùng cho toast).
     @PostMapping("/articles/{articleId}/comments")
     public String addComment(@PathVariable Integer articleId, @ModelAttribute CommentRequestDTO commentRequest,

@@ -122,28 +122,18 @@
                 <section class="ws-main-col">
 
                     <!-- Bản đang duyệt (phiên bản mới nhất).
-                         data-field / data-paragraph = vị trí lưu vào comment.anchor_field / anchor_paragraph khi góp ý.
-                         Phần tử có data-field chỉ chứa chữ của bài, KHÔNG thêm thẻ con khác vào, vì JS đếm vị trí từng ký tự trong đó.
-                         Dữ liệu: workspace.current (VersionViewDTO) = version mới nhất, service lấy ở BƯỚC 2 của openWorkspace.
-
-                         CÁCH GÓP Ý GẮN VỊ TRÍ HOẠT ĐỘNG:
-                           1. Bôi đen chữ trong một phần tử có data-field (tít, tít phụ, sapo, đoạn thân bài)
-                           2. JS đọc data-field + data-paragraph của phần tử đó, đếm vị trí ký tự bắt đầu / kết thúc
-                           3. JS hiện khung #comment-popover ngay dưới chỗ bôi đen
-                           4. Gõ góp ý, bấm "Thêm góp ý" -> JS điền vào form ẩn #comment-form (cuối file) rồi gửi
-                           5. Server: DepartmentHeadController.addComment() -> service.addComment() kiểm tra vị trí và lưu -->
+                         Dữ liệu: workspace.current (VersionViewDTO) = version mới nhất, service lấy ở BƯỚC 2 của openWorkspace. -->
 
                     <article id="article-card" class="ws-article">
                         <div class="ws-article-meta">
                             <span class="ws-tag-yellow"
                                   th:text="${workspace.previous != null} ? |Bản nộp lại (v${workspace.current.label})| : |Bản nộp đầu (v${workspace.current.label})|">Bản nộp (v1.0)</span>
                             <span class="ws-mono" th:text="|Gửi duyệt: ${workspace.current.createdAtText}|">Gửi duyệt: 08:35</span>
-                            <span class="ws-hint" th:if="${workspace.reviewable}"><svg class="rp-icon"><use href="#ws-icon-info"></use></svg>Bôi đen một đoạn để góp ý</span>
                         </div>
 
-                        <h1 class="ws-title" data-field="TITLE" data-paragraph="1" data-anchor="Tít" th:text="${workspace.current.title}">Tít bài</h1>
+                        <h1 class="ws-title" th:text="${workspace.current.title}">Tít bài</h1>
                         <p class="ws-subtitle" th:if="${workspace.current.subtitle != null and !#strings.isEmpty(workspace.current.subtitle)}"
-                           data-field="SUBTITLE" data-paragraph="1" data-anchor="Tít phụ" th:text="${workspace.current.subtitle}">Tít phụ</p>
+                           th:text="${workspace.current.subtitle}">Tít phụ</p>
 
                         <!-- Người viết (Lead, Supporting) + số từ, số ảnh
                              Dữ liệu: workspace.leadName, workspace.leadInitials, workspace.supportingNames, workspace.wordCount, workspace.imageCount (service BƯỚC 4-5). -->
@@ -164,10 +154,10 @@
 
                         <hr class="ws-divider">
 
-                        <!-- Sapo: nhãn "Sapo" nằm ngoài thẻ <p> có data-field để không bị tính vào vị trí ký tự -->
+                        <!-- Sapo -->
                         <div class="ws-sapo">
                             <span class="ws-sapo-label">Sapo</span>
-                            <p class="ws-sapo-text" data-field="SAPO" data-paragraph="1" data-anchor="Sapo" th:text="${workspace.current.sapo}">Sapo</p>
+                            <p class="ws-sapo-text" th:text="${workspace.current.sapo}">Sapo</p>
                         </div>
 
                         <!-- Ảnh đại diện (article_source.is_featured), giống ảnh cover phóng viên thấy trong trình soạn thảo -->
@@ -177,14 +167,12 @@
                         </figure>
 
                         <!-- Thân bài theo đúng thứ tự phóng viên sắp xếp (ContentBlockDTO: đoạn chữ, ảnh, video, bảng).
-                             Chỉ khối chữ có data-field / data-paragraph nên chỉ bôi đen chữ mới góp ý được; ảnh, video, bảng thì không.
                              th:each lặp từng khối b trong workspace.current.blocks (do ReviewWorkspaceMapper.blocks() cắt sẵn).
                              th:switch / th:case giống switch trong Java: tùy block.kind là TEXT / IMAGE / VIDEO / TABLE mà in ra thẻ khác nhau.
                              th:utext in nguyên HTML (giữ in đậm, nghiêng); an toàn vì mapper đã lọc bỏ thẻ nguy hiểm. -->
                         <div id="article-body" class="ws-body">
                             <th:block th:each="block : ${workspace.current.blocks}" th:switch="${block.kind.name()}">
-                                <div th:case="'TEXT'" class="ws-text" th:classappend="|ws-${block.tag}|"
-                                     data-field="CONTENT" th:attr="data-paragraph=${block.paragraph},data-anchor=|Đoạn ${block.paragraph}|" th:utext="${block.html}">Đoạn nội dung</div>
+                                <div th:case="'TEXT'" class="ws-text" th:classappend="|ws-${block.tag}|" th:utext="${block.html}">Đoạn nội dung</div>
                                 <figure th:case="'IMAGE'" class="ws-figure">
                                     <img th:src="${block.url}" th:alt="${block.caption}" alt="" loading="lazy">
                                     <figcaption th:if="${block.caption != null}" th:text="${block.caption}">Chú thích ảnh</figcaption>
@@ -195,35 +183,6 @@
                                 </figure>
                                 <div th:case="'TABLE'" class="ws-table" th:utext="${block.html}">Bảng</div>
                             </th:block>
-                        </div>
-
-                        <!-- Khung góp ý: hiện ra khi bôi đen chữ trong bài (chỉ có khi mình đang được duyệt bài này).
-                             JS đặt khung ngay dưới chỗ bôi đen.
-                             th:if="${workspace.reviewable}": không được thao tác (chỉ xem) thì khung này KHÔNG được in ra HTML luôn.
-                             Khung này không phải form: nút "Thêm góp ý" (id="popover-save") do JS xử lý, JS chép dữ liệu
-                             sang form ẩn #comment-form rồi mới gửi lên server. -->
-                        <div th:if="${workspace.reviewable}" id="comment-popover" class="ws-popover" hidden>
-                            <div class="ws-popover-head">
-                                <div class="ws-popover-title">
-                                    <span class="ws-popover-icon"><svg class="rp-icon"><use href="#ws-icon-comment"></use></svg></span>
-                                    Góp ý
-                                    <span id="popover-anchor" class="ws-anchor-pill">Đoạn</span>
-                                </div>
-                                <button id="popover-close" class="ws-icon-button" type="button" aria-label="Đóng"><svg class="rp-icon"><use href="#ws-icon-close"></use></svg></button>
-                            </div>
-                            <p id="popover-quote" class="ws-popover-quote"></p>
-                            <textarea id="popover-text" class="ws-textarea" rows="3" placeholder="Nội dung góp ý..."></textarea>
-                            <!-- Gợi ý nhanh: bấm vào là chữ được thêm vào ô góp ý -->
-                            <div class="ws-quick">
-                                <span>Gợi ý nhanh:</span>
-                                <button data-chip class="ws-chip" type="button">Cần ghi rõ nguồn</button>
-                                <button data-chip class="ws-chip" type="button">Kiểm tra lại số liệu</button>
-                                <button data-chip class="ws-chip" type="button">Nên rút gọn</button>
-                            </div>
-                            <div class="ws-actions-right">
-                                <button id="popover-cancel" class="ws-btn ws-btn--grey ws-btn--small" type="button">Hủy</button>
-                                <button id="popover-save" class="ws-btn ws-btn--maroon ws-btn--small" type="button" disabled><svg class="rp-icon"><use href="#ws-icon-send"></use></svg>Thêm góp ý</button>
-                            </div>
                         </div>
                     </article>
 
@@ -314,10 +273,8 @@
                             <p class="ws-note">Góp ý trên <b th:text="|v${workspace.current.label}|">v1.0</b>. Lead chỉ thấy sau khi bạn bấm <b>Yêu cầu sửa</b> hoặc <b>Duyệt</b>.</p>
                             <p class="ws-note" th:if="${#lists.isEmpty(workspace.comments)}"><i>Chưa có góp ý nào.</i></p>
 
-                            <!-- Một thẻ góp ý. data-field / data-paragraph / data-start / data-end: JS dùng để tô vàng đúng chữ được góp ý.
-                                 Góp ý chung (không gắn vị trí) thì không có data-field. -->
-                            <div class="ws-comment comment-card" th:each="comment : ${workspace.comments}"
-                                 th:attr="data-cid=${comment.id},data-field=${comment.anchorField},data-paragraph=${comment.anchorParagraph},data-start=${comment.anchorStart},data-end=${comment.anchorEnd}">
+                            <!-- Một thẻ góp ý (góp ý chung cho cả bài) -->
+                            <div class="ws-comment comment-card" th:each="comment : ${workspace.comments}">
                                 <div class="ws-comment-top">
                                     <b th:text="${comment.anchorLabel}">Đoạn 2</b>
                                     <span class="ws-mono" th:text="${comment.timeText}">08:42</span>
@@ -325,8 +282,7 @@
                                 <p class="ws-quote" th:if="${comment.quotedText != null}" th:text="|“${comment.quotedText}”|">“trích dẫn”</p>
                                 <p class="ws-comment-text" th:text="${comment.content}">Nội dung góp ý</p>
                                 <div class="ws-comment-foot">
-                                    <button th:if="${comment.anchorField != null}" data-goto class="ws-link" type="button">Xem vị trí →</button>
-                                    <span th:unless="${comment.anchorField != null}"></span>
+                                    <span></span>
                                     <!-- data-confirm: JS hỏi lại "Xóa góp ý này?" trước khi gửi form
                                          Gửi: POST /department-head/articles/{a}/comments/{c}/delete
                                          -> DepartmentHeadController.deleteComment() -> service.deleteComment() -->
@@ -338,10 +294,10 @@
                                 </div>
                             </div>
 
-                            <!-- Góp ý chung cho cả bài (không gắn vị trí trong bài)
+                            <!-- Góp ý chung cho cả bài
                                  Gửi: POST /department-head/articles/{a}/comments với 1 ô name="content"
-                                 -> DepartmentHeadController.addComment() (Spring đổ vào CommentRequestDTO.content, anchorField để trống)
-                                 -> service.addComment() lưu góp ý không có vị trí. -->
+                                 -> DepartmentHeadController.addComment() (Spring đổ vào CommentRequestDTO.content)
+                                 -> service.addComment() lưu vào bảng comment. -->
 
                             <form th:if="${workspace.reviewable}" class="ws-general-form" method="post"
                                   th:action="@{/department-head/articles/{a}/comments(a=${workspace.articleId})}">
@@ -456,19 +412,6 @@
                 </div>
             </form>
         </div>
-
-        <!-- Form ẩn để gửi góp ý gắn vị trí: JS điền vị trí vừa bôi đen + nội dung rồi gửi đi
-             Tên 5 ô (name=...) TRÙNG tên 5 field của CommentRequestDTO, nên Spring tự đổ đúng vào:
-               anchorField -> setAnchorField, anchorParagraph -> setAnchorParagraph, ..., content -> setContent
-             Gửi: POST /department-head/articles/{a}/comments -> DepartmentHeadController.addComment() -> service.addComment() -->
-
-        <form th:if="${workspace.reviewable}" id="comment-form" method="post" th:action="@{/department-head/articles/{a}/comments(a=${workspace.articleId})}" hidden>
-            <input type="hidden" name="anchorField">
-            <input type="hidden" name="anchorParagraph">
-            <input type="hidden" name="anchorStart">
-            <input type="hidden" name="anchorEnd">
-            <input type="hidden" name="content">
-        </form>
 
         <!-- Thông báo nhỏ sau mỗi thao tác (flash "toast" / "toastError" từ controller), JS tự ẩn sau vài giây
              toast / toastError do DepartmentHeadController.runAndReturn() gửi kèm khi redirect (flash.addFlashAttribute).

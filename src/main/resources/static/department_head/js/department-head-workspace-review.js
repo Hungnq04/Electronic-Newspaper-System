@@ -1,13 +1,12 @@
 // =====================================================================
 // Màn thẩm định bài viết của Trưởng ban (department_head/workspacereview.html)
 //
-// File này làm 6 việc:
+// File này làm 4 việc:
 //   1. Hiện thông báo nhỏ (toast) sau mỗi thao tác
 //   2. Hỏi lại trước khi xóa góp ý
-//   3. Tô vàng chữ đã được góp ý; bấm qua lại giữa chữ trong bài và thẻ góp ý
-//   4. Bôi đen chữ -> hiện khung góp ý -> gửi góp ý lên server
 //   5. So sánh hai phiên bản của bài
 //   6. Đổi tab góp ý, mở / đóng hộp thoại "Duyệt" và "Yêu cầu sửa"
+// (Phần 3, 4 cũ là tô vàng và bôi đen để góp ý: đã bỏ, Trưởng phòng chỉ còn góp ý chung)
 //
 // Cách ẩn / hiện một phần tử: element.hidden = true (ẩn) hoặc element.hidden = false (hiện).
 // File được nạp ở cuối trang (layout/app.html) nên mọi phần tử HTML đã có sẵn khi chạy.
@@ -68,215 +67,6 @@ document.querySelectorAll('form[data-confirm]').forEach(function (form) {
     }
   });
 });
-
-
-// ---------------------------------------------------------------------
-// 3. Vị trí ký tự + tô vàng các góp ý đã lưu
-//
-// Mỗi góp ý lưu vị trí: đoạn nào (data-field + data-paragraph) và từ ký tự thứ mấy
-// đến ký tự thứ mấy (start, end; đếm từ 0, ký tự ở vị trí end không tính).
-// "Range" là một vùng chữ trên trang, giống vùng bạn bôi đen bằng chuột.
-// ---------------------------------------------------------------------
-
-// Đếm xem từ đầu phần tử element tới điểm (node, offset) có bao nhiêu ký tự
-// (Đếm số ký tự từ đầu phần tử tới một điểm)
-function offsetIn(element, node, offset) {
-  const range = document.createRange();   // tạo một vùng chọn mới (trống)
-  range.setStart(element, 0);             // điểm đầu: đầu thẻ <p>
-  range.setEnd(node, offset);             // điểm cuối: chỗ cần đo
-  return range.toString().length;         // lấy chữ trong vùng đó, đếm độ dài
-}
-
-// Ngược lại với offsetIn: từ vị trí [start, end) trong element, tạo ra Range để tô màu
-function rangeFromOffsets(element, start, end) {
-  // TreeWalker đi lần lượt qua từng mẩu chữ (text node) bên trong element
-  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-  const range = document.createRange();
-  let position = 0;           // đã đi qua bao nhiêu ký tự
-  let startFound = false;
-  let node = walker.nextNode();
-  while (node) {
-    const length = node.textContent.length;
-    if (!startFound && start <= position + length) {
-      range.setStart(node, start - position);
-      startFound = true;
-    }
-    if (startFound && end <= position + length) {
-      range.setEnd(node, end - position);
-      return range;
-    }
-    position += length;
-    node = walker.nextNode();
-  }
-  return null;                // vị trí không còn đúng (ví dụ chữ đã đổi): bỏ qua
-}
-
-// Tìm phần tử chứa đoạn chữ theo vị trí đã lưu, ví dụ field = "CONTENT", paragraph = "3"
-function anchorElement(field, paragraph) {
-  return articleCard.querySelector('[data-field="' + field + '"][data-paragraph="' + paragraph + '"]');
-}
-
-// Tô vàng chữ của từng góp ý đã lưu: bọc chữ đó trong thẻ <mark class="ws-mark">
-// (chỉ thẻ góp ý có data-field mới gắn vị trí; góp ý chung thì không có)
-// Với mỗi góp ý có vị trí: tìm đúng đoạn, khoanh đúng chữ, bọc trong <mark>
-document.querySelectorAll('.comment-card[data-field]').forEach(function (card) {
-  // Tít / tít phụ / sapo chỉ có 1 đoạn: góp ý cũ có thể không lưu số đoạn (NULL) thì coi là đoạn 1
-  const element = anchorElement(card.dataset.field, card.dataset.paragraph || '1');
-  if (!element) return;
-  const range = rangeFromOffsets(element, Number(card.dataset.start), Number(card.dataset.end));
-  if (!range) return;
-  const mark = document.createElement('mark');   // thẻ <mark> có nền vàng sẵn
-  mark.className = 'ws-mark';
-  mark.dataset.cid = card.dataset.cid;        // nhớ thẻ <mark> này thuộc góp ý nào
-  try {
-    range.surroundContents(mark);
-  } catch (error) {
-    // Hai góp ý chồng lên nhau thì không bọc được: bỏ qua phần tô màu, góp ý vẫn hiện ở cột bên phải
-  }
-});
-
-// Nháy viền vàng để người dùng thấy phần tử vừa được nhảy tới
-function flash(element) {
-  element.classList.remove('ws-flash');
-  void element.offsetWidth;                         // bắt trình duyệt vẽ lại, để hiệu ứng chạy lại từ đầu
-  element.classList.add('ws-flash');
-}
-
-// Bấm "Xem vị trí →" ở thẻ góp ý -> cuộn tới chữ được tô vàng trong bài
-byId('tab-now').addEventListener('click', function (event) {
-  if (!event.target.closest('[data-goto]')) return;      // chỉ xử lý khi bấm đúng nút "Xem vị trí"
-  const card = event.target.closest('.comment-card');
-  if (comparing) toggleCompare();                         // đang xem màn so sánh thì quay lại bài
-  const mark = document.querySelector('mark[data-cid="' + card.dataset.cid + '"]');
-  if (mark) {
-    mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    flash(mark);
-  }
-});
-
-// Bấm vào chữ được tô vàng -> nhảy tới thẻ góp ý tương ứng ở cột bên phải
-articleCard.addEventListener('click', function (event) {
-  const mark = event.target.closest('mark[data-cid]');
-  if (!mark) return;
-  showTab('now');
-  const card = document.querySelector('.comment-card[data-cid="' + mark.dataset.cid + '"]');
-  if (card) {
-    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    flash(card);
-  }
-});
-
-
-// ---------------------------------------------------------------------
-// 4. Bôi đen chữ -> khung góp ý
-//    Khung góp ý chỉ có khi mình đang được duyệt bài này (không thì popover = null)
-// ---------------------------------------------------------------------
-// Tìm form có id "comment-popover" (các thành phần bên trong nó: popoverText, popoverSave lấy ở dưới, trong if (popover))
-const popover = byId('comment-popover');
-let pendingAnchor = null;                     // vị trí đoạn chữ vừa bôi đen, chờ bấm "Thêm góp ý"
-// Tạo một biến để nhớ vị trí vừa bôi đen. Ban đầu là null (chưa có gì).
-// Chữ "pending" nghĩa là "đang chờ": vị trí này chờ người dùng gõ xong và bấm "Thêm góp ý" mới dùng tới.
-
-// Đóng khung góp ý và xóa chữ đang gõ dở (hàm ẩn khung góp ý)
-function hidePopover() {
-  if (!popover) return;
-  popover.hidden = true;                      // ẩn khung góp ý
-  pendingAnchor = null;                       // xóa vị trí đang chờ
-  byId('popover-text').value = '';            // xóa chữ người dùng đã gõ dở trong ô
-  byId('popover-save').disabled = true;       // làm mờ nút "Thêm góp ý" trở lại
-}
-
-// Tìm phần tử có data-field chứa node (node có thể là một mẩu chữ hoặc một thẻ HTML)
-// Hàm anchorOf nhận một node và trả về thẻ cha gần nhất có thuộc tính data-field.
-// Để biết được xem vùng được chọn thuộc phần nào: sapo hay title hay subtitle...
-function anchorOf(node) {
-  const element = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
-  return element ? element.closest('[data-field]') : null;
-}
-
-if (popover) {
-  const popoverText = byId('popover-text');
-  const popoverSave = byId('popover-save');
-
-
-  articleCard.addEventListener('mouseup', function (event) {
-    if (popover.contains(event.target)) return;          // bấm bên trong khung góp ý thì bỏ qua
-    // setTimeout(..., 0): đợi trình duyệt cập nhật xong vùng bôi đen rồi mới đọc
-    setTimeout(function () {
-      const selection = window.getSelection();           // lấy đối tượng Selection hiện tại
-      // Nếu không có vùng chọn nào, hoặc vùng chọn đang rỗng, thì thoát khỏi hàm luôn
-      if (!selection.rangeCount || selection.isCollapsed) return;    // không bôi đen gì
-      // range cho biết vùng chọn bắt đầu ở đâu.
-      // Ví dụ bạn bôi đen chữ "ghe hàng lớn" thì range ghi nhận điểm bắt đầu trước chữ "ghe" và điểm kết thúc sau chữ "lớn"
-      const range = selection.getRangeAt(0);
-      // Tìm thẻ cha gần nhất có thuộc tính data-field cho điểm bắt đầu, ý là nguyên cả thẻ <p> chứa chữ vừa bôi đen
-      const startAnchor = anchorOf(range.startContainer);
-      // Tìm thẻ cha gần nhất có thuộc tính data-field cho điểm kết thúc, ý là nguyên cả thẻ <p> chứa chữ vừa bôi đen
-      const endAnchor = anchorOf(range.endContainer);
-      if (!selection.toString().trim() || !startAnchor) return;      // bôi đen khoảng trắng hoặc ngoài chữ bài
-      if (startAnchor !== endAnchor) {
-        showToast('Chỉ chọn trong một đoạn để góp ý.');
-        return;
-      }
-
-      // Ghi nhớ vị trí để gửi lên server khi bấm "Thêm góp ý"
-      // (lưu thông tin về vị trí vừa bôi đen vào biến pendingAnchor)
-      pendingAnchor = {
-        field: startAnchor.dataset.field,
-        paragraph: startAnchor.dataset.paragraph,
-        start: offsetIn(startAnchor, range.startContainer, range.startOffset),
-        end: offsetIn(startAnchor, range.endContainer, range.endOffset)
-      };
-      byId('popover-anchor').textContent = startAnchor.dataset.anchor;
-      // Tìm thẻ <p id="popover-quote"> trong khung và ghi chữ vừa bôi đen vào đó
-      // để người dùng thấy mình đang góp ý cho đoạn chữ nào. textContent là thuộc tính để gán chữ cho một thẻ.
-      byId('popover-quote').textContent = '“' + selection.toString() + '”';
-
-      // Đặt khung góp ý ngay dưới vùng bôi đen (tọa độ tính theo khung bài viết)
-      const selectionBox = range.getBoundingClientRect();
-      const cardBox = articleCard.getBoundingClientRect();
-      popover.hidden = false;
-      popover.style.top = (selectionBox.bottom - cardBox.top + 10) + 'px';
-      const maxLeft = cardBox.width - popover.offsetWidth - 16;   // không cho khung tràn ra ngoài bên phải
-      popover.style.left = Math.max(16, Math.min(selectionBox.left - cardBox.left, maxLeft)) + 'px';
-
-      popover.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-      popoverText.focus({ preventScroll: true });
-    }, 0);
-  });
-
-  // Chỉ bật nút "Thêm góp ý" khi đã gõ nội dung
-  popoverText.addEventListener('input', function () {
-    popoverSave.disabled = !popoverText.value.trim();
-  });
-
-  // Bấm một gợi ý nhanh -> nối chữ của gợi ý vào ô nội dung góp ý
-  document.querySelectorAll('[data-chip]').forEach(function (chip) {
-    chip.addEventListener('click', function () {
-      const current = popoverText.value.trim();
-      popoverText.value = (current ? current + ' ' : '') + chip.textContent.trim() + '.';
-      popoverSave.disabled = false;
-      popoverText.focus();
-    });
-  });
-
-  byId('popover-close').addEventListener('click', hidePopover);
-  byId('popover-cancel').addEventListener('click', hidePopover);
-
-  // Lưu góp ý: điền vị trí + nội dung vào form ẩn #comment-form rồi gửi lên server.
-  // Server tự kiểm tra lại vị trí và tự lấy đoạn trích, không tin dữ liệu trình duyệt gửi lên.
-  popoverSave.addEventListener('click', function () {
-    if (!pendingAnchor) return;
-    const form = byId('comment-form');
-    form.anchorField.value = pendingAnchor.field;
-    form.anchorParagraph.value = pendingAnchor.paragraph;
-    form.anchorStart.value = pendingAnchor.start;
-    form.anchorEnd.value = pendingAnchor.end;
-    form.content.value = popoverText.value.trim();
-    popoverSave.disabled = true;               // chặn bấm 2 lần
-    form.submit();
-  });
-}
 
 
 // ---------------------------------------------------------------------
@@ -445,7 +235,6 @@ function renderCompare() {
 // Chuyển qua lại giữa bài đang duyệt và màn so sánh
 function toggleCompare() {
   comparing = !comparing;
-  hidePopover();
   articleCard.hidden = comparing;            // đang so sánh thì ẩn bài viết...
   compareCard.hidden = !comparing;           // ...và hiện màn so sánh (và ngược lại)
   byId('btn-compare-label').textContent = comparing ? 'Quay lại bản đang duyệt' : 'So sánh phiên bản';
@@ -524,10 +313,9 @@ if (btnRevise) {
   });
 }
 
-// Phím Esc: đóng khung góp ý và hộp thoại
+// Phím Esc: đóng hộp thoại
 document.addEventListener('keydown', function (event) {
   if (event.key === 'Escape') {
-    hidePopover();
     closeModals();
   }
 });

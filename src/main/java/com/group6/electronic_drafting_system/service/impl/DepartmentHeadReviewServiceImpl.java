@@ -12,7 +12,6 @@ import com.group6.electronic_drafting_system.entity.ArticleReview;
 import com.group6.electronic_drafting_system.entity.ArticleVersion;
 import com.group6.electronic_drafting_system.entity.Comment;
 import com.group6.electronic_drafting_system.entity.Department;
-import com.group6.electronic_drafting_system.entity.enums.AnchorField;
 import com.group6.electronic_drafting_system.entity.enums.ArticleReviewDecision;
 import com.group6.electronic_drafting_system.entity.enums.ArticleStatus;
 import com.group6.electronic_drafting_system.entity.enums.AssignmentRole;
@@ -172,29 +171,9 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
         comment.setReview(review);   // góp ý thuộc lượt duyệt đang mở
         comment.setCreator(head); // R17: comment gốc phải do chính người duyệt viết
         comment.setContent(content);
+        // Góp ý chung cho cả bài: các cột vị trí (anchor_field, anchor_paragraph, anchor_start, anchor_end,
+        // quoted_text) để NULL. DB cho phép (ràng buộc ck_comment_anchor_field).
 
-        // Góp ý gắn vị trí: kiểm tra vị trí có thật trong version đang duyệt, quoted_text lấy từ DB (không tin chữ gửi lên)
-        // anchorField để trống = góp ý chung -> bỏ qua cả khối if này.
-        if (commentRequest.getAnchorField() != null && !commentRequest.getAnchorField().isBlank()) {
-            // "CONTENT" (chữ) -> AnchorField.CONTENT (enum); chữ lạ thì báo lỗi (hàm phụ parseAnchorField)
-            AnchorField field = parseAnchorField(commentRequest.getAnchorField());
-            int paragraph = commentRequest.getAnchorParagraph() == null ? 0 : commentRequest.getAnchorParagraph();
-            // mapper.anchorText (ReviewWorkspaceMapper dòng 212): lấy chữ THẬT của đúng ô đó (tít / sapo / đoạn số mấy) trong version
-            String text = mapper.anchorText(review.getVersion(), field, paragraph);
-            Integer anchorStart = commentRequest.getAnchorStart();
-            Integer anchorEnd = commentRequest.getAnchorEnd();
-            // Vị trí ký tự phải hợp lệ: 0 <= anchorStart < anchorEnd <= độ dài đoạn. Sai thì báo lỗi.
-            if (text == null || anchorStart == null || anchorEnd == null
-                    || anchorStart < 0 || anchorEnd <= anchorStart || anchorEnd > text.length()) {
-                throw new ApplicationException(ErrorCode.COMMENT_INVALID);
-            }
-            comment.setAnchorField(field);
-            comment.setAnchorParagraph(paragraph);
-            comment.setAnchorStart(anchorStart);
-            comment.setAnchorEnd(anchorEnd);
-            // Cắt đúng đoạn chữ được bôi đen từ nội dung trong DB (không dùng chữ trình duyệt gửi lên).
-            comment.setQuotedText(text.substring(anchorStart, anchorEnd));
-        }
         // SQL: INSERT vào bảng comment
         comments.save(comment);
     }
@@ -494,15 +473,6 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
             result.addAll(rootComments(allVersions.get(i)));
         }
         return result;
-    }
-
-    // Đổi chữ "TITLE" / "SAPO" / "CONTENT"... (form gửi lên) thành enum AnchorField; chữ lạ thì báo lỗi.
-    private static AnchorField parseAnchorField(String value) {
-        try {
-            return AnchorField.valueOf(value);
-        } catch (IllegalArgumentException ex) {
-            throw new ApplicationException(ErrorCode.COMMENT_INVALID);
-        }
     }
 
     // Nội dung có thể là HTML từ trình soạn thảo: bỏ thẻ trước rồi mới đếm, để không đếm "<p>", "<img ...>" thành chữ

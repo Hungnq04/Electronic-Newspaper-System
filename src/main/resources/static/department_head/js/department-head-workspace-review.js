@@ -252,25 +252,8 @@ if (compareCard) {
 
 
 // ---------------------------------------------------------------------
-// 6. Tab góp ý (Vòng này / Vòng trước) và hộp thoại Duyệt / Yêu cầu sửa
+// 6. Hộp thoại Duyệt / Yêu cầu sửa
 // ---------------------------------------------------------------------
-
-// name = 'now' (góp ý vòng này) hoặc 'prev' (góp ý vòng trước)
-function showTab(name) {
-  byId('tab-now').hidden = name !== 'now';
-  const prevPanel = byId('tab-prev');          // null nếu bài mới có 1 phiên bản
-  if (prevPanel) prevPanel.hidden = name !== 'prev';
-  document.querySelectorAll('.tab-btn').forEach(function (button) {
-    const active = button.dataset.tab === name;
-    button.classList.toggle('is-active', active);
-    button.setAttribute('aria-selected', active ? 'true' : 'false');
-  });
-}
-document.querySelectorAll('.tab-btn').forEach(function (button) {
-  button.addEventListener('click', function () {
-    showTab(button.dataset.tab);
-  });
-});
 
 // Hộp thoại (modal): chỉ có khi mình đang được duyệt bài này
 const modals = document.querySelectorAll('#modal-revise, #modal-approve');

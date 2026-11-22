@@ -148,8 +148,7 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
                 .versions(allVersions.stream().map(mapper::toVersionView).toList())   // mọi version (ô chọn "So với")
                 .sources(sources)
                 .featuredImage(featuredImage)
-                .comments(rootComments(current))                              // góp ý vòng này (hàm phụ rootComments)
-                .previousComments(earlierComments(allVersions))               // góp ý các vòng trước (hàm phụ earlierComments)
+                .comments(rootComments(current))                              // góp ý trên bản đang duyệt (hàm phụ rootComments)
                 .build();
     }
 
@@ -459,18 +458,6 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
             if (comment.getParent() == null) {          // chỉ giữ góp ý gốc
                 result.add(mapper.toComment(comment));  // ReviewWorkspaceMapper.toComment: đổi thành ReviewCommentDTO
             }
-        }
-        return result;
-    }
-
-    // Góp ý của các vòng trước cho tab "Vòng trước": MỌI góp ý trên MỌI version cũ, chỉ để đọc lại.
-    // allVersions xếp tăng dần [v1.0, v1.1, ..., bản đang duyệt]; version đang duyệt không tính.
-    // Đi lùi từ version liền trước về v1.0, nên góp ý của phiên bản mới hơn đứng trước.
-    private List<ReviewCommentDTO> earlierComments(List<ArticleVersion> allVersions) {
-        List<ReviewCommentDTO> result = new ArrayList<>();
-        int previousIndex = allVersions.size() - 2;   // vị trí version liền trước; < 0 nghĩa là bài mới nộp 1 lần
-        for (int i = previousIndex; i >= 0; i--) {
-            result.addAll(rootComments(allVersions.get(i)));
         }
         return result;
     }

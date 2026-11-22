@@ -7,8 +7,8 @@ import lombok.Getter;
 //
 // TẠO Ở ĐÂU: ReviewWorkspaceMapper.toComment(comment) (mapper/DepartmentHead/ReviewWorkspaceMapper.java),
 //            được DepartmentHeadReviewServiceImpl.rootComments() gọi cho từng góp ý gốc.
-// NẰM TRONG: ReviewWorkspaceDTO.comments (vòng này) và ReviewWorkspaceDTO.previousComments (vòng trước)
-// HTML ĐỌC:  th:each="comment : ${workspace.comments}" (tab "Vòng này") và th:each="comment : ${workspace.previousComments}" (tab "Vòng trước")
+// NẰM TRONG: ReviewWorkspaceDTO.comments (góp ý trên bản đang duyệt)
+// HTML ĐỌC:  th:each="comment : ${workspace.comments}"
 //
 // DTO dùng để HIỂN THỊ góp ý. Còn dữ liệu form GỬI LÊN khi thêm góp ý là CommentRequestDTO (file khác).
 @Getter
@@ -28,6 +28,6 @@ public class ReviewCommentDTO {
     private String content;            // nội dung góp ý -> ${comment.content}
     private String authorName;         // người viết
     private String timeText;           // thời gian, đã định dạng sẵn
-    private String versionLabel;       // góp ý nằm trên phiên bản nào, ví dụ "1.0" -> tab "Vòng trước" ghi "v1.0"
+    private String versionLabel;       // góp ý nằm trên phiên bản nào, ví dụ "1.0"
     // Không có trạng thái "đã sửa / chưa sửa" và không có câu trả lời: màn này chỉ hiện lại góp ý đã viết.
 }

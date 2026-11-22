@@ -42,7 +42,7 @@ public class ReviewWorkspaceDTO {
     // ----- Các phiên bản -----
     // Version đang duyệt (mới nhất), version liền trước (null nếu mới có v1.0) và toàn bộ version để chọn so sánh
     private VersionViewDTO current;          // bản đang duyệt -> tít, sapo, thân bài: ${workspace.current.title}, ${workspace.current.blocks}...
-    private VersionViewDTO previous;         // bản liền trước; null thì HTML ẩn nút so sánh và tab "Vòng trước" (th:if="${workspace.previous != null}")
+    private VersionViewDTO previous;         // bản liền trước; null thì HTML ẩn phần so sánh (th:if="${workspace.previous != null}")
     private List<VersionViewDTO> versions;   // mọi version -> ô chọn "So với" và khối ẩn #version-data cho JS so sánh
 
     // ----- Tư liệu -----
@@ -51,7 +51,6 @@ public class ReviewWorkspaceDTO {
     private SourceItemDTO featuredImage;     // khung ảnh cover dưới sapo: th:if="${workspace.featuredImage != null}"
 
     // ----- Góp ý -----
-    // Góp ý của lượt duyệt trên version đang duyệt / góp ý trên version liền trước
-    private List<ReviewCommentDTO> comments;          // tab "Vòng này": th:each="comment : ${workspace.comments}"
-    private List<ReviewCommentDTO> previousComments;  // tab "Vòng trước": th:each="comment : ${workspace.previousComments}"
+    // Góp ý trên version đang duyệt
+    private List<ReviewCommentDTO> comments;          // th:each="comment : ${workspace.comments}"
 }

@@ -43,4 +43,10 @@ public interface PublicationService {
 
     // UC-31: hủy lịch đăng (xóa publication) và trả bài về Lead, trước giờ đăng, lý do bắt buộc. SCHEDULED -> REVISION_REQUIRED
     void cancelAndReturn(Integer articleId, String secretaryEmail, String reason);
+
+    // ---------------------------------------------------------------- Gỡ bài (thêm sau góp ý hội đồng)
+
+    // Gỡ bài đã đăng khỏi trang công khai và trả về Lead, lý do bắt buộc. PUBLISHED -> REVISION_REQUIRED.
+    // PRD BR-33 bản cũ ghi Phase 1 chưa có chức năng này; được thêm theo góp ý của hội đồng.
+    void unpublish(Integer articleId, String secretaryEmail, String reason);
 }

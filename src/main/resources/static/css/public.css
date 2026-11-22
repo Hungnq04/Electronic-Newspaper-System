@@ -134,3 +134,22 @@ section { margin-bottom: 36px; }
     .search { order: 3; max-width: none; flex-basis: 100%; }
     .filters input, .filters select { flex: 1 1 100%; }
 }
+
+/* Ảnh, video, bảng trong thân bài */
+.body .pub-figure { margin: 22px 0; }
+.body .pub-figure img, .body .pub-figure video { display: block; width: 100%; max-height: 560px; object-fit: contain; border-radius: 8px; }
+.body .pub-figure figcaption { margin-top: 6px; font-size: 14px; font-style: italic; text-align: center; color: var(--muted); }
+.body .pub-table { overflow-x: auto; margin: 22px 0; }
+.body .pub-table table { border-collapse: collapse; width: 100%; font-size: 15px; }
+.body .pub-table th, .body .pub-table td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+
+/* Link "Vào trang làm việc" trên header (người dùng nội bộ đã đăng nhập) */
+.account .workspace-link { color: var(--accent); font-weight: 600; }
+
+/* Thanh dành cho Thư ký trên trang đọc bài: mở màn quản lý bài (gỡ bài) */
+.staff-bar {
+    max-width: 760px; margin: 0 auto 14px; padding: 10px 14px; border-radius: 8px;
+    background: var(--accent-soft); border: 1px solid var(--accent);
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px;
+}
+.staff-bar a { color: var(--accent); font-weight: 700; }

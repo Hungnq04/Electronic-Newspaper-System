@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.ObjIntConsumer;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,7 +55,7 @@ import org.springframework.transaction.annotation.Transactional;
 //   topics.findByStatusAndDepartment(...)      -> đề tài chờ duyệt của phóng viên cùng phòng
 //   articleReviews.countDecisionsSince(...)    -> số lượt mình đã duyệt hôm nay
 //   articles.countByStatusForDepartment(...)   -> số bài đang trả về sửa
-//   entryMapper.fromArticle / fromTopic        -> đổi Article / Topic thành thẻ hiển thị (không phải SQL)
+//   entryMapper.fromArticle                    -> đổi Article thành một dòng bảng hiển thị (không phải SQL)
 //
 // @Transactional(readOnly = true): mọi method chỉ ĐỌC dữ liệu, không ghi gì vào DB.
 @Service
@@ -106,7 +105,7 @@ public class DepartmentHeadServiceImpl implements DepartmentHeadService {
         // ===== BƯỚC 2: chưa có phòng ban thì trả hộp rỗng =====
         // List.of() = danh sách rỗng. stats rỗng nên dashboard.html ẩn cả khu hộp thống kê.
         if (headDepartment == null) {
-            return dashboard.stats(List.of()).entries(List.of()).categories(List.of()).build();
+            return dashboard.stats(List.of()).entries(List.of()).build();
         }
         Integer departmentId = headDepartment.getId();
 
@@ -121,27 +120,17 @@ public class DepartmentHeadServiceImpl implements DepartmentHeadService {
         // Kết quả là bảng tra "mã bài -> số nguồn", ví dụ {12 -> 3, 15 -> 1}.
         Map<Integer, Long> sourceCountByArticleId = countSources(articleList);
 
-        // cards = danh sách THẺ hiển thị trên dashboard, gồm cả bài viết lẫn đề tài (mỗi thẻ là một DraftEntryDTO).
+        // cards = danh sách THẺ hiển thị trong bảng dashboard, mỗi thẻ là một DraftEntryDTO.
+        // Chỉ gồm BÀI VIẾT chờ duyệt. Đề tài chờ duyệt có màn riêng; ở đây chỉ dùng topicList để đếm số (hộp thống kê).
         List<DraftEntryDTO> cards = new ArrayList<>();
         for (Article article : articleList) {
             long sourceCount = sourceCountByArticleId.getOrDefault(article.getId(), 0L);   // không có trong bảng tra thì 0
             cards.add(entryMapper.fromArticle(article, sourceCount));
         }
-        for (Topic topic : topicList) {
-            cards.add(entryMapper.fromTopic(topic));
-        }
 
-        // ===== BƯỚC 4: đánh số thứ tự để JavaScript sắp xếp khi bấm nút =====
-        // assignOrder (cuối file) ghi số 1, 2, 3... vào deadlineOrder / createdOrder của từng thẻ.
-        // HTML in ra thành data-deadline-order, data-created-order; department-head-dashboard.js đọc để sắp xếp.
-        //   Nút "Gần hạn chót": ngày dự kiến đăng gần nhất xếp trước, thẻ chưa có ngày xếp cuối
-        assignOrder(cards, Comparator.comparing(DraftEntryDTO::getExpectedDate, Comparator.nullsLast(Comparator.naturalOrder())),
-                DraftEntryDTO::setDeadlineOrder);
-        //   Nút "Mới nộp": nộp gần đây nhất xếp trước
-        assignOrder(cards, Comparator.comparing(DraftEntryDTO::getSubmittedAt, Comparator.nullsLast(Comparator.reverseOrder())),
-                DraftEntryDTO::setCreatedOrder);
-        // Lúc mở trang, nút "Gần hạn chót" đang được chọn, nên xếp sẵn theo thứ tự đó.
-        cards.sort(Comparator.comparingInt(DraftEntryDTO::getDeadlineOrder));
+        // ===== BƯỚC 4: sắp xếp bảng =====
+        // Ngày dự kiến đăng gần nhất xếp trước; bài chưa có ngày xếp cuối (nullsLast).
+        cards.sort(Comparator.comparing(DraftEntryDTO::getExpectedDate, Comparator.nullsLast(Comparator.naturalOrder())));
 
         // ===== BƯỚC 5: tính các con số =====
         long pendingArticleCount = articleList.size();      // bài chờ duyệt
@@ -167,7 +156,6 @@ public class DepartmentHeadServiceImpl implements DepartmentHeadService {
         return dashboard
                 .departmentName(headDepartment.getDepartmentName())
                 .entries(cards)
-                .categories(cards.stream().map(DraftEntryDTO::getCategory).distinct().sorted().toList())   // chuyên mục, không trùng, A->Z
                 .articleCount(pendingArticleCount)
                 .topicCount(pendingTopicCount)
                 .urgentCount(urgentCount)
@@ -287,19 +275,5 @@ public class DepartmentHeadServiceImpl implements DepartmentHeadService {
         // 3. Đổi thành bảng tra {12 -> 3, 15 -> 1}; row[0] = cột mã bài, row[1] = cột số nguồn
         return articles.countSourcesByArticleIds(articleIds).stream()
                 .collect(Collectors.toMap(row -> (Integer) row[0], row -> (Long) row[1]));
-    }
-
-    // Hàm phụ: đánh số thứ tự 1, 2, 3... cho các thẻ theo một quy tắc so sánh.
-    // Bắt đầu từ 1 vì JS coi 0 là "không có thứ tự".
-    //   comparator = quy tắc so sánh (ví dụ "ngày gần hơn đứng trước")
-    //   setter     = ô để ghi số vào (setDeadlineOrder hoặc setCreatedOrder của DraftEntryDTO)
-    private static void assignOrder(List<DraftEntryDTO> cards, Comparator<DraftEntryDTO> comparator,
-                                    ObjIntConsumer<DraftEntryDTO> setter) {
-        // Tạo bản sao đã sắp xếp (danh sách gốc không đổi thứ tự).
-        List<DraftEntryDTO> sortedCards = cards.stream().sorted(comparator).toList();
-        // Thẻ đứng đầu ghi số 1, thẻ thứ hai ghi số 2... (i bắt đầu từ 0 nên ghi i + 1).
-        for (int i = 0; i < sortedCards.size(); i++) {
-            setter.accept(sortedCards.get(i), i + 1);
-        }
     }
 }

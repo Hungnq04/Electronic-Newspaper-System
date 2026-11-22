@@ -28,10 +28,8 @@ public class DepartmentHeadDashboardDTO {
     private String departmentName;
     // 4 hộp thống kê đầu trang, mỗi phần tử là một DashboardStatDTO. HTML: th:each="stat : ${dashboard.stats}" (dashboard.html dòng 82-83)
     private List<DashboardStatDTO> stats;
-    // Danh sách thẻ chờ duyệt (cả bài viết lẫn đề tài). HTML: th:each="entry : ${dashboard.entries}" (dashboard.html dòng 144)
+    // Danh sách bài viết chờ duyệt (mỗi dòng bảng). HTML: th:each="card : ${dashboard.entries}"
     private List<DraftEntryDTO> entries;
-    // Các chuyên mục (không trùng, A->Z) cho ô chọn "Chuyên mục". HTML: dashboard.html dòng 106
-    private List<String> categories;
     // Số bài chờ duyệt -> số trên tab "Bài viết" và chip "Tất cả". HTML: dashboard.html dòng 94, 110
     private long articleCount;
     // Số đề tài chờ duyệt -> số trên tab "Đề tài". HTML: dashboard.html dòng 95

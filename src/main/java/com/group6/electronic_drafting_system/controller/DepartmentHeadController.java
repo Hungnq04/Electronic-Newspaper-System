@@ -68,8 +68,7 @@ public class DepartmentHeadController {
         // Dùng chung giao diện của màn /reporter/tasks; file dashboard.css chỉ giữ vài chi tiết riêng
         // layout/app.html lặp qua danh sách này để in ra các thẻ <link rel="stylesheet">.
         model.addAttribute("pageCss", List.of("/reporter/css/reporter-tasks.css", "/department_head/css/department-head-dashboard.css"));
-        // File JS riêng của trang (lọc, tìm kiếm, sắp xếp thẻ trên trình duyệt); layout/app.html in ra thẻ <script>.
-        model.addAttribute("pageJs", List.of("/department_head/js/department-head-dashboard.js"));
+        // Dashboard không có file JS riêng: bảng in sẵn từ server, không lọc / tìm / sắp xếp trên trình duyệt.
         // Trả về TÊN template: Spring + Thymeleaf mở templates/layout/app.html, điền dữ liệu trong model, gửi HTML về trình duyệt.
         return "layout/app";
     }

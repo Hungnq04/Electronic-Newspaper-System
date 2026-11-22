@@ -2,7 +2,7 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <body>
 <!-- FL-07 Màn #62 Publication Detail + pop-up #64 Publish Now, #65 Schedule Form, #66 Schedule Confirmation,
-     #63 Return to Lead Form (Iter3), pop-up Gỡ bài (thêm sau góp ý hội đồng) -->
+     #63 Return to Lead Form (Iter3). Gỡ bài đã đăng nằm ở màn secretary/published-detail.html -->
 <th:block th:fragment="content">
 <main class="page">
     <a class="back-link" th:href="@{/secretary/publications}">← Danh sách chờ xuất bản</a>
@@ -49,8 +49,7 @@
                         </div>
                     </th:block>
                     <th:block th:unless="${pub.canPublish}">
-                        <p th:if="${pub.canUnpublish}">Bài đang hiển thị trên trang công khai. Nếu cần rút bài, bấm <strong>Gỡ bài</strong>: bài biến khỏi trang công khai và trở về Lead Reporter để chỉnh sửa.</p>
-                        <p th:unless="${pub.canUnpublish}">Bài không còn ở trạng thái chờ xuất bản. Trang này chỉ để xem.</p>
+                        <p>Bài không còn ở trạng thái chờ xuất bản. Trang này chỉ để xem.</p>
                         <dl class="pub-facts">
                             <dt>Hình thức</dt><dd th:text="${pub.publicationTypeLabel} ?: '—'"></dd>
                             <th:block th:if="${pub.scheduledAt}">
@@ -63,10 +62,9 @@
                         </dl>
                         <a class="btn btn-ghost btn-block" th:if="${pub.status == 'SCHEDULED'}"
                            th:href="@{/secretary/scheduled-publications/{id}(id=${pub.articleId})}">Xem lịch đăng / Hủy lịch</a>
+                        <!-- Bài đã đăng: quản lý (xem, gỡ bài) ở menu "Đã xuất bản" -->
                         <a class="btn btn-ghost btn-block" th:if="${pub.status == 'PUBLISHED'}"
-                           th:href="@{/news/{id}(id=${pub.articleId})}" target="_blank">Xem trên trang công khai</a>
-                        <button type="button" class="btn btn-danger btn-block" th:if="${pub.canUnpublish}"
-                                data-open="unpublish-dialog">Gỡ bài</button>
+                           th:href="@{/secretary/published-articles/{id}(id=${pub.articleId})}">Xem ở mục Đã xuất bản</a>
                     </th:block>
                 </div>
             </section>
@@ -155,25 +153,6 @@
 </dialog>
 </th:block>
 
-<!-- Gỡ bài (thêm sau góp ý hội đồng): chỉ có khi bài đang PUBLISHED. Lý do bắt buộc, bài về REVISION_REQUIRED -->
-<th:block th:if="${pub.canUnpublish}">
-<dialog id="unpublish-dialog">
-    <form method="post" th:action="@{/secretary/publications/{id}/unpublish(id=${pub.articleId})}">
-        <h2>Gỡ bài khỏi trang công khai?</h2>
-        <p>
-            Bài "<strong th:text="${pub.title}"></strong>" sẽ biến khỏi trang công khai ngay và trở về Lead Reporter để chỉnh sửa.
-            Muốn đăng lại, Lead phải sửa và nộp lại, bài đi qua Trưởng phòng rồi Thư ký duyệt lại từ đầu.
-        </p>
-        <label for="unpublish-reason">Lý do gỡ bài (bắt buộc)</label>
-        <textarea id="unpublish-reason" name="reason" maxlength="3500" required th:text="${unpublishReason}"></textarea>
-        <div class="dialog-actions">
-            <button type="button" class="btn btn-ghost" data-close>Hủy</button>
-            <button type="submit" class="btn btn-danger">Gỡ bài và trả về Lead</button>
-        </div>
-    </form>
-</dialog>
-</th:block>
-
 <script th:inline="javascript">
     (() => {
         // Mở / đóng pop-up
@@ -185,10 +164,6 @@
         // Server báo lỗi trả bài (vd lý do trống): mở lại pop-up #63 với lý do đã gõ
         const returnDialog = document.getElementById('return-dialog');
         if (returnDialog && /*[[${returnReason != null}]]*/ false) returnDialog.showModal();
-
-        // Server báo lỗi gỡ bài (vd lý do trống): mở lại pop-up Gỡ bài với lý do đã gõ
-        const unpublishDialog = document.getElementById('unpublish-dialog');
-        if (unpublishDialog && /*[[${unpublishReason != null}]]*/ false) unpublishDialog.showModal();
 
         const input = document.getElementById('schedule-at');
         if (!input) return;   // bài không còn chờ xuất bản: không có pop-up

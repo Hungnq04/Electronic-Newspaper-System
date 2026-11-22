@@ -2,6 +2,7 @@ package com.group6.electronic_drafting_system.service;
 
 import com.group6.electronic_drafting_system.dto.Publication.ApprovedArticleItemDTO;
 import com.group6.electronic_drafting_system.dto.Publication.PublicationDetailDTO;
+import com.group6.electronic_drafting_system.dto.Publication.PublishedArticleItemDTO;
 import com.group6.electronic_drafting_system.dto.Publication.ScheduledArticleItemDTO;
 import java.util.List;
 
@@ -44,7 +45,13 @@ public interface PublicationService {
     // UC-31: hủy lịch đăng (xóa publication) và trả bài về Lead, trước giờ đăng, lý do bắt buộc. SCHEDULED -> REVISION_REQUIRED
     void cancelAndReturn(Integer articleId, String secretaryEmail, String reason);
 
-    // ---------------------------------------------------------------- Gỡ bài (thêm sau góp ý hội đồng)
+    // ---------------------------------------------------------------- Đã xuất bản + Gỡ bài (thêm sau góp ý hội đồng)
+
+    // Danh sách "Đã xuất bản": các bài PUBLISHED, bài mới đăng đứng đầu
+    List<PublishedArticleItemDTO> getPublishedArticles(String secretaryEmail);
+
+    // Chi tiết bài đã xuất bản: chỉ mở được bài đang PUBLISHED
+    PublicationDetailDTO getPublishedDetail(Integer articleId, String secretaryEmail);
 
     // Gỡ bài đã đăng khỏi trang công khai và trả về Lead, lý do bắt buộc. PUBLISHED -> REVISION_REQUIRED.
     // PRD BR-33 bản cũ ghi Phase 1 chưa có chức năng này; được thêm theo góp ý của hội đồng.

@@ -20,7 +20,8 @@ public interface PublicationRepository extends JpaRepository<Publication, Intege
     @Query("select p.article.id from Publication p where p.status = :status and p.scheduledAt <= :now order by p.scheduledAt")
     List<Integer> findDueArticleIds(@Param("status") PublicationStatus status, @Param("now") OffsetDateTime now);
 
-    // Scheduled Publication List (Iter3): lịch đăng của các bài đang ở trạng thái articleStatus (SCHEDULED),
+    // Scheduled Publication List (Iter3, articleStatus = SCHEDULED) và danh sách Đã xuất bản (articleStatus = PUBLISHED):
+    // lịch đăng của các bài đang ở trạng thái articleStatus,
     // lấy luôn bài, Topic, Lead, phiên bản, người đặt lịch trong một câu SQL; giờ đăng sớm nhất đứng đầu
     @Query("select p from Publication p join fetch p.article a join fetch a.topic join fetch a.lead "
             + "join fetch p.version join fetch p.publishedBy "

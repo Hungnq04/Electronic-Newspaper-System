@@ -6,17 +6,16 @@
 <header th:replace="~{public/layout :: siteHeader}"></header>
 
 <main class="wrap">
-    <!-- Chỉ Thư ký đã đăng nhập mới thấy thanh này (độc giả không thấy): mở màn quản lý bài để gỡ bài.
-         Ẩn ở đây chỉ để gọn giao diện; quyền thật được kiểm tra ở backend (SecurityConfig + PublicationServiceImpl). -->
-    <div class="staff-bar" sec:authorize="hasRole('EDITORIAL_SECRETARY')">
-        <span>Bạn đang xem với vai trò <strong>Thư ký tòa soạn</strong>.</span>
-        <a th:href="@{/secretary/publications/{id}(id=${article.articleId})}">Quản lý bài này (gỡ bài)</a>
+    <div class="crumbs-row">
+        <nav class="crumbs" aria-label="Đường dẫn">
+            <a th:href="@{/}">Trang chủ</a> ›
+            <a th:href="@{/news(category=${article.category})}" th:text="${article.category}">Chuyên mục</a>
+        </nav>
+        <!-- Chỉ Thư ký đã đăng nhập mới thấy nút này (độc giả không thấy): mở chi tiết bài ở menu "Đã xuất bản" để gỡ bài.
+             Ẩn ở đây chỉ để gọn giao diện; quyền thật được kiểm tra ở backend (SecurityConfig + PublicationServiceImpl). -->
+        <a class="staff-bar" sec:authorize="hasRole('EDITORIAL_SECRETARY')"
+           th:href="@{/secretary/published-articles/{id}(id=${article.articleId})}">Gỡ bài xuống</a>
     </div>
-
-    <nav class="crumbs" aria-label="Đường dẫn">
-        <a th:href="@{/}">Trang chủ</a> ›
-        <a th:href="@{/news(category=${article.category})}" th:text="${article.category}">Chuyên mục</a>
-    </nav>
 
     <article class="story">
         <header>

@@ -377,22 +377,64 @@ class PublicationTests {
 
     @Test
     void reporterCannotUnpublish() throws Exception {
-        mvc.perform(post("/secretary/publications/" + A1 + "/unpublish").param("reason", "x").with(csrf())
+        mvc.perform(post("/secretary/published-articles/" + A1 + "/unpublish").param("reason", "x").with(csrf())
                         .with(user(email("mai.vu")).roles("REPORTER")))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/secretary/published-articles").with(user(email("mai.vu")).roles("REPORTER")))
                 .andExpect(status().isForbidden());
         assertError(() -> publicationService.unpublish(A1, email("mai.vu"), "x"), ErrorCode.PUBLICATION_ACCESS_DENIED);
         assertThat(article(A1).getStatus()).isEqualTo(ArticleStatus.PUBLISHED);
     }
 
+    // ------------------------------------------------------------ Menu "Đã xuất bản"
+
     @Test
-    void publishedDetailShowsUnpublishButtonAndWebUnpublishRedirects() throws Exception {
-        mvc.perform(get("/secretary/publications/" + A1).with(user(email("chau.le")).roles("EDITORIAL_SECRETARY")))
+    void publishedListShowsPublishedArticlesNewestFirst() {
+        var items = publicationService.getPublishedArticles(email("chau.le"));
+        var ids = items.stream().map(i -> i.getArticleId()).toList();
+        // A1 đang PUBLISHED; A4 (APPROVED) và A3 (SCHEDULED) không có trong danh sách
+        assertThat(ids).contains(A1).doesNotContain(A3, A4);
+        // Bài mới đăng đứng đầu
+        for (int i = 1; i < items.size(); i++)
+            assertThat(items.get(i - 1).getPublishedAt()).isAfterOrEqualTo(items.get(i).getPublishedAt());
+        // Sau khi gỡ, A1 biến khỏi danh sách và không mở được chi tiết nữa
+        publicationService.unpublish(A1, email("chau.le"), "Rút bài");
+        assertThat(publicationService.getPublishedArticles(email("chau.le")).stream().map(i -> i.getArticleId()))
+                .doesNotContain(A1);
+        assertError(() -> publicationService.getPublishedDetail(A1, email("chau.le")), ErrorCode.PUBLICATION_NOT_PUBLISHED);
+    }
+
+    @Test
+    void publishedDetailOnlyOpensPublishedArticles() {
+        assertThat(publicationService.getPublishedDetail(A1, email("chau.le")).isCanUnpublish()).isTrue();
+        assertError(() -> publicationService.getPublishedDetail(A4, email("chau.le")), ErrorCode.PUBLICATION_NOT_PUBLISHED);
+        assertError(() -> publicationService.getPublishedDetail(A3, email("chau.le")), ErrorCode.PUBLICATION_NOT_PUBLISHED);
+        assertError(() -> publicationService.getPublishedDetail(A1, email("mai.vu")), ErrorCode.PUBLICATION_ACCESS_DENIED);
+    }
+
+    @Test
+    void publishedScreensShowUnpublishButtonAndWebUnpublishRedirects() throws Exception {
+        var secretary = user(email("chau.le")).roles("EDITORIAL_SECRETARY");
+        mvc.perform(get("/secretary/published-articles").with(secretary))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/secretary/published-articles/" + A1)));
+        mvc.perform(get("/secretary/published-articles/" + A1).with(secretary))
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("unpublish-dialog")));
-        mvc.perform(post("/secretary/publications/" + A1 + "/unpublish").param("reason", "Rút bài để sửa").with(csrf())
-                        .with(user(email("chau.le")).roles("EDITORIAL_SECRETARY")))
+        // Màn Chờ xuất bản không còn nút Gỡ bài, chỉ có link sang menu Đã xuất bản
+        mvc.perform(get("/secretary/publications/" + A1).with(secretary))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("unpublish-dialog"))))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/secretary/published-articles/" + A1)));
+        // Lý do trống: quay lại màn chi tiết, bài vẫn đăng
+        mvc.perform(post("/secretary/published-articles/" + A1 + "/unpublish").param("reason", " ").with(csrf()).with(secretary))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl("/secretary/publications"));
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl("/secretary/published-articles/" + A1));
+        assertThat(article(A1).getStatus()).isEqualTo(ArticleStatus.PUBLISHED);
+        // Gỡ thành công: về danh sách Đã xuất bản
+        mvc.perform(post("/secretary/published-articles/" + A1 + "/unpublish").param("reason", "Rút bài để sửa").with(csrf()).with(secretary))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl("/secretary/published-articles"));
         assertThat(article(A1).getStatus()).isEqualTo(ArticleStatus.REVISION_REQUIRED);
     }
 
@@ -400,11 +442,11 @@ class PublicationTests {
 
     @Test
     void publicPageShowsWorkspaceLinkAndManageBarOnlyForSecretary() throws Exception {
-        // Thư ký đã đăng nhập: có link "Vào trang làm việc" và thanh "Quản lý bài này"
+        // Thư ký đã đăng nhập: có link "Vào trang làm việc" và nút "Gỡ bài xuống"
         mvc.perform(get("/news/" + A1).with(user(email("chau.le")).roles("EDITORIAL_SECRETARY")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("href=\"/dashboard\"")))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("/secretary/publications/" + A1)));
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/secretary/published-articles/" + A1)));
         // Phóng viên đã đăng nhập: có link "Vào trang làm việc" nhưng không có thanh của Thư ký
         mvc.perform(get("/news/" + A1).with(user(email("mai.vu")).roles("REPORTER")))
                 .andExpect(status().isOk())

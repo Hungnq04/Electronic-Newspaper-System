@@ -2,6 +2,7 @@ package com.group6.electronic_drafting_system.service.impl;
 
 import com.group6.electronic_drafting_system.dto.Publication.ApprovedArticleItemDTO;
 import com.group6.electronic_drafting_system.dto.Publication.PublicationDetailDTO;
+import com.group6.electronic_drafting_system.dto.Publication.PublishedArticleItemDTO;
 import com.group6.electronic_drafting_system.dto.Publication.ScheduledArticleItemDTO;
 import com.group6.electronic_drafting_system.entity.Account;
 import com.group6.electronic_drafting_system.entity.Article;
@@ -143,7 +144,45 @@ public class PublicationServiceImpl implements PublicationService {
         return items;
     }
 
-    // Dữ liệu chung cho màn #62 Publication Detail và #68 Scheduled Publication Detail
+    // Danh sách "Đã xuất bản" (thêm sau góp ý hội đồng): bài PUBLISHED kèm dòng publication, bài mới đăng đứng đầu
+    @Override
+    @Transactional(readOnly = true)
+    public List<PublishedArticleItemDTO> getPublishedArticles(String secretaryEmail) {
+        requireSecretary(secretaryEmail);
+        List<PublishedArticleItemDTO> items = new ArrayList<>();
+        // Dùng lại câu truy vấn của màn Đã hẹn giờ, chỉ đổi trạng thái bài thành PUBLISHED
+        for (Publication p : publications.findWithArticleByArticleStatus(ArticleStatus.PUBLISHED)) {
+            items.add(PublishedArticleItemDTO.builder()
+                    .articleId(p.getArticle().getId())
+                    .title(p.getVersion().getTitle())               // tít của đúng bản độc giả đang đọc
+                    .topicTitle(p.getArticle().getTopic().getTitle())
+                    .category(p.getArticle().getCategory())
+                    .leadName(p.getArticle().getLead().getFullName())
+                    .versionLabel(p.getVersion().getVersionLabel())
+                    .publicationTypeLabel(p.getPublicationType() == PublicationType.IMMEDIATE ? "Đăng ngay" : "Hẹn giờ")
+                    .publishedAt(p.getPublishedAt())
+                    .publishedBy(p.getPublishedBy().getFullName())
+                    .build());
+        }
+        // Bài mới đăng đứng đầu
+        items.sort(Comparator.comparing(PublishedArticleItemDTO::getPublishedAt,
+                Comparator.nullsLast(Comparator.reverseOrder())));
+        return items;
+    }
+
+    // Chi tiết bài đã xuất bản: chỉ mở được bài đang PUBLISHED (đã gỡ thì không mở được nữa)
+    @Override
+    @Transactional(readOnly = true)
+    public PublicationDetailDTO getPublishedDetail(Integer articleId, String secretaryEmail) {
+        requireSecretary(secretaryEmail);
+        Article article = articles.findWithTopicAndLeadById(articleId)
+                .orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_NOT_FOUND));
+        if (article.getStatus() != ArticleStatus.PUBLISHED)
+            throw new ApplicationException(ErrorCode.PUBLICATION_NOT_PUBLISHED);
+        return buildDetail(article);
+    }
+
+    // Dữ liệu chung cho màn #62 Publication Detail, #68 Scheduled Publication Detail và chi tiết bài Đã xuất bản
     private PublicationDetailDTO buildDetail(Article article) {
         Integer articleId = article.getId();
         ArticleVersion version = versions.findFirstByArticleOrderByVersionNumberDesc(article)

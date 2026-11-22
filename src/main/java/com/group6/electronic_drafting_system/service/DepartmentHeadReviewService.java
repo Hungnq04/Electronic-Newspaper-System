@@ -27,6 +27,10 @@ public interface DepartmentHeadReviewService {
     // Trả bài cho Lead: DEPARTMENT_REVIEW -> REVISION_REQUIRED, bắt buộc có nhận xét. Gọi từ: DepartmentHeadController.requestRevision()
     void requestRevision(String email, Integer articleId, String feedback);
     
+    // Màn "So sánh phiên bản": bản đang duyệt (mới nhất) đặt cạnh bản liền trước. Chỉ đọc, không tạo lượt duyệt.
+    // Gọi từ: DepartmentHeadController.compareVersions()  (GET /department-head/articles/{id}/compare)
+    ReviewWorkspaceDTO getVersionCompare(String email, Integer articleId);
+
     // Màn "Lịch sử phiên bản" (UC-23): mọi phiên bản của bài + các lượt duyệt đã chốt. Chỉ đọc, không tạo lượt duyệt.
     // Gọi từ: DepartmentHeadController.versionHistory()  (GET /department-head/articles/{id}/versions)
     VersionHistoryPageDTO getVersionHistory(String email, Integer articleId);

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  Màn "So sánh phiên bản" của Trưởng ban: đặt bản liền trước (cột trái) cạnh bản đang duyệt (cột phải).
+  Chỉ để XEM, không có form nào. Người duyệt tự đọc và đối chiếu, trang không tô màu chỗ khác nhau.
+  Màn này KHÔNG có JavaScript.
+
+  ĐƯỜNG ĐI CỦA DỮ LIỆU:
+    Nút "So sánh phiên bản" trên màn thẩm định
+     -> GET /department-head/articles/{id}/compare
+     -> DepartmentHeadController.compareVersions()
+     -> DepartmentHeadReviewServiceImpl.getVersionCompare()  (kiểm tra quyền xem, lấy bản mới nhất + bản liền trước)
+     -> trả về ReviewWorkspaceDTO -> model.addAttribute("workspace", ...)
+
+  CÁC HỘP DỮ LIỆU (DTO) DÙNG TRONG FILE:
+    workspace                              = ReviewWorkspaceDTO  (chỉ điền mã bài, topic, chuyên mục, thanh trên cùng, 2 phiên bản)
+    workspace.previous / workspace.current = VersionViewDTO      (bản liền trước / bản đang duyệt)
+    block (trong th:each)                  = ContentBlockDTO     (một khối thân bài: đoạn chữ, ảnh, video, bảng)
+-->
+<th:block th:fragment="versionCompareContent">
+    <section class="rp-page ws-page" aria-label="So sánh phiên bản">
+        <!-- Thanh trên cùng dùng chung với dashboard Trưởng ban (fragment dhTopbar trong dashboard.html) -->
+        <header th:replace="~{department_head/dashboard :: dhTopbar(${workspace.reviewerName}, ${workspace.departmentName}, ${workspace.reviewerInitials}, false)}"></header>
+
+        <main class="ws-main">
+            <!-- Đường dẫn: quay lại màn thẩm định của bài -->
+            <nav class="ws-crumb" aria-label="Breadcrumb">
+                <a class="ws-crumb-back" th:href="@{/department-head/articles/{id}/review(id=${workspace.articleId})}">← Quay lại màn thẩm định</a>
+                <span>/</span>
+                <strong th:text="|So sánh phiên bản · Bài #${workspace.code}|">So sánh phiên bản · Bài #BT-1</strong>
+            </nav>
+
+            <div class="ws-status-bar">
+                <div class="ws-status-info">
+                    <span>Topic: <strong th:text="${workspace.topicTitle}">Topic</strong></span>
+                    <span class="ws-sep">|</span>
+                    <span>Chuyên mục: <strong th:text="${workspace.category}">Kinh tế</strong></span>
+                    <span class="ws-sep">|</span>
+                    <span>Trạng thái: <strong th:text="${workspace.statusText}">Chờ Trưởng phòng duyệt</strong></span>
+                </div>
+            </div>
+
+            <!-- Bài mới nộp 1 lần (chưa có bản liền trước): không có gì để so -->
+            <section class="rp-card" th:if="${workspace.previous == null}">
+                <p class="ws-note" th:text="|Bài mới có 1 phiên bản (v${workspace.current.label}), chưa có bản trước để so sánh.|">
+                    Bài mới có 1 phiên bản.</p>
+            </section>
+
+            <th:block th:if="${workspace.previous != null}">
+                <!-- Ghi chú "đã sửa gì" của Lead khi nộp bản đang duyệt -->
+                <section class="rp-card" th:if="${workspace.current.changeSummary != null}">
+                    <p class="ws-note"><b th:text="|Ghi chú của Lead khi nộp v${workspace.current.label}:|">Ghi chú của Lead:</b>
+                        <span th:text="|“${workspace.current.changeSummary}”|">“…”</span></p>
+                </section>
+
+                <!-- 2 cột bằng nhau (grid 1fr 1fr): trái là bản trước, phải là bản đang duyệt.
+                     Mỗi cột in tít, tít phụ, sapo và thân bài theo blocks, giống màn thẩm định. -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+
+                    <!-- ===== Cột trái: bản liền trước ===== -->
+                    <article class="rp-card ws-article">
+                        <div class="ws-article-meta">
+                            <span class="ws-tag-yellow" th:text="|v${workspace.previous.label} · bản trước|">v1.0 · bản trước</span>
+                            <span class="ws-mono" th:text="|Gửi duyệt: ${workspace.previous.createdAtText}|">Gửi duyệt: 08:35</span>
+                        </div>
+                        <h1 class="ws-title" th:text="${workspace.previous.title}">Tít bài</h1>
+                        <p class="ws-subtitle" th:if="${workspace.previous.subtitle != null and !#strings.isEmpty(workspace.previous.subtitle)}"
+                           th:text="${workspace.previous.subtitle}">Tít phụ</p>
+                        <div class="ws-sapo">
+                            <span class="ws-sapo-label">Sapo</span>
+                            <p class="ws-sapo-text" th:text="${workspace.previous.sapo}">Sapo</p>
+                        </div>
+                        <div class="ws-body">
+                            <!-- th:switch giống switch trong Java: tùy loại khối mà in thẻ khác nhau -->
+                            <th:block th:each="block : ${workspace.previous.blocks}" th:switch="${block.kind.name()}">
+                                <div th:case="'TEXT'" class="ws-text" th:classappend="|ws-${block.tag}|" th:utext="${block.html}">Đoạn</div>
+                                <figure th:case="'IMAGE'" class="ws-figure">
+                                    <img th:src="${block.url}" th:alt="${block.caption}" alt="" loading="lazy">
+                                    <figcaption th:if="${block.caption != null}" th:text="${block.caption}">Chú thích</figcaption>
+                                </figure>
+                                <figure th:case="'VIDEO'" class="ws-figure">
+                                    <video th:src="${block.url}" controls preload="metadata" playsinline></video>
+                                    <figcaption th:if="${block.caption != null}" th:text="${block.caption}">Chú thích</figcaption>
+                                </figure>
+                                <div th:case="'TABLE'" class="ws-table" th:utext="${block.html}">Bảng</div>
+                            </th:block>
+                        </div>
+                    </article>
+
+                    <!-- ===== Cột phải: bản đang duyệt (mới nhất) ===== -->
+                    <article class="rp-card ws-article">
+                        <div class="ws-article-meta">
+                            <span class="ws-tag-yellow" th:text="|v${workspace.current.label} · đang duyệt|">v1.1 · đang duyệt</span>
+                            <span class="ws-mono" th:text="|Gửi duyệt: ${workspace.current.createdAtText}|">Gửi duyệt: 08:35</span>
+                        </div>
+                        <h1 class="ws-title" th:text="${workspace.current.title}">Tít bài</h1>
+                        <p class="ws-subtitle" th:if="${workspace.current.subtitle != null and !#strings.isEmpty(workspace.current.subtitle)}"
+                           th:text="${workspace.current.subtitle}">Tít phụ</p>
+                        <div class="ws-sapo">
+                            <span class="ws-sapo-label">Sapo</span>
+                            <p class="ws-sapo-text" th:text="${workspace.current.sapo}">Sapo</p>
+                        </div>
+                        <div class="ws-body">
+                            <th:block th:each="block : ${workspace.current.blocks}" th:switch="${block.kind.name()}">
+                                <div th:case="'TEXT'" class="ws-text" th:classappend="|ws-${block.tag}|" th:utext="${block.html}">Đoạn</div>
+                                <figure th:case="'IMAGE'" class="ws-figure">
+                                    <img th:src="${block.url}" th:alt="${block.caption}" alt="" loading="lazy">
+                                    <figcaption th:if="${block.caption != null}" th:text="${block.caption}">Chú thích</figcaption>
+                                </figure>
+                                <figure th:case="'VIDEO'" class="ws-figure">
+                                    <video th:src="${block.url}" controls preload="metadata" playsinline></video>
+                                    <figcaption th:if="${block.caption != null}" th:text="${block.caption}">Chú thích</figcaption>
+                                </figure>
+                                <div th:case="'TABLE'" class="ws-table" th:utext="${block.html}">Bảng</div>
+                            </th:block>
+                        </div>
+                    </article>
+                </div>
+            </th:block>
+        </main>
+    </section>
+</th:block>
+</body>
+</html>

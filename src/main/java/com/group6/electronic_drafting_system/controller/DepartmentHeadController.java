@@ -220,6 +220,22 @@ public class DepartmentHeadController {
 
     // ---------- Màn thẩm định bài viết (workspace) ----------
 
+    // ===== Màn "So sánh phiên bản": GET /department-head/articles/{articleId}/compare =====
+    // AI ĐƯA REQUEST TỚI ĐÂY? Nút "So sánh phiên bản" trên thanh trạng thái của màn thẩm định (workspacereview.html).
+    // Chỉ XEM: đặt bản đang duyệt cạnh bản liền trước. Sai quyền / không thấy bài -> handleError() trả 403 / 404.
+    @GetMapping("/articles/{articleId}/compare")
+    public String compareVersions(@PathVariable Integer articleId, Authentication authentication, Model model) {
+        model.addAttribute("workspace", departmentHeadReviewService.getVersionCompare(currentEmail(authentication), articleId));
+        model.addAttribute("pageTitle", "So sánh phiên bản – Trưởng ban");
+        // layout/app.html chèn fragment "versionCompareContent" của templates/department_head/version-compare.html
+        model.addAttribute("contentView", "department_head/version-compare");
+        model.addAttribute("contentFragment", "versionCompareContent");
+        // Dùng lại CSS của màn thẩm định (ws-title, ws-figure...) để nội dung bài hiện giống hệt
+        model.addAttribute("pageCss", List.of(NEWSREADER_FONT, "/reporter/css/reporter-tasks.css", "/department_head/css/department-head-workspace-review.css"));
+        model.addAttribute("activePath", "/department-head/dashboard");
+        return "layout/app";
+    }
+
     // ===== Màn "Lịch sử phiên bản" (UC-23): GET /department-head/articles/{articleId}/versions =====
     // AI ĐƯA REQUEST TỚI ĐÂY?
     //   - Nút "Lịch sử phiên bản" trên thanh trạng thái của màn thẩm định (workspacereview.html)
@@ -269,7 +285,7 @@ public class DepartmentHeadController {
         model.addAttribute("contentFragment", "reviewWorkspaceContent");
         // Phông Newsreader có chữ nghiêng (cho sapo) + giao diện chung của /reporter/tasks + CSS riêng của màn thẩm định
         model.addAttribute("pageCss", List.of(NEWSREADER_FONT, "/reporter/css/reporter-tasks.css", "/department_head/css/department-head-workspace-review.css"));
-        // Màn này không còn file JS riêng: góp ý, xóa, duyệt, trả bài đều là form thường; so sánh dùng thẻ <details>
+        // Màn này không còn file JS riêng: góp ý, xóa, duyệt, trả bài đều là form thường; so sánh là trang riêng (/compare)
         // Đang thẩm định một bài thì sidebar vẫn sáng mục "Duyệt bản thảo"
         // (ghi đè giá trị activePath mà SidebarAdvice đã đặt sẵn trước khi method này chạy)
         model.addAttribute("activePath", "/department-head/dashboard");

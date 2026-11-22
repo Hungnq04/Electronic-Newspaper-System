@@ -234,7 +234,41 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
         article.setStatus(ArticleStatus.REVISION_REQUIRED);
         article.setCompletedAt(null); // ck_article_completed: bài chưa APPROVED thì completed_at phải NULL
     }
-   
+
+    // =====================================================================================================
+    // SO SÁNH PHIÊN BẢN. Gọi từ DepartmentHeadController.compareVersions().
+    // CHỈ ĐỌC: không tạo lượt duyệt, nên dùng readOnly của class (không cần @Transactional riêng).
+    // Dùng lại hộp ReviewWorkspaceDTO của màn thẩm định, chỉ điền các ô trang so sánh cần.
+    // =====================================================================================================
+    @Override
+    public ReviewWorkspaceDTO getVersionCompare(String email, Integer articleId) {
+        // BƯỚC 1: kiểm tra quyền XEM, giống hệt màn thẩm định (cùng phòng HOẶC được giao, và không phải Lead)
+        Account head = currentHead(email);
+        Article article = findArticle(articleId);
+        checkCanReview(head, article);
+
+        // BƯỚC 2: lấy các version, xếp tăng dần [v1.0, v1.1, ...]
+        List<ArticleVersion> allVersions = versions.findByArticleIdOrderByVersionNumberAsc(articleId);
+        if (allVersions.isEmpty()) throw new ApplicationException(ErrorCode.ARTICLE_NOT_SUBMITTED);
+        // current = bản mới nhất (phần tử cuối), previous = bản liền trước (phần tử áp chót; null nếu mới có 1 bản)
+        ArticleVersion current = allVersions.get(allVersions.size() - 1);
+        ArticleVersion previous = allVersions.size() > 1 ? allVersions.get(allVersions.size() - 2) : null;
+
+        // BƯỚC 3: đóng gói. mapper.toVersionView cắt nội dung mỗi bản thành các khối chữ / ảnh / video / bảng
+        return ReviewWorkspaceDTO.builder()
+                .articleId(article.getId())
+                .code("BT-" + article.getId())
+                .topicTitle(article.getTopic().getTitle())
+                .category(article.getCategory())
+                .statusText(statusText(article.getStatus()))
+                .reviewerName(head.getFullName())                             // thanh trên cùng
+                .reviewerInitials(entryMapper.initials(head.getFullName()))
+                .departmentName(head.getDepartment() != null ? head.getDepartment().getDepartmentName() : null)
+                .current(mapper.toVersionView(current))                       // cột phải
+                .previous(previous != null ? mapper.toVersionView(previous) : null)   // cột trái
+                .build();
+    }
+
     // =====================================================================================================
     // LỊCH SỬ PHIÊN BẢN (UC-23). Gọi từ DepartmentHeadController.versionHistory().
     // CHỈ ĐỌC: khác openWorkspace, ở đây KHÔNG tạo lượt duyệt (article_review), nên dùng readOnly của class.

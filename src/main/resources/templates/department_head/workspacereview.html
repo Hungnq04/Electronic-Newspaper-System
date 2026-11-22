@@ -33,7 +33,7 @@
     "Xóa" trên thẻ góp ý          -> form .../comments/{c}/delete   -> deleteComment()    -> service.deleteComment()
     "Yêu cầu sửa" (khung Quyết định) -> form .../request-revision   -> requestRevision()  -> service.requestRevision()
     "Duyệt, chuyển Thư ký"        -> form .../approve               -> approve()          -> service.approve()
-    "So sánh với bản trước": thẻ <details>, bấm vào thì trình duyệt tự mở / đóng, không gửi gì lên server.
+    "So sánh phiên bản"           -> link thường mở trang riêng      -> compareVersions()  -> service.getVersionCompare()
 -->
 <!-- th:fragment="reviewWorkspaceContent": đặt tên cho khối này để layout/app.html chèn vào
      (controller: model.addAttribute("contentFragment", "reviewWorkspaceContent")). -->
@@ -95,6 +95,13 @@
                     <span class="ws-sep">|</span>
                     <span>Phiên bản: <strong th:text="|v${workspace.current.label}|">v1.0</strong></span>
                 </div>
+                <!-- Mở trang So sánh phiên bản (chỉ hiện khi bài đã nộp từ 2 lần trở lên: workspace.previous khác null).
+                     Link thường -> GET /department-head/articles/{id}/compare -> DepartmentHeadController.compareVersions() -->
+                <a class="ws-btn ws-btn--white" th:if="${workspace.previous != null}"
+                   th:href="@{/department-head/articles/{id}/compare(id=${workspace.articleId})}">
+                    <svg class="rp-icon ws-icon-maroon"><use href="#ws-icon-compare"></use></svg>
+                    <span th:text="|So sánh phiên bản (v${workspace.previous.label} → v${workspace.current.label})|">So sánh phiên bản</span>
+                </a>
                 <!-- Mở màn Lịch sử phiên bản (luôn hiện, kể cả bài mới có 1 phiên bản) -->
                 <a class="ws-btn ws-btn--white ws-history-link" th:href="@{/department-head/articles/{id}/versions(id=${workspace.articleId})}">
                     <svg class="rp-icon ws-icon-maroon"><use href="#ws-icon-file"></use></svg><span>Lịch sử phiên bản</span>
@@ -104,7 +111,7 @@
             <!-- Bố cục 2 cột: bài viết bên trái, góp ý bên phải -->
             <div class="ws-layout">
 
-                <!-- ===== 3. Cột trái: bài viết đang duyệt, màn so sánh, tư liệu ===== -->
+                <!-- ===== 3. Cột trái: bài viết đang duyệt, tư liệu ===== -->
                 <section class="ws-main-col">
 
                     <!-- Bản đang duyệt (phiên bản mới nhất).
@@ -171,59 +178,6 @@
                             </th:block>
                         </div>
                     </article>
-
-                    <!-- So sánh với bản trước: chỉ có khi bài đã nộp từ 2 lần trở lên (workspace.previous khác null).
-                         <details>: bấm dòng <summary> thì HTML tự mở / đóng phần bên trong, KHÔNG cần JavaScript.
-                         Hai cột: bên trái là bản liền trước (workspace.previous), bên phải là bản đang duyệt (workspace.current).
-                         Mỗi cột in tít, sapo và thân bài theo blocks, giống phần bài viết ở trên. Người duyệt tự đọc và đối chiếu. -->
-                    <details class="rp-card ws-compare-simple" th:if="${workspace.previous != null}">
-                        <summary><svg class="rp-icon ws-icon-maroon"><use href="#ws-icon-compare"></use></svg>
-                            <span th:text="|So sánh với bản trước (v${workspace.previous.label} → v${workspace.current.label})|">So sánh với bản trước</span></summary>
-                        <p class="ws-note" th:if="${workspace.current.changeSummary != null}">
-                            <b>Ghi chú của Lead khi nộp:</b> <span th:text="|“${workspace.current.changeSummary}”|">“…”</span>
-                        </p>
-                        <!-- grid 2 cột bằng nhau (1fr 1fr) -->
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-                            <!-- Cột trái: bản liền trước -->
-                            <div>
-                                <h3 th:text="|v${workspace.previous.label} · bản trước|">v1.0 · bản trước</h3>
-                                <h4 th:text="${workspace.previous.title}">Tít</h4>
-                                <p th:if="${workspace.previous.subtitle != null and !#strings.isEmpty(workspace.previous.subtitle)}"
-                                   th:text="${workspace.previous.subtitle}">Tít phụ</p>
-                                <p><i th:text="${workspace.previous.sapo}">Sapo</i></p>
-                                <th:block th:each="block : ${workspace.previous.blocks}" th:switch="${block.kind.name()}">
-                                    <div th:case="'TEXT'" th:utext="${block.html}">Đoạn</div>
-                                    <figure th:case="'IMAGE'" class="ws-figure">
-                                        <img th:src="${block.url}" alt="" loading="lazy">
-                                        <figcaption th:if="${block.caption != null}" th:text="${block.caption}">Chú thích</figcaption>
-                                    </figure>
-                                    <figure th:case="'VIDEO'" class="ws-figure">
-                                        <video th:src="${block.url}" controls preload="metadata"></video>
-                                    </figure>
-                                    <div th:case="'TABLE'" th:utext="${block.html}">Bảng</div>
-                                </th:block>
-                            </div>
-                            <!-- Cột phải: bản đang duyệt -->
-                            <div>
-                                <h3 th:text="|v${workspace.current.label} · đang duyệt|">v1.1 · đang duyệt</h3>
-                                <h4 th:text="${workspace.current.title}">Tít</h4>
-                                <p th:if="${workspace.current.subtitle != null and !#strings.isEmpty(workspace.current.subtitle)}"
-                                   th:text="${workspace.current.subtitle}">Tít phụ</p>
-                                <p><i th:text="${workspace.current.sapo}">Sapo</i></p>
-                                <th:block th:each="block : ${workspace.current.blocks}" th:switch="${block.kind.name()}">
-                                    <div th:case="'TEXT'" th:utext="${block.html}">Đoạn</div>
-                                    <figure th:case="'IMAGE'" class="ws-figure">
-                                        <img th:src="${block.url}" alt="" loading="lazy">
-                                        <figcaption th:if="${block.caption != null}" th:text="${block.caption}">Chú thích</figcaption>
-                                    </figure>
-                                    <figure th:case="'VIDEO'" class="ws-figure">
-                                        <video th:src="${block.url}" controls preload="metadata"></video>
-                                    </figure>
-                                    <div th:case="'TABLE'" th:utext="${block.html}">Bảng</div>
-                                </th:block>
-                            </div>
-                        </div>
-                    </details>
 
                     <!-- Tư liệu đính kèm bài (article_source). Ảnh / video đã chèn trong bài được đánh dấu "Có trong bài"
                          Dữ liệu: workspace.sources (danh sách SourceItemDTO), service lấy ở BƯỚC 4 của openWorkspace

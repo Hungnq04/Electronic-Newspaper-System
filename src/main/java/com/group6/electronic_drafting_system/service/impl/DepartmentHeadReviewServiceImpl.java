@@ -144,8 +144,7 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
                 .wordCount(String.format(Locale.forLanguageTag("vi-VN"), "%,d từ", countWords(current.getContent())))
                 .imageCount((int) sources.stream().filter(SourceItemDTO::isImage).count())
                 .current(currentView)                                         // bản đang duyệt
-                .previous(previous != null ? mapper.toVersionView(previous) : null)   // bản liền trước (để so sánh)
-                .versions(allVersions.stream().map(mapper::toVersionView).toList())   // mọi version (ô chọn "So với")
+                .previous(previous != null ? mapper.toVersionView(previous) : null)   // bản liền trước (cột trái phần so sánh)
                 .sources(sources)
                 .featuredImage(featuredImage)
                 .comments(rootComments(current))                              // góp ý trên bản đang duyệt (hàm phụ rootComments)

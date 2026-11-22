@@ -10,7 +10,7 @@ import lombok.Setter;
 // TẠO Ở ĐÂU: ReviewWorkspaceMapper.toVersionView(version) (mapper/DepartmentHead/ReviewWorkspaceMapper.java dòng 52),
 //            được DepartmentHeadReviewServiceImpl.openWorkspace() gọi cho bản đang duyệt, bản liền trước và mọi version.
 // NẰM TRONG: ReviewWorkspaceDTO.current / previous / versions
-// HTML ĐỌC:  ${workspace.current.title}, ${workspace.previous.label}, th:each="version : ${workspace.versions}"...
+// HTML ĐỌC:  ${workspace.current.title}, ${workspace.previous.label}, th:each="block : ${workspace.current.blocks}"...
 @Getter
 @Builder
 public class VersionViewDTO {

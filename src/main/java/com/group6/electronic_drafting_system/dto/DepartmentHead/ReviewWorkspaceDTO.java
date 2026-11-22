@@ -40,10 +40,9 @@ public class ReviewWorkspaceDTO {
     private int imageCount;           // số tư liệu loại ảnh -> "${workspace.imageCount} ảnh"
 
     // ----- Các phiên bản -----
-    // Version đang duyệt (mới nhất), version liền trước (null nếu mới có v1.0) và toàn bộ version để chọn so sánh
+    // Version đang duyệt (mới nhất) và version liền trước (null nếu mới có v1.0)
     private VersionViewDTO current;          // bản đang duyệt -> tít, sapo, thân bài: ${workspace.current.title}, ${workspace.current.blocks}...
-    private VersionViewDTO previous;         // bản liền trước; null thì HTML ẩn phần so sánh (th:if="${workspace.previous != null}")
-    private List<VersionViewDTO> versions;   // mọi version -> ô chọn "So với" và khối ẩn #version-data cho JS so sánh
+    private VersionViewDTO previous;         // bản liền trước -> cột trái phần "So sánh với bản trước"; null thì HTML ẩn phần này
 
     // ----- Tư liệu -----
     private List<SourceItemDTO> sources;     // khung "Tư liệu đính kèm": th:each="source : ${workspace.sources}"

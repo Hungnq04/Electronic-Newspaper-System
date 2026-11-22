@@ -94,22 +94,7 @@
                     <span class="ws-sep">|</span>
                     <span>Phiên bản: <strong th:text="|v${workspace.current.label}|">v1.0</strong></span>
                 </div>
-                <!-- So sánh chỉ có khi bài đã có từ 2 phiên bản trở lên -->
-                <!-- Ô chọn "So với": lặp mọi version (workspace.versions) trừ bản đang duyệt; mặc định chọn bản liền trước.
-                     Nút "So sánh phiên bản" (id="btn-compare") KHÔNG gửi lên server: JS ẩn bài viết, hiện #compare-card
-                     và dựng bảng so sánh từ khối ẩn #version-data (phần 3 bên dưới). -->
-                <div class="ws-compare-tools" th:if="${workspace.previous != null}">
-                    <label for="compare-base">So với</label>
-                    <select id="compare-base">
-                        <option th:each="version : ${workspace.versions}" th:if="${version.versionId != workspace.current.versionId}"
-                                th:value="${version.label}" th:text="|v${version.label} (${version.createdAtText})|"
-                                th:selected="${version.versionId == workspace.previous.versionId}">v1.0</option>
-                    </select>
-                    <button id="btn-compare" class="ws-btn ws-btn--white" type="button">
-                        <svg class="rp-icon ws-icon-maroon"><use href="#ws-icon-compare"></use></svg><span id="btn-compare-label">So sánh phiên bản</span>
-                    </button>
-                </div>
-                          <!-- Mở màn Lịch sử phiên bản (luôn hiện, kể cả bài mới có 1 phiên bản) -->
+                <!-- Mở màn Lịch sử phiên bản (luôn hiện, kể cả bài mới có 1 phiên bản) -->
                 <a class="ws-btn ws-btn--white ws-history-link" th:href="@{/department-head/articles/{id}/versions(id=${workspace.articleId})}">
                     <svg class="rp-icon ws-icon-maroon"><use href="#ws-icon-file"></use></svg><span>Lịch sử phiên bản</span>
                 </a>
@@ -186,46 +171,58 @@
                         </div>
                     </article>
 
-                    <!-- Màn so sánh phiên bản: ẩn sẵn, bấm "So sánh phiên bản" thì JS hiện ra thay chỗ bài viết.
-                         Nội dung so sánh do JS dựng từ khối #version-data bên dưới. -->
-                    <article id="compare-card" class="ws-compare" th:if="${workspace.previous != null}" hidden>
-                        <div class="ws-compare-head">
+                    <!-- So sánh với bản trước: chỉ có khi bài đã nộp từ 2 lần trở lên (workspace.previous khác null).
+                         <details>: bấm dòng <summary> thì HTML tự mở / đóng phần bên trong, KHÔNG cần JavaScript.
+                         Hai cột: bên trái là bản liền trước (workspace.previous), bên phải là bản đang duyệt (workspace.current).
+                         Mỗi cột in tít, sapo và thân bài theo blocks, giống phần bài viết ở trên. Người duyệt tự đọc và đối chiếu. -->
+                    <details class="rp-card ws-compare-simple" th:if="${workspace.previous != null}">
+                        <summary><svg class="rp-icon ws-icon-maroon"><use href="#ws-icon-compare"></use></svg>
+                            <span th:text="|So sánh với bản trước (v${workspace.previous.label} → v${workspace.current.label})|">So sánh với bản trước</span></summary>
+                        <p class="ws-note" th:if="${workspace.current.changeSummary != null}">
+                            <b>Ghi chú của Lead khi nộp:</b> <span th:text="|“${workspace.current.changeSummary}”|">“…”</span>
+                        </p>
+                        <!-- grid 2 cột bằng nhau (1fr 1fr) -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                            <!-- Cột trái: bản liền trước -->
                             <div>
-                                <h2>So sánh phiên bản</h2>
-                                <p id="compare-summary"></p>
+                                <h3 th:text="|v${workspace.previous.label} · bản trước|">v1.0 · bản trước</h3>
+                                <h4 th:text="${workspace.previous.title}">Tít</h4>
+                                <p th:if="${workspace.previous.subtitle != null and !#strings.isEmpty(workspace.previous.subtitle)}"
+                                   th:text="${workspace.previous.subtitle}">Tít phụ</p>
+                                <p><i th:text="${workspace.previous.sapo}">Sapo</i></p>
+                                <th:block th:each="block : ${workspace.previous.blocks}" th:switch="${block.kind.name()}">
+                                    <div th:case="'TEXT'" th:utext="${block.html}">Đoạn</div>
+                                    <figure th:case="'IMAGE'" class="ws-figure">
+                                        <img th:src="${block.url}" alt="" loading="lazy">
+                                        <figcaption th:if="${block.caption != null}" th:text="${block.caption}">Chú thích</figcaption>
+                                    </figure>
+                                    <figure th:case="'VIDEO'" class="ws-figure">
+                                        <video th:src="${block.url}" controls preload="metadata"></video>
+                                    </figure>
+                                    <div th:case="'TABLE'" th:utext="${block.html}">Bảng</div>
+                                </th:block>
                             </div>
-                            <div class="ws-compare-legend">
-                                <span class="diff-del">đã xóa</span>
-                                <span class="diff-ins">thêm mới</span>
-                                <label><input id="compare-only-changed" type="checkbox"> Chỉ hiện đoạn thay đổi</label>
+                            <!-- Cột phải: bản đang duyệt -->
+                            <div>
+                                <h3 th:text="|v${workspace.current.label} · đang duyệt|">v1.1 · đang duyệt</h3>
+                                <h4 th:text="${workspace.current.title}">Tít</h4>
+                                <p th:if="${workspace.current.subtitle != null and !#strings.isEmpty(workspace.current.subtitle)}"
+                                   th:text="${workspace.current.subtitle}">Tít phụ</p>
+                                <p><i th:text="${workspace.current.sapo}">Sapo</i></p>
+                                <th:block th:each="block : ${workspace.current.blocks}" th:switch="${block.kind.name()}">
+                                    <div th:case="'TEXT'" th:utext="${block.html}">Đoạn</div>
+                                    <figure th:case="'IMAGE'" class="ws-figure">
+                                        <img th:src="${block.url}" alt="" loading="lazy">
+                                        <figcaption th:if="${block.caption != null}" th:text="${block.caption}">Chú thích</figcaption>
+                                    </figure>
+                                    <figure th:case="'VIDEO'" class="ws-figure">
+                                        <video th:src="${block.url}" controls preload="metadata"></video>
+                                    </figure>
+                                    <div th:case="'TABLE'" th:utext="${block.html}">Bảng</div>
+                                </th:block>
                             </div>
                         </div>
-                        <div class="ws-change-note" th:if="${workspace.current.changeSummary != null}">
-                            <b th:text="|Ghi chú của Lead khi nộp v${workspace.current.label}:|">Ghi chú của Lead:</b>
-                            <span th:text="|“${workspace.current.changeSummary}”|">“…”</span>
-                        </div>
-                        <div class="ws-compare-columns">
-                            <span></span>
-                            <span id="compare-head-old">bản trước</span>
-                            <span class="ws-compare-current" th:text="|v${workspace.current.label} · đang duyệt|">đang duyệt</span>
-                        </div>
-                        <div id="compare-rows"></div>
-                        <p class="ws-compare-lock"><svg class="rp-icon"><use href="#ws-icon-lock"></use></svg>Chế độ so sánh chỉ để xem. Quay lại bản đang duyệt để góp ý.</p>
-                    </article>
-
-                    <!-- Dữ liệu chữ của từng phiên bản cho phần so sánh (luôn ẩn).
-                         Mỗi <span data-key> là một "ô" để so: Tít, Tít phụ, Sapo, Đoạn 1, Đoạn 2...
-                         Dữ liệu: workspace.versions (mọi VersionViewDTO), version.paragraphs (chữ từng đoạn).
-                         it.count = số thứ tự vòng lặp, đếm từ 1 (biến "it" do th:each tạo).
-                         Người dùng không thấy khối này; JS (readVersion / renderCompare) đọc nó để so sánh, không cần hỏi lại server. -->
-                    <div id="version-data" hidden>
-                        <div th:each="version : ${workspace.versions}" th:attr="data-label=${version.label},data-time=${version.createdAtText}">
-                            <span data-key="Tít" th:text="${version.title}"></span>
-                            <span data-key="Tít phụ" th:text="${version.subtitle}"></span>
-                            <span data-key="Sapo" th:text="${version.sapo}"></span>
-                            <span th:each="paragraph, it : ${version.paragraphs}" th:attr="data-key=|Đoạn ${it.count}|" th:text="${paragraph}"></span>
-                        </div>
-                    </div>
+                    </details>
 
                     <!-- Tư liệu đính kèm bài (article_source). Ảnh / video đã chèn trong bài được đánh dấu "Có trong bài"
                          Dữ liệu: workspace.sources (danh sách SourceItemDTO), service lấy ở BƯỚC 4 của openWorkspace

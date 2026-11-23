@@ -43,6 +43,8 @@ public class ReviewWorkspaceDTO {
     // Version đang duyệt (mới nhất) và version liền trước (null nếu mới có v1.0)
     private VersionViewDTO current;          // bản đang duyệt -> tít, sapo, thân bài: ${workspace.current.title}, ${workspace.current.blocks}...
     private VersionViewDTO previous;         // bản liền trước -> cột trái trang So sánh phiên bản; null thì màn thẩm định ẩn nút "So sánh phiên bản"
+    // Mọi version của bài -> 2 ô chọn "So sánh ... với ..." trên trang So sánh phiên bản (màn thẩm định không dùng)
+    private List<VersionViewDTO> versions;
 
     // ----- Tư liệu -----
     private List<SourceItemDTO> sources;     // khung "Tư liệu đính kèm": th:each="source : ${workspace.sources}"

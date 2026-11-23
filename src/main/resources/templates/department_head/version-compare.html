@@ -2,7 +2,8 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <body>
 <!--
-  Màn "So sánh phiên bản" của Trưởng ban: đặt bản liền trước (cột trái) cạnh bản đang duyệt (cột phải).
+  Màn "So sánh phiên bản" của Trưởng ban: đặt 2 phiên bản cạnh nhau. Chọn 2 bản bất kỳ ở 2 ô chọn đầu trang;
+  lần đầu mở trang thì mặc định bản liền trước (cột trái) và bản mới nhất (cột phải).
   Chỉ để XEM, không có form nào. Người duyệt tự đọc và đối chiếu, trang không tô màu chỗ khác nhau.
   Màn này KHÔNG có JavaScript.
 
@@ -41,6 +42,29 @@
                 </div>
             </div>
 
+            <!-- Chọn 2 phiên bản để so (chỉ hiện khi bài có từ 2 phiên bản trở lên).
+                 Form GET thường, KHÔNG cần JS: bấm "So sánh" thì trình duyệt mở lại trang này với địa chỉ
+                 /department-head/articles/{id}/compare?from=<mã version trái>&to=<mã version phải>
+                 -> DepartmentHeadController.compareVersions() nhận from / to bằng @RequestParam.
+                 th:selected: đánh dấu sẵn 2 bản đang được so. -->
+            <form class="rp-card" method="get" th:if="${#lists.size(workspace.versions) > 1}"
+                  th:action="@{/department-head/articles/{id}/compare(id=${workspace.articleId})}"
+                  style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
+                <label for="compare-from"><b>So sánh</b></label>
+                <select id="compare-from" name="from">
+                    <option th:each="version : ${workspace.versions}" th:value="${version.versionId}"
+                            th:text="|v${version.label} (${version.createdAtText})|"
+                            th:selected="${workspace.previous != null and version.versionId == workspace.previous.versionId}">v1.0</option>
+                </select>
+                <label for="compare-to"><b>với</b></label>
+                <select id="compare-to" name="to">
+                    <option th:each="version : ${workspace.versions}" th:value="${version.versionId}"
+                            th:text="|v${version.label} (${version.createdAtText})|"
+                            th:selected="${version.versionId == workspace.current.versionId}">v1.1</option>
+                </select>
+                <button class="ws-btn ws-btn--white" type="submit">So sánh</button>
+            </form>
+
             <!-- Bài mới nộp 1 lần (chưa có bản liền trước): không có gì để so -->
             <section class="rp-card" th:if="${workspace.previous == null}">
                 <p class="ws-note" th:text="|Bài mới có 1 phiên bản (v${workspace.current.label}), chưa có bản trước để so sánh.|">
@@ -54,14 +78,14 @@
                         <span th:text="|“${workspace.current.changeSummary}”|">“…”</span></p>
                 </section>
 
-                <!-- 2 cột bằng nhau (grid 1fr 1fr): trái là bản trước, phải là bản đang duyệt.
+                <!-- 2 cột bằng nhau (grid 1fr 1fr): trái là bản chọn ở ô "So sánh", phải là bản chọn ở ô "với".
                      Mỗi cột in tít, tít phụ, sapo và thân bài theo blocks, giống màn thẩm định. -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
 
-                    <!-- ===== Cột trái: bản liền trước ===== -->
+                    <!-- ===== Cột trái: bản chọn ở ô "So sánh" (mặc định: bản liền trước) ===== -->
                     <article class="rp-card ws-article">
                         <div class="ws-article-meta">
-                            <span class="ws-tag-yellow" th:text="|v${workspace.previous.label} · bản trước|">v1.0 · bản trước</span>
+                            <span class="ws-tag-yellow" th:text="|v${workspace.previous.label}|">v1.0</span>
                             <span class="ws-mono" th:text="|Gửi duyệt: ${workspace.previous.createdAtText}|">Gửi duyệt: 08:35</span>
                         </div>
                         <h1 class="ws-title" th:text="${workspace.previous.title}">Tít bài</h1>
@@ -88,10 +112,10 @@
                         </div>
                     </article>
 
-                    <!-- ===== Cột phải: bản đang duyệt (mới nhất) ===== -->
+                    <!-- ===== Cột phải: bản chọn ở ô "với" (mặc định: bản mới nhất, đang duyệt) ===== -->
                     <article class="rp-card ws-article">
                         <div class="ws-article-meta">
-                            <span class="ws-tag-yellow" th:text="|v${workspace.current.label} · đang duyệt|">v1.1 · đang duyệt</span>
+                            <span class="ws-tag-yellow" th:text="|v${workspace.current.label}|">v1.1</span>
                             <span class="ws-mono" th:text="|Gửi duyệt: ${workspace.current.createdAtText}|">Gửi duyệt: 08:35</span>
                         </div>
                         <h1 class="ws-title" th:text="${workspace.current.title}">Tít bài</h1>

@@ -238,10 +238,11 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
     // =====================================================================================================
     // SO SÁNH PHIÊN BẢN. Gọi từ DepartmentHeadController.compareVersions().
     // CHỈ ĐỌC: không tạo lượt duyệt, nên dùng readOnly của class (không cần @Transactional riêng).
-    // Dùng lại hộp ReviewWorkspaceDTO của màn thẩm định, chỉ điền các ô trang so sánh cần.
+    // Dùng lại hộp ReviewWorkspaceDTO của màn thẩm định, chỉ điền các ô trang so sánh cần:
+    //   previous = bản bên TRÁI (from), current = bản bên PHẢI (to), versions = mọi version cho 2 ô chọn.
     // =====================================================================================================
     @Override
-    public ReviewWorkspaceDTO getVersionCompare(String email, Integer articleId) {
+    public ReviewWorkspaceDTO getVersionCompare(String email, Integer articleId, Integer fromVersionId, Integer toVersionId) {
         // BƯỚC 1: kiểm tra quyền XEM, giống hệt màn thẩm định (cùng phòng HOẶC được giao, và không phải Lead)
         Account head = currentHead(email);
         Article article = findArticle(articleId);
@@ -250,11 +251,21 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
         // BƯỚC 2: lấy các version, xếp tăng dần [v1.0, v1.1, ...]
         List<ArticleVersion> allVersions = versions.findByArticleIdOrderByVersionNumberAsc(articleId);
         if (allVersions.isEmpty()) throw new ApplicationException(ErrorCode.ARTICLE_NOT_SUBMITTED);
-        // current = bản mới nhất (phần tử cuối), previous = bản liền trước (phần tử áp chót; null nếu mới có 1 bản)
+
+        // BƯỚC 3: chọn 2 bản để so.
+        // Mặc định (người dùng chưa chọn): bên trái = bản liền trước, bên phải = bản mới nhất.
         ArticleVersion current = allVersions.get(allVersions.size() - 1);
         ArticleVersion previous = allVersions.size() > 1 ? allVersions.get(allVersions.size() - 2) : null;
+        // Người dùng có chọn thì tìm đúng version đó TRONG DANH SÁCH VERSION CỦA BÀI NÀY (hàm phụ findVersionInList).
+        // Không thấy (ví dụ sửa số trên địa chỉ thành version của bài khác) -> lỗi 404, không cho xem.
+        if (fromVersionId != null) {
+            previous = findVersionInList(allVersions, fromVersionId);
+        }
+        if (toVersionId != null) {
+            current = findVersionInList(allVersions, toVersionId);
+        }
 
-        // BƯỚC 3: đóng gói. mapper.toVersionView cắt nội dung mỗi bản thành các khối chữ / ảnh / video / bảng
+        // BƯỚC 4: đóng gói. mapper.toVersionView cắt nội dung mỗi bản thành các khối chữ / ảnh / video / bảng
         return ReviewWorkspaceDTO.builder()
                 .articleId(article.getId())
                 .code("BT-" + article.getId())
@@ -266,7 +277,18 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
                 .departmentName(head.getDepartment() != null ? head.getDepartment().getDepartmentName() : null)
                 .current(mapper.toVersionView(current))                       // cột phải
                 .previous(previous != null ? mapper.toVersionView(previous) : null)   // cột trái
+                .versions(allVersions.stream().map(mapper::toVersionView).toList())   // mọi version -> 2 ô chọn
                 .build();
+    }
+
+    // Hàm phụ: tìm version có mã versionId trong danh sách version của bài. Không có -> lỗi 404.
+    private static ArticleVersion findVersionInList(List<ArticleVersion> allVersions, Integer versionId) {
+        for (ArticleVersion version : allVersions) {
+            if (version.getId().equals(versionId)) {
+                return version;
+            }
+        }
+        throw new ApplicationException(ErrorCode.ARTICLE_VERSION_NOT_FOUND);
     }
 
     // =====================================================================================================

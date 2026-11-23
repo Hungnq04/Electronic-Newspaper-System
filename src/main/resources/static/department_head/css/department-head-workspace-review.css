@@ -222,6 +222,13 @@
 .ws-tab.is-active { background: #fff; color: var(--ws-maroon); box-shadow: 0 1px 2px rgba(20, 30, 60, .08); }
 /* Nội dung của mỗi tab */
 .ws-tab-panel { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 14px; }
+/* Phần thân của một khung ở cột phải (Góp ý, Quyết định): đệm trong + xếp dọc cách đều.
+   Giống .ws-tab-panel, đặt tên riêng vì màn thẩm định không còn tab. */
+.ws-panel { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 14px; }
+/* Một dòng quyết định (thẻ <details>): khung viền mảnh bo góc, giống ô nhập */
+.ws-decision { border: 1px solid var(--ws-surface-high); border-radius: 8px; padding: 10px 12px; }
+.ws-decision > summary { cursor: pointer; font-size: 13px; font-weight: 600; }
+.ws-decision[open] > summary { margin-bottom: 8px; }   /* [open] = đang mở: cách form bên dưới một chút */
 .ws-note { margin: 0; font-size: 12.5px; line-height: 18px; color: var(--ws-secondary); }
 
 /* Một thẻ góp ý: viền trái đỏ đô (vòng này) hoặc vàng (vòng trước) */

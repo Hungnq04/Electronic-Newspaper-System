@@ -223,9 +223,14 @@ public class DepartmentHeadController {
     // ===== Màn "So sánh phiên bản": GET /department-head/articles/{articleId}/compare =====
     // AI ĐƯA REQUEST TỚI ĐÂY? Nút "So sánh phiên bản" trên thanh trạng thái của màn thẩm định (workspacereview.html).
     // Chỉ XEM: đặt bản đang duyệt cạnh bản liền trước. Sai quyền / không thấy bài -> handleError() trả 403 / 404.
+    // from / to: mã 2 version chọn ở 2 ô chọn đầu trang (form GET gửi lên dạng ?from=21&to=23).
+    // required = false: lần đầu mở trang không có 2 tham số này -> null -> service dùng mặc định (bản trước / bản mới nhất).
     @GetMapping("/articles/{articleId}/compare")
-    public String compareVersions(@PathVariable Integer articleId, Authentication authentication, Model model) {
-        model.addAttribute("workspace", departmentHeadReviewService.getVersionCompare(currentEmail(authentication), articleId));
+    public String compareVersions(@PathVariable Integer articleId,
+                                  @RequestParam(required = false) Integer from,
+                                  @RequestParam(required = false) Integer to,
+                                  Authentication authentication, Model model) {
+        model.addAttribute("workspace", departmentHeadReviewService.getVersionCompare(currentEmail(authentication), articleId, from, to));
         model.addAttribute("pageTitle", "So sánh phiên bản – Trưởng ban");
         // layout/app.html chèn fragment "versionCompareContent" của templates/department_head/version-compare.html
         model.addAttribute("contentView", "department_head/version-compare");

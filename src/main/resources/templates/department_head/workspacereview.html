@@ -212,8 +212,9 @@
                         </div>
 
                         <!-- Góp ý trên phiên bản đang duyệt
-                             Dữ liệu: workspace.comments (danh sách ReviewCommentDTO), service tạo bằng rootComments(current). -->
-                        <div>
+                             Dữ liệu: workspace.comments (danh sách ReviewCommentDTO), service tạo bằng rootComments(current).
+                             class ws-panel: đệm trong để nội dung thẳng hàng với tiêu đề khung, các phần xếp dọc cách đều. -->
+                        <div class="ws-panel">
                             <p class="ws-note">Góp ý trên <b th:text="|v${workspace.current.label}|">v1.0</b>. Lead chỉ thấy sau khi bạn bấm <b>Yêu cầu sửa</b> hoặc <b>Duyệt</b>.</p>
                             <p class="ws-note" th:if="${#lists.isEmpty(workspace.comments)}"><i>Chưa có góp ý nào.</i></p>
 
@@ -258,42 +259,44 @@
                          Không cần JavaScript (thay cho 2 hộp thoại cũ). -->
                     <section class="rp-card" th:if="${workspace.reviewable}">
                         <div class="rp-card-head"><h2>Quyết định</h2></div>
+                        <!-- ws-panel: đệm trong giống khung Góp ý, để 2 dòng thẳng hàng với tiêu đề khung -->
+                        <div class="ws-panel">
 
-                        <!-- Yêu cầu sửa: nhận xét chung BẮT BUỘC (BR-12)
-                             Gửi: POST /department-head/articles/{a}/request-revision với ô name="feedback"
-                             -> DepartmentHeadController.requestRevision() -> service.requestRevision():
-                                bài DEPARTMENT_REVIEW -> REVISION_REQUIRED (trả về Lead), lượt duyệt chốt REQUEST_REVISION.
-                             required chỉ nhắc ở giao diện; service vẫn kiểm tra lại "có nhận xét chưa". -->
-                        <details>
-                            <summary style="cursor: pointer; font-weight: 600; padding: 6px 0;">Yêu cầu sửa (trả bài cho Lead)</summary>
-                            <form method="post" th:action="@{/department-head/articles/{a}/request-revision(a=${workspace.articleId})}">
-                                <label for="revise-feedback">Nhận xét khi trả bài <span class="ws-required">*</span></label>
-                                <textarea id="revise-feedback" class="ws-textarea" name="feedback" rows="3" required placeholder="Tóm tắt những gì Lead cần sửa..."></textarea>
-                                <button class="ws-btn ws-btn--yellow" type="submit">
-                                    <svg class="rp-icon"><use href="#ws-icon-replay"></use></svg>Gửi trả bài
-                                </button>
-                            </form>
-                        </details>
+                            <!-- Yêu cầu sửa: nhận xét chung BẮT BUỘC (BR-12)
+                                 Gửi: POST /department-head/articles/{a}/request-revision với ô name="feedback"
+                                 -> DepartmentHeadController.requestRevision() -> service.requestRevision():
+                                    bài DEPARTMENT_REVIEW -> REVISION_REQUIRED (trả về Lead), lượt duyệt chốt REQUEST_REVISION.
+                                 required chỉ nhắc ở giao diện; service vẫn kiểm tra lại "có nhận xét chưa". -->
+                            <details class="ws-decision">
+                                <summary>Yêu cầu sửa (trả bài cho Lead)</summary>
+                                <!-- ws-general-form: cùng kiểu với form Góp ý chung (ô nhập rộng hết khung, nút nằm bên phải) -->
+                                <form class="ws-general-form" method="post" th:action="@{/department-head/articles/{a}/request-revision(a=${workspace.articleId})}">
+                                    <label for="revise-feedback">Nhận xét khi trả bài <span class="ws-required">*</span></label>
+                                    <textarea id="revise-feedback" class="ws-textarea" name="feedback" rows="3" required placeholder="Tóm tắt những gì Lead cần sửa..."></textarea>
+                                    <button class="ws-btn ws-btn--yellow ws-btn--small" type="submit">
+                                        <svg class="rp-icon"><use href="#ws-icon-replay"></use></svg>Gửi trả bài
+                                    </button>
+                                </form>
+                            </details>
 
-                        <hr class="ws-divider">
-
-                        <!-- Duyệt cấp phòng: bài chuyển sang Thư ký tòa soạn (chưa phải Final Approve)
-                             Gửi: POST /department-head/articles/{a}/approve với ô name="feedback" (không bắt buộc)
-                             -> DepartmentHeadController.approve() -> service.approve():
-                                bài DEPARTMENT_REVIEW -> DEPARTMENT_APPROVED, lượt duyệt chốt APPROVED. -->
-                        <details>
-                            <summary style="cursor: pointer; font-weight: 600; padding: 6px 0;">Duyệt, chuyển Thư ký</summary>
-                            <form method="post" th:action="@{/department-head/articles/{a}/approve(a=${workspace.articleId})}">
-                                <!-- Nhắc khi đã có góp ý mà vẫn duyệt (góp ý vẫn được lưu) -->
-                                <p class="ws-note" th:if="${!#lists.isEmpty(workspace.comments)}"
-                                   th:text="|Bạn đã viết ${#lists.size(workspace.comments)} góp ý ở vòng này. Vẫn duyệt?|">Cảnh báo</p>
-                                <label for="approve-feedback">Ghi chú khi duyệt (không bắt buộc)</label>
-                                <textarea id="approve-feedback" class="ws-textarea" name="feedback" rows="2"></textarea>
-                                <button class="ws-btn ws-btn--maroon" type="submit">
-                                    <svg class="rp-icon"><use href="#ws-icon-approve"></use></svg>Xác nhận duyệt
-                                </button>
-                            </form>
-                        </details>
+                            <!-- Duyệt cấp phòng: bài chuyển sang Thư ký tòa soạn (chưa phải Final Approve)
+                                 Gửi: POST /department-head/articles/{a}/approve với ô name="feedback" (không bắt buộc)
+                                 -> DepartmentHeadController.approve() -> service.approve():
+                                    bài DEPARTMENT_REVIEW -> DEPARTMENT_APPROVED, lượt duyệt chốt APPROVED. -->
+                            <details class="ws-decision">
+                                <summary>Duyệt, chuyển Thư ký</summary>
+                                <form class="ws-general-form" method="post" th:action="@{/department-head/articles/{a}/approve(a=${workspace.articleId})}">
+                                    <!-- Nhắc khi đã có góp ý mà vẫn duyệt (góp ý vẫn được lưu) -->
+                                    <p class="ws-note" th:if="${!#lists.isEmpty(workspace.comments)}"
+                                       th:text="|Bạn đã viết ${#lists.size(workspace.comments)} góp ý ở vòng này. Vẫn duyệt?|">Cảnh báo</p>
+                                    <label for="approve-feedback">Ghi chú khi duyệt (không bắt buộc)</label>
+                                    <textarea id="approve-feedback" class="ws-textarea" name="feedback" rows="2"></textarea>
+                                    <button class="ws-btn ws-btn--maroon ws-btn--small" type="submit">
+                                        <svg class="rp-icon"><use href="#ws-icon-approve"></use></svg>Xác nhận duyệt
+                                    </button>
+                                </form>
+                            </details>
+                        </div>
                     </section>
 
                     <!-- Thông tin thêm về phiên bản đang duyệt -->

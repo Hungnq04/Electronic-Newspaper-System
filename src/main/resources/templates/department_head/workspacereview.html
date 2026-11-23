@@ -312,23 +312,6 @@
                 </aside>
             </div>
         </main>
-
-        <!-- ===== 5. Thanh nút ở đáy: luôn dính ở đáy màn hình khi cuộn (CSS: position: sticky) ===== -->
-        <footer id="action-bar" class="ws-action-bar">
-            <div class="ws-action-inner">
-                <div class="ws-action-state">
-                    <!-- Chấm đỏ nhấp nháy = đang duyệt; chấm xanh = chỉ xem -->
-                    <span class="ws-status-dot" th:classappend="${workspace.reviewable} ? 'is-live' : 'is-done'"></span>
-                    <span th:if="${workspace.reviewable}">Đang duyệt bài <b th:text="|#${workspace.code}|">#BT-1</b> · <span th:text="|v${workspace.current.label}|">v1.0</span></span>
-                    <span th:unless="${workspace.reviewable}" th:text="|${workspace.statusText} · chỉ xem, không thao tác được|">Chỉ xem</span>
-                </div>
-                <!-- "Để sau": link thường, quay về dashboard (lượt duyệt vẫn mở, lần sau vào tiếp).
-                     Hai nút Yêu cầu sửa / Duyệt nằm ở khung "Quyết định" bên cột phải. -->
-                <div class="ws-action-buttons" th:if="${workspace.reviewable}">
-                    <a class="ws-btn ws-btn--grey" th:href="@{/department-head/dashboard}"><svg class="rp-icon ws-icon-muted"><use href="#ws-icon-clock"></use></svg>Để sau</a>
-                </div>
-            </div>
-        </footer>
     </section>
 </th:block>
 </body>

@@ -259,18 +259,6 @@
 /* Thẻ "Thông tin bài": ghi chú của Lead in nghiêng, không in đậm */
 .rp-article-meta .ws-change-summary { font-weight: 400; font-style: italic; }
 
-/* ===== 5. Thanh nút ở đáy (giữ thiết kế màn cũ) =====
-   position: sticky + bottom: 0 = luôn dính ở đáy màn hình khi cuộn, nhưng chỉ rộng bằng cột nội dung
-   nên không đè lên sidebar bên trái. */
-.ws-action-bar { position: sticky; bottom: 0; z-index: 20; background: rgba(255, 255, 255, .95); backdrop-filter: blur(16px); box-shadow: 0 -4px 24px rgba(0, 0, 0, .08); }
-.ws-action-inner { max-width: 1520px; margin: 0 auto; padding: 12px clamp(16px, 2.3vw, 32px); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
-.ws-action-state { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 600; }
-.ws-action-state b { color: var(--ws-maroon-dark); }
-.ws-status-dot { width: 12px; height: 12px; flex: none; border-radius: 50%; }
-.ws-status-dot.is-live { background: var(--ws-maroon-dark); animation: ws-pulse 2s ease-in-out infinite; }   /* đang duyệt: nhấp nháy */
-.ws-status-dot.is-done { background: #059669; }                                                            /* chỉ xem */
-@keyframes ws-pulse { 50% { opacity: .4; } }
-.ws-action-buttons { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 10px; }
 /* Số góp ý trên nút "Yêu cầu sửa": hình tròn nâu, chữ vàng */
 .ws-count-circle { width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; background: var(--ws-on-yellow); color: var(--ws-yellow); font-size: 10px; font-weight: 700; }
 

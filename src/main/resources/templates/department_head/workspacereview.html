@@ -1,73 +1,136 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-
-<head>
-    <meta charset="UTF-8">
-</head>
-
 <body>
-    <th:block th:fragment="reviewWorkspace">
-        <h1>Đang thẩm định bài số <span th:text="${articleId}">0</span></h1>
-        <p>Phiên bản đang duyệt: v<span th:text="${version.label}">1.0</span></p>
-        <p th:if="${version.changeSummary != null}">
-            Ghi chú của Lead khi nộp: <b th:text="${version.changeSummary}">...</b>
-        </p>
-        <a th:href="@{/department-head/dashboard}">Quay lại trang tổng quan</a>
+<th:block th:fragment="reviewWorkspace">
+    <section class="rp-page ws-page">
+        <!-- Gọi fragment dhTopbar trong dashboard.html, truyền 3 giá trị ĐÚNG THỨ TỰ tham số -->
+        <header th:replace="~{department_head/dashboard :: dhTopbar(${workspace.reviewerName}, ${workspace.___}, ${workspace.reviewerInitials})}"></header>
 
-        <!-- Nội dung bài: tít, tít phụ, sapo, rồi thân bài theo đúng thứ tự phóng viên sắp xếp -->
-        <article>
-            <h2 th:text="${version.title}">Tít bài</h2>
-            <h3 th:if="${version.subtitle != null and !#strings.isEmpty(version.subtitle)}"
-                th:text="${version.subtitle}">Tít phụ</h3>
-            <p><i th:text="${version.sapo}">Sapo</i></p>
+        <main class="ws-main">
+            <!-- 1. Đường dẫn -->
+            <nav class="ws-crumb">
+                <a class="ws-crumb-back" th:href="@{/department-head/dashboard}">← Quay lại danh sách</a>
+                <span>/</span>
+                <strong th:text="|Bài #${workspace.code}|">Bài #BT-1</strong>
+            </nav>
 
-            <!-- Thân bài = danh sách khối (ContentBlockDTO). th:switch giống switch trong Java:
-                 tùy loại khối (kind) mà in ra thẻ khác nhau -->
-            <th:block th:each="block : ${version.blocks}" th:switch="${block.kind.name()}">
-                <!-- Đoạn chữ: th:utext in HTML để giữ in đậm / nghiêng
-                     (an toàn vì mapper đã lọc, chỉ giữ thẻ định dạng chữ) -->
-                <p th:case="'TEXT'" th:utext="${block.html}">Đoạn chữ</p>
-                <!-- Ảnh + chú thích -->
-                <figure th:case="'IMAGE'">
-                    <img th:src="${block.url}" style="max-width: 100%;" alt="">
-                    <figcaption th:if="${block.caption != null}" th:text="${block.caption}">Chú thích</figcaption>
-                </figure>
-                <!-- Video + chú thích -->
-                <figure th:case="'VIDEO'">
-                    <video th:src="${block.url}" controls style="max-width: 100%;"></video>
-                    <figcaption th:if="${block.caption != null}" th:text="${block.caption}">Chú thích</figcaption>
-                </figure>
-                <!-- Bảng: in nguyên HTML bảng (mapper đã lọc) -->
-                <div th:case="'TABLE'" th:utext="${block.html}">Bảng</div>
-            </th:block>
-        </article>
+            <!-- 2. Thanh trạng thái -->
+            <div class="ws-status-bar">
+                <div class="ws-status-info">
+                    <span class="ws-chip-yellow" th:text="${workspace.___}">Chờ duyệt</span>
+                    <span class="ws-mono">Mã: <strong th:text="|#${workspace.code}|">#BT-1</strong></span>
+                    <span class="ws-sep">|</span>
+                    <span>Topic: <strong class="ws-topic" th:text="${workspace.topicTitle}">Topic</strong></span>
+                    <span class="ws-sep">|</span>
+                    <span>Chuyên mục: <strong th:text="${workspace.category}">Kinh tế</strong></span>
+                    <span class="ws-sep">|</span>
+                    <span>Phiên bản: <strong th:text="|v${workspace.current.label}|">v1.0</strong></span>
+                </div>
+            </div>
 
-        <!-- Danh sách góp ý của lượt duyệt đang mở -->
-        <h3>Góp ý</h3>
-        <p th:if="${#lists.isEmpty(comments)}">Chưa có góp ý nào.</p>
-        <div th:each="comment : ${comments}">
-            <span th:text="${comment.content}">Nội dung</span>
-            <small th:text="'— ' + ${comment.authorName}">Người viết</small>
-        </div>
+            <!-- 3. Hai cột -->
+            <div class="ws-layout">
 
-        <!-- Form thêm góp ý chung cho cả bài -->
-        <form method="post" th:action="@{/department-head/articles/{id}/comments(id=${articleId})}">
-            <textarea name="content" required placeholder="Nội dung góp ý..."></textarea>
-            <button type="submit">Thêm góp ý</button>
-        </form>
-        <!--form để duyệt bài-->
-        <form method="post" th:action="@{/department-head/articles/{id}/approve(id=${articleId})}">
-            <label>Ghi chú (không bắt buộc)</label>
-            <textarea name="feedback"></textarea>
-            <button type="submit">Duyệt, chuyển Thư ký</button>
-        </form>
-        <!--form để yêu cầu sửa bài-->
-        <form method="post" th:action="@{/department-head/articles/{id}/request-revision(id=${articleId})}">
-            <label>Nhận xét (bắt buộc)</label>
-            <textarea name="feedback" required></textarea>
-            <button type="submit">Yêu cầu sửa</button>
-        </form>
-    </th:block>
+                <!-- CỘT TRÁI: bài viết -->
+                <section class="ws-main-col">
+                    <article class="ws-article">
+                        <div class="ws-article-meta">
+                            <!-- Có bản trước = bài nộp lại; không có = nộp lần đầu -->
+                            <span class="ws-tag-yellow"
+                                  th:text="${workspace.___ != null} ? |Bản nộp lại (v${workspace.current.label})| : |Bản nộp đầu (v${workspace.current.label})|">Bản nộp</span>
+                            <span class="ws-mono" th:text="|Gửi duyệt: ${workspace.current.createdAtText}|">Gửi duyệt</span>
+                        </div>
+
+                        <h1 class="ws-title" th:text="${workspace.current.title}">Tít</h1>
+                        <p class="ws-subtitle" th:if="${!#strings.isEmpty(workspace.current.subtitle)}"
+                           th:text="${workspace.current.subtitle}">Tít phụ</p>
+
+                        <!-- Dòng tác giả -->
+                        <div class="ws-byline">
+                            <div class="ws-author">
+                                <span class="ws-author-avatar" th:text="${workspace.leadInitials}">MQ</span>
+                                <div>
+                                    <strong th:text="${workspace.leadName}">Lead</strong> <small>• Lead Reporter</small>
+                                    <!-- Không có Supporting thì ẩn -->
+                                    <span class="ws-supporting" th:if="${!#strings.isEmpty(workspace.supportingNames)}">
+                                        Supporting: <b th:text="${workspace.supportingNames}">Tên</b></span>
+                                </div>
+                            </div>
+                        </div>
+                        <hr class="ws-divider">
+
+                        <div class="ws-sapo">
+                            <span class="ws-sapo-label">Sapo</span>
+                            <p class="ws-sapo-text" th:text="${workspace.current.sapo}">Sapo</p>
+                        </div>
+
+                        <!-- Thân bài theo khối (giống bước trước, chỉ thêm class) -->
+                        <div class="ws-body">
+                            <th:block th:each="block : ${workspace.current.blocks}" th:switch="${block.kind.name()}">
+                                <div th:case="'TEXT'" class="ws-text" th:classappend="|ws-${block.tag}|" th:utext="${block.html}">Đoạn chữ</div>
+                                <figure th:case="'IMAGE'" class="ws-figure">
+                                    <img th:src="${block.url}" alt="">
+                                    <figcaption th:if="${block.caption != null}" th:text="${block.caption}">Chú thích</figcaption>
+                                </figure>
+                                <figure th:case="'VIDEO'" class="ws-figure">
+                                    <video th:src="${block.url}" controls></video>
+                                    <figcaption th:if="${block.caption != null}" th:text="${block.caption}">Chú thích</figcaption>
+                                </figure>
+                                <div th:case="'TABLE'" class="ws-table" th:utext="${block.html}">Bảng</div>
+                            </th:block>
+                        </div>
+                    </article>
+                </section>
+
+                <!-- CỘT PHẢI: góp ý, quyết định, thông tin bài -->
+                <aside class="ws-side">
+                    <section class="rp-card">
+                        <div class="rp-card-head">
+                            <h2>Góp ý <span class="rp-count-pill" th:text="${#lists.size(workspace.___)}">0</span></h2>
+                        </div>
+                        <div class="ws-panel">
+                            <p class="ws-note" th:if="${#lists.isEmpty(workspace.comments)}"><i>Chưa có góp ý nào.</i></p>
+                            <div class="ws-comment" th:each="comment : ${workspace.comments}">
+                                <div class="ws-comment-top">
+                                    <b th:text="${comment.authorName}">Người viết</b>
+                                    <span class="ws-mono" th:text="${comment.timeText}">08:42</span>
+                                </div>
+                                <p class="ws-comment-text" th:text="${comment.content}">Nội dung</p>
+                            </div>
+                            <form class="ws-general-form" method="post" th:action="@{/department-head/articles/{id}/comments(id=${workspace.articleId})}">
+                                <label for="general-comment">Góp ý chung</label>
+                                <textarea id="general-comment" class="ws-textarea" name="content" rows="2" required placeholder="Nhận xét cho cả bài..."></textarea>
+                                <button class="ws-btn ws-btn--grey ws-btn--small" type="submit">Thêm góp ý chung</button>
+                            </form>
+                        </div>
+                    </section>
+
+                    <section class="rp-card">
+                        <div class="rp-card-head"><h2>Quyết định</h2></div>
+                        <div class="ws-panel">
+                            <form class="ws-general-form" method="post" th:action="@{/department-head/articles/{id}/request-revision(id=${workspace.articleId})}">
+                                <label for="revise-feedback">Nhận xét khi trả bài <span class="ws-required">*</span></label>
+                                <textarea id="revise-feedback" class="ws-textarea" name="feedback" rows="3" required></textarea>
+                                <button class="ws-btn ws-btn--yellow ws-btn--small" type="submit">Gửi trả bài</button>
+                            </form>
+                            <form class="ws-general-form" method="post" th:action="@{/department-head/articles/{id}/approve(id=${workspace.articleId})}">
+                                <label for="approve-feedback">Ghi chú khi duyệt (không bắt buộc)</label>
+                                <textarea id="approve-feedback" class="ws-textarea" name="feedback" rows="2"></textarea>
+                                <button class="ws-btn ws-btn--maroon ws-btn--small" type="submit">Duyệt, chuyển Thư ký</button>
+                            </form>
+                        </div>
+                    </section>
+
+                    <section class="rp-card" th:if="${workspace.current.changeSummary != null}">
+                        <div class="rp-card-head"><h2>Thông tin bài</h2></div>
+                        <dl class="rp-article-meta">
+                            <div><dt>Ghi chú của Lead khi nộp</dt><dd class="ws-change-summary" th:text="${workspace.current.changeSummary}">...</dd></div>
+                        </dl>
+                    </section>
+                </aside>
+            </div>
+        </main>
+    </section>
+</th:block>
 </body>
-
 </html>

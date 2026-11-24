@@ -1,16 +1,19 @@
 package com.group6.electronic_drafting_system.service.impl;
 
 import com.group6.electronic_drafting_system.dto.DepartmentHead.ReviewCommentDTO;
+import com.group6.electronic_drafting_system.dto.DepartmentHead.ReviewWorkspaceDTO;
 import com.group6.electronic_drafting_system.dto.DepartmentHead.VersionViewDTO;
 import com.group6.electronic_drafting_system.entity.Account;
 import com.group6.electronic_drafting_system.entity.Article;
 import com.group6.electronic_drafting_system.entity.ArticleVersion;
+import com.group6.electronic_drafting_system.entity.Assignment;
 import com.group6.electronic_drafting_system.entity.Comment;
 import com.group6.electronic_drafting_system.entity.Department;
 import com.group6.electronic_drafting_system.entity.enums.AssignmentRole;
 import com.group6.electronic_drafting_system.exception.ApplicationException;
 import com.group6.electronic_drafting_system.exception.ErrorCode;
 import com.group6.electronic_drafting_system.mapper.DepartmentHead.ReviewWorkspaceMapper;
+import com.group6.electronic_drafting_system.mapper.Reporter.ReporterTaskMapper;
 import com.group6.electronic_drafting_system.repository.AccountRepository;
 import com.group6.electronic_drafting_system.repository.ArticleRepository;
 import com.group6.electronic_drafting_system.repository.ArticleVersionRepository;
@@ -56,7 +59,7 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
     @Override
     @Transactional // ① GHI dữ liệu, nên cần nhãn riêng, không readOnly vì sẽ tạo lượt duyệt nếu
                    // chưa có
-    public VersionViewDTO openArticle(String email, Integer articleId) {
+    public ReviewWorkspaceDTO openWorkspace(String email, Integer articleId) {
         // 1. Tìm người đăng nhập
         Account head = accounts.findByEmailIgnoreCase(email) // ①
                 .orElseThrow(() -> new ApplicationException(ErrorCode.AUTH_ACCOUNT_NOT_REGISTERED));
@@ -74,6 +77,8 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
             throw new ApplicationException(ErrorCode.ARTICLE_NOT_SUBMITTED);
         }
         ArticleVersion current = allVersions.get(allVersions.size() - 1); // ④
+        // previous = bản LIỀN TRƯỚC (phần tử áp chót); bài mới có 1 version thì null
+        ArticleVersion previous = allVersions.size() > 1 ? allVersions.get(allVersions.size() - 2) : null;
         // 5. Mở lượt duyệt nếu đủ điều kiện // MỚI (cả khối dưới)
         boolean assignedToMe = assignments.isActiveOnTopic(
                 article.getTopic().getId(), head.getId(), AssignmentRole.DEPARTMENT_HEAD);
@@ -84,9 +89,33 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
             articleReviews.findOpenReview(current.getId(), ReviewStage.DEPARTMENT)
                     .orElseGet(() -> articleReviews.save(newDepartmentReview(current, head)));
         }
-        // 5. Đổi version thành DTO để hiển thị. Mapper của nhóm cắt nội dung thành các khối
-        //    (chữ / ảnh / video / bảng) đúng thứ tự phóng viên sắp xếp -> VersionViewDTO.blocks
-        return mapper.toVersionView(current);
+        // Ghép tên các Supporting đang hoạt động trên Topic: "A, B, C"
+        String supportingNames = "";
+        for (Assignment assignment : assignments.findActiveByTopicAndRole(
+                article.getTopic().getId(), AssignmentRole.SUPPORTING)) { // ①
+            if (!supportingNames.isEmpty()) {
+                supportingNames = supportingNames + ", ";
+            }
+            supportingNames = supportingNames + assignment.getAccount().getFullName();
+        }
+        // 6. Đóng gói cả trang vào một hộp
+        return ReviewWorkspaceDTO.builder()
+                .articleId(article.getId())
+                .code("BT-" + article.getId())
+                .topicTitle(article.getTopic().getTitle()) // ②
+                .category(article.getCategory())
+                .statusText(statusText(article.getStatus())) // ③
+                .reviewerName(head.getFullName())
+                .reviewerInitials(ReporterTaskMapper.initials(head.getFullName()))
+                // chưa được gán phòng thì null, tránh lỗi NullPointerException
+                .departmentName(head.getDepartment() != null ? head.getDepartment().getDepartmentName() : null)
+                .leadName(article.getLead().getFullName()) // ④
+                .leadInitials(ReporterTaskMapper.initials(article.getLead().getFullName()))
+                .supportingNames(supportingNames)
+                .current(mapper.toVersionView(current)) // bản đang duyệt
+                .previous(previous != null ? mapper.toVersionView(previous) : null) // bản trước (có thể null)
+                .comments(rootComments(current)) // góp ý trên bản đang duyệt
+                .build();
     }
 
     @Override
@@ -136,39 +165,32 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
     // Thêm góp ý chung cho cả bài (không gắn vị trí: các cột anchor_* để NULL)
     public void addComment(String email, Integer articleId, String content) {
         if (content == null || content.isBlank()) {
-            throw new ApplicationException(ErrorCode.COMMENT_INVALID);   // nội dung rỗng
+            throw new ApplicationException(ErrorCode.COMMENT_INVALID); // nội dung rỗng
         }
         Account head = accounts.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new ApplicationException(ErrorCode.AUTH_ACCOUNT_NOT_REGISTERED));
         Article article = articles.findWithLeadAndTopic(articleId)
                 .orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_NOT_FOUND));
-        // Kiểm tra quyền GHI: được giao, không phải Lead, bài đang chờ duyệt; lấy lượt duyệt đang mở
+        // Kiểm tra quyền GHI: được giao, không phải Lead, bài đang chờ duyệt; lấy lượt
+        // duyệt đang mở
         ArticleReview review = myOpenReview(head, article);
 
         Comment comment = new Comment();
-        comment.setReview(review);       // thuộc lượt duyệt nào
-        comment.setCreator(head);        // ai viết
+        comment.setReview(review); // thuộc lượt duyệt nào
+        comment.setCreator(head); // ai viết
         comment.setContent(content.trim());
-        comments.save(comment);   // INSERT vào bảng comment
+        comments.save(comment); // INSERT vào bảng comment
     }
 
-    @Override
-    public List<ReviewCommentDTO> getComments(String email, Integer articleId) {
-        Account head = accounts.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new ApplicationException(ErrorCode.AUTH_ACCOUNT_NOT_REGISTERED)); // giống approve()
-        Article article = articles.findWithLeadAndTopic(articleId)
-                .orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_NOT_FOUND)); // giống approve()
-        checkCanReview(head, article);
-
-        List<ArticleVersion> allVersions = versions.findByArticleIdOrderByVersionNumberAsc(articleId);
-        if (allVersions.isEmpty()) {
-            return List.of();
-        }
-        ArticleVersion current = allVersions.get(allVersions.size() - 1);
-
+    // Hàm phụ: góp ý GỐC trên một version (bỏ câu trả lời có parent), đổi thành
+    // ReviewCommentDTO để hiển thị
+    private List<ReviewCommentDTO> rootComments(ArticleVersion version) {
         List<ReviewCommentDTO> result = new ArrayList<>();
-        for (Comment comment : comments.findByVersion(current.getId())) {
-            if (comment.getParent() == null) { // chỉ lấy góp ý gốc, bỏ câu trả lời
+        // Chỉ lấy góp ý gốc (parent = null). Dự án không làm chức năng trả lời góp ý,
+        // nhưng dữ liệu mẫu có sẵn vài câu trả lời của phóng viên, nên vẫn lọc ra để
+        // không hiện lẫn vào.
+        for (Comment comment : comments.findByVersion(version.getId())) { // đọc bảng comment theo mã version
+            if (comment.getParent() == null) {
                 result.add(mapper.toComment(comment, List.of()));
             }
         }
@@ -234,5 +256,17 @@ public class DepartmentHeadReviewServiceImpl implements DepartmentHeadReviewServ
         review.setReviewStage(ReviewStage.DEPARTMENT);
         review.setReviewKind(ReviewKind.REVIEW);
         return review;
+    }
+        // Đổi trạng thái bài (enum) thành chữ tiếng Việt để hiển thị
+    private static String statusText(ArticleStatus status) {
+        return switch (status) {
+            case DRAFT -> "Bản nháp";
+            case DEPARTMENT_REVIEW -> "Chờ Trưởng phòng duyệt";
+            case REVISION_REQUIRED -> "Đã trả Lead chỉnh sửa";
+            case DEPARTMENT_APPROVED -> "Đã duyệt cấp phòng · chờ Thư ký";
+            case APPROVED -> "Thư ký đã duyệt cuối";
+            case SCHEDULED -> "Đã hẹn giờ đăng";
+            case PUBLISHED -> "Đã xuất bản";
+        };
     }
 }

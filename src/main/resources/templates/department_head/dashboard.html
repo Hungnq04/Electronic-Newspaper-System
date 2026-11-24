@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
 </head>
 <body>
+    <!-- Thanh trên cùng dùng chung. Đây là fragment CÓ THAM SỐ: giống một hàm, nơi gọi truyền 3 giá trị vào -->
+<header th:fragment="dhTopbar(fullName, departmentName, initials)" class="rp-topbar">
+    <div class="rp-topbar-right">
+        <div class="rp-account">
+            <span class="rp-avatar" th:text="${initials}">TH</span>
+            <div class="rp-account-copy">
+                <strong th:text="${fullName}">Họ tên</strong>
+                <small th:text="${departmentName != null} ? |Trưởng phòng · ${departmentName}| : 'Trưởng phòng'">Trưởng phòng</small>
+            </div>
+        </div>
+    </div>
+</header>
 <th:block th:fragment="departmentHeadContent">
     <h1 th:text="${loiChao}">Xin chào trưởng phòng</h1>
     <p>Bạn đang đăng nhập bằng: <b th:text="${dashboard.email}">Email mẫu</b></p>

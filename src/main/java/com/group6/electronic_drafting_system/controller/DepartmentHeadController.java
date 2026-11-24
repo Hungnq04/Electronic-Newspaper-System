@@ -1,26 +1,24 @@
 package com.group6.electronic_drafting_system.controller;
 
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-
 import java.io.IOException;
 import java.util.List;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.group6.electronic_drafting_system.exception.ApplicationException;
 import com.group6.electronic_drafting_system.service.DepartmentHeadReviewService;
 import com.group6.electronic_drafting_system.service.DepartmentHeadService;
 
 import jakarta.servlet.http.HttpServletResponse;
-
-import org.springframework.ui.Model;
 
 @Controller
 @RequestMapping("/department-head")
@@ -51,12 +49,12 @@ public class DepartmentHeadController {
     @GetMapping("/articles/{articleId}/review")
     public String reviewWorkspace(@PathVariable Integer articleId, Model model, Authentication authentication) { // dẫn
         String email = currentEmail(authentication);
-        model.addAttribute("version", departmentHeadReviewService.openArticle(email, articleId));
-        model.addAttribute("articleId", articleId);
+        model.addAttribute("workspace", departmentHeadReviewService.openWorkspace(email, articleId));
         model.addAttribute("pageTitle", "Thẩm định bản thảo");
         model.addAttribute("contentView", "department_head/workspacereview");
         model.addAttribute("contentFragment", "reviewWorkspace");
-        model.addAttribute("comments", departmentHeadReviewService.getComments(email, articleId));
+                model.addAttribute("pageCss", List.of("/reporter/css/reporter-tasks.css",
+                "/department_head/css/department-head-workspace-review.css"));
         return "layout/app";
     }
 

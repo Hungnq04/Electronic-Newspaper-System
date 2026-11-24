@@ -1,40 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <body>
-<!--
-  Màn thẩm định bài viết của Trưởng ban (FL-05), hiển thị trong layout chung layout/app.html (sidebar + nội dung).
-
-  Dữ liệu: ${workspace} (ReviewWorkspaceDTO) do DepartmentHeadController truyền vào, đọc bằng ${workspace.tenField}.
-  Sau mỗi thao tác, controller gửi kèm flash "message" (thành công, chữ xanh) hoặc "error" (lỗi, chữ đỏ).
-  Mọi thao tác (góp ý, xóa góp ý, duyệt, trả bài) đều là form POST thường; backend kiểm tra quyền lại từ đầu.
-  Màn này KHÔNG có file JavaScript riêng.
-
-  Giao diện:
-    - reporter-tasks.css: khung dùng chung (class rp-: thẻ rp-card, thanh trên cùng...)
-    - department-head-workspace-review.css: phần riêng của màn này (class ws-, viết tắt của "workspace")
-
-  ĐƯỜNG ĐI CỦA DỮ LIỆU (đọc từ trên xuống):
-    GET /department-head/articles/{id}/review
-     -> DepartmentHeadController.reviewWorkspace()
-     -> DepartmentHeadReviewServiceImpl.openWorkspace()  (kiểm tra quyền, mở lượt duyệt, gom dữ liệu)
-     -> trả về ReviewWorkspaceDTO -> model.addAttribute("workspace", ...)
-     -> layout/app.html chèn fragment "reviewWorkspaceContent" của file này vào giữa trang
-     -> file này đọc ${workspace.xxx}. Field nào nghĩa là gì: xem dto/DepartmentHead/ReviewWorkspaceDTO.java
-
-  CÁC HỘP DỮ LIỆU (DTO) DÙNG TRONG FILE:
-    workspace                = ReviewWorkspaceDTO   (cả trang)
-    workspace.current / workspace.previous = VersionViewDTO       (bản đang duyệt / bản liền trước)
-    block (trong th:each)    = ContentBlockDTO      (một khối thân bài: đoạn chữ, ảnh, video, bảng)
-    source (trong th:each)   = SourceItemDTO        (một tư liệu)
-    comment (trong th:each)  = ReviewCommentDTO     (một góp ý)
-
-  CÁC NÚT -> METHOD XỬ LÝ (tất cả là form POST, xử lý xong redirect lại trang này kèm thông báo):
-    "Thêm góp ý chung"            -> form .ws-general-form          -> addComment()       -> service.addComment()
-    "Xóa" trên thẻ góp ý          -> form .../comments/{c}/delete   -> deleteComment()    -> service.deleteComment()
-    "Yêu cầu sửa" (khung Quyết định) -> form .../request-revision   -> requestRevision()  -> service.requestRevision()
-    "Duyệt, chuyển Thư ký"        -> form .../approve               -> approve()          -> service.approve()
-    "So sánh phiên bản"           -> link thường mở trang riêng      -> compareVersions()  -> service.getVersionCompare()
--->
 <!-- th:fragment="reviewWorkspaceContent": đặt tên cho khối này để layout/app.html chèn vào
      (controller: model.addAttribute("contentFragment", "reviewWorkspaceContent")). -->
 <th:block th:fragment="reviewWorkspaceContent">

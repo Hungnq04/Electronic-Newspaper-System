@@ -1,11 +1,12 @@
 package com.group6.electronic_drafting_system.entity;
 
 import jakarta.persistence.*;
+import com.group6.electronic_drafting_system.dto.DepartmentHead.ContentBlockDTO;
+import com.group6.electronic_drafting_system.mapper.DepartmentHead.ReviewWorkspaceMapper;
 import lombok.Getter;
 import org.hibernate.annotations.Immutable;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.Arrays;
 import java.util.List;
 
 // Đọc từ view v_public_article: chỉ bài PUBLISHED, nội dung lấy từ đúng version đã Final Approve, không có tài liệu nội bộ.
@@ -29,9 +30,8 @@ public class PublicArticle {
         return publishedAt == null ? null : publishedAt.withOffsetSameInstant(VN_OFFSET);
     }
 
-    // Nội dung là văn bản thường, các đoạn cách nhau bằng dòng trống.
-    public List<String> getParagraphs() {
-        if (content == null || content.isBlank()) return List.of();
-        return Arrays.stream(content.strip().split("\\R\\s*\\R")).map(String::strip).filter(p -> !p.isEmpty()).toList();
+    // Thân bài tách thành khối (đoạn chữ, ảnh, video, bảng). Hiểu cả HTML của trình soạn thảo lẫn chữ thường (dữ liệu mẫu cũ).
+    public List<ContentBlockDTO> getBlocks() {
+        return new ReviewWorkspaceMapper().blocks(content);
     }
 }

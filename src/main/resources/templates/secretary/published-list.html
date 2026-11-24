@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- FL-07 (thêm sau góp ý hội đồng) Danh sách "Đã xuất bản": bài PUBLISHED đang hiển thị trên trang công khai -->
+<th:block th:fragment="content">
+<main class="page">
+    <div class="page-head">
+        <div>
+            <h1>Đã xuất bản</h1>
+            <p>Các bài đang hiển thị trên trang công khai. Mở bài để xem lại hoặc gỡ bài xuống (bài trở về Lead Reporter chỉnh sửa).</p>
+        </div>
+        <span class="badge badge-success" th:text="${#lists.size(items)} + ' bài đã đăng'"></span>
+    </div>
+
+    <div class="alert alert-success" th:if="${message}" th:text="${message}"></div>
+    <div class="alert alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <section class="card">
+        <div class="empty" th:if="${#lists.isEmpty(items)}">Hiện chưa có bài nào được đăng trên trang công khai.</div>
+        <div class="table-wrap" th:unless="${#lists.isEmpty(items)}">
+            <table class="data">
+                <thead>
+                <tr>
+                    <th>Bài viết</th>
+                    <th>Lead Reporter</th>
+                    <th>Phiên bản đang đăng</th>
+                    <th>Đăng lúc</th>
+                    <th>Người đăng</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${items}">
+                    <td class="title-cell">
+                        <a th:href="@{/secretary/published-articles/{id}(id=${item.articleId})}" th:text="${item.title}"></a>
+                        <span class="sub"><span th:text="${item.topicTitle}"></span> · <span th:text="${item.category}"></span></span>
+                    </td>
+                    <td th:text="${item.leadName}"></td>
+                    <td th:text="'v' + ${item.versionLabel}"></td>
+                    <td>
+                        <span th:text="${#temporals.format(item.publishedAt, 'HH:mm, dd/MM/yyyy')}"></span>
+                        <span class="sub" th:text="${item.publicationTypeLabel}"></span>
+                    </td>
+                    <td th:text="${item.publishedBy}"></td>
+                    <td>
+                        <a class="btn btn-sm btn-ghost" th:href="@{/secretary/published-articles/{id}(id=${item.articleId})}">Xem</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</th:block>
+</body>
+</html>

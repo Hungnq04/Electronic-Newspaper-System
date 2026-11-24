@@ -64,6 +64,15 @@ class PublicationTests {
                 + "WHERE article_id = " + A3).executeUpdate();
         em.createNativeQuery("INSERT INTO publication (article_id, version_id, published_by, publication_type, scheduled_at, published_at, status) "
                 + "VALUES (" + A3 + ", 4, 2, 'SCHEDULED', '2026-11-28T08:00:00+07:00', NULL, 'SCHEDULED')").executeUpdate();
+
+        // A1 = PUBLISHED (đăng ngay lúc 16:10 12/09/2026, version 3, do chau.le đăng), phòng khi đã bấm thử Gỡ bài
+        em.createNativeQuery("DELETE FROM article_review WHERE review_kind <> 'REVIEW' AND version_id IN "
+                + "(SELECT version_id FROM article_version WHERE article_id = " + A1 + ")").executeUpdate();
+        em.createNativeQuery("DELETE FROM publication WHERE article_id = " + A1).executeUpdate();
+        em.createNativeQuery("UPDATE article SET status = 'PUBLISHED', completed_at = COALESCE(completed_at, '2026-09-12T15:30:00+07:00') "
+                + "WHERE article_id = " + A1).executeUpdate();
+        em.createNativeQuery("INSERT INTO publication (article_id, version_id, published_by, publication_type, scheduled_at, published_at, status) "
+                + "VALUES (" + A1 + ", 3, 1, 'IMMEDIATE', NULL, '2026-09-12T16:10:00+07:00', 'PUBLISHED')").executeUpdate();
         em.clear();
     }
 
@@ -324,6 +333,130 @@ class PublicationTests {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl("/secretary/scheduled-publications"));
         assertThat(article(A3).getStatus()).isEqualTo(ArticleStatus.REVISION_REQUIRED);
+    }
+
+    // ------------------------------------------------------------ Gỡ bài đã đăng (thêm sau góp ý hội đồng)
+
+    @Test
+    void unpublishRemovesArticleFromPublicSiteAndReturnsToLead() {
+        assertThat(publicArticles.findById(A1)).isPresent();          // trước: độc giả đọc được
+
+        publicationService.unpublish(A1, email("chau.le"), "Số liệu trong bài bị sai, cần sửa.");
+        em.flush();
+        em.clear();
+
+        Article a1 = article(A1);
+        assertThat(a1.getStatus()).isEqualTo(ArticleStatus.REVISION_REQUIRED);
+        assertThat(a1.getCompletedAt()).isNull();                      // ck_article_completed
+        assertThat(publications.findByArticle_Id(A1)).isEmpty();       // dòng publication đã bị xóa
+        assertThat(publicArticles.findById(A1)).isEmpty();             // độc giả không còn thấy bài
+        // Vẫn truy vết được: một lượt RETURN_TO_LEAD ghi rõ là gỡ bài, đăng lúc nào, lý do gì
+        assertThat(returnReviews(A1, "RETURN_TO_LEAD")).containsExactly(
+                "Gỡ bài đã đăng (đăng lúc 16:10 12/09/2026). Lý do: Số liệu trong bài bị sai, cần sửa.");
+        assertThat(ruleViolations()).isZero();
+    }
+
+    @Test
+    void unpublishRequiresReason() {
+        assertError(() -> publicationService.unpublish(A1, email("chau.le"), "   "), ErrorCode.PUBLICATION_REASON_REQUIRED);
+        assertThat(article(A1).getStatus()).isEqualTo(ArticleStatus.PUBLISHED);
+        assertThat(publications.findByArticle_Id(A1)).isPresent();
+    }
+
+    @Test
+    void cannotUnpublishArticleThatIsNotPublished() {
+        assertError(() -> publicationService.unpublish(A4, email("chau.le"), "Lý do"), ErrorCode.PUBLICATION_NOT_PUBLISHED);
+        assertError(() -> publicationService.unpublish(A3, email("chau.le"), "Lý do"), ErrorCode.PUBLICATION_NOT_PUBLISHED);
+    }
+
+    @Test
+    void cannotUnpublishTheSameArticleTwice() {
+        publicationService.unpublish(A1, email("chau.le"), "Gỡ lần 1");
+        assertError(() -> publicationService.unpublish(A1, email("bao.pham"), "Gỡ lần 2"), ErrorCode.PUBLICATION_NOT_PUBLISHED);
+    }
+
+    @Test
+    void reporterCannotUnpublish() throws Exception {
+        mvc.perform(post("/secretary/published-articles/" + A1 + "/unpublish").param("reason", "x").with(csrf())
+                        .with(user(email("mai.vu")).roles("REPORTER")))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/secretary/published-articles").with(user(email("mai.vu")).roles("REPORTER")))
+                .andExpect(status().isForbidden());
+        assertError(() -> publicationService.unpublish(A1, email("mai.vu"), "x"), ErrorCode.PUBLICATION_ACCESS_DENIED);
+        assertThat(article(A1).getStatus()).isEqualTo(ArticleStatus.PUBLISHED);
+    }
+
+    // ------------------------------------------------------------ Menu "Đã xuất bản"
+
+    @Test
+    void publishedListShowsPublishedArticlesNewestFirst() {
+        var items = publicationService.getPublishedArticles(email("chau.le"));
+        var ids = items.stream().map(i -> i.getArticleId()).toList();
+        // A1 đang PUBLISHED; A4 (APPROVED) và A3 (SCHEDULED) không có trong danh sách
+        assertThat(ids).contains(A1).doesNotContain(A3, A4);
+        // Bài mới đăng đứng đầu
+        for (int i = 1; i < items.size(); i++)
+            assertThat(items.get(i - 1).getPublishedAt()).isAfterOrEqualTo(items.get(i).getPublishedAt());
+        // Sau khi gỡ, A1 biến khỏi danh sách và không mở được chi tiết nữa
+        publicationService.unpublish(A1, email("chau.le"), "Rút bài");
+        assertThat(publicationService.getPublishedArticles(email("chau.le")).stream().map(i -> i.getArticleId()))
+                .doesNotContain(A1);
+        assertError(() -> publicationService.getPublishedDetail(A1, email("chau.le")), ErrorCode.PUBLICATION_NOT_PUBLISHED);
+    }
+
+    @Test
+    void publishedDetailOnlyOpensPublishedArticles() {
+        assertThat(publicationService.getPublishedDetail(A1, email("chau.le")).isCanUnpublish()).isTrue();
+        assertError(() -> publicationService.getPublishedDetail(A4, email("chau.le")), ErrorCode.PUBLICATION_NOT_PUBLISHED);
+        assertError(() -> publicationService.getPublishedDetail(A3, email("chau.le")), ErrorCode.PUBLICATION_NOT_PUBLISHED);
+        assertError(() -> publicationService.getPublishedDetail(A1, email("mai.vu")), ErrorCode.PUBLICATION_ACCESS_DENIED);
+    }
+
+    @Test
+    void publishedScreensShowUnpublishButtonAndWebUnpublishRedirects() throws Exception {
+        var secretary = user(email("chau.le")).roles("EDITORIAL_SECRETARY");
+        mvc.perform(get("/secretary/published-articles").with(secretary))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/secretary/published-articles/" + A1)));
+        mvc.perform(get("/secretary/published-articles/" + A1).with(secretary))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("unpublish-dialog")));
+        // Màn Chờ xuất bản không còn nút Gỡ bài, chỉ có link sang menu Đã xuất bản
+        mvc.perform(get("/secretary/publications/" + A1).with(secretary))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("unpublish-dialog"))))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/secretary/published-articles/" + A1)));
+        // Lý do trống: quay lại màn chi tiết, bài vẫn đăng
+        mvc.perform(post("/secretary/published-articles/" + A1 + "/unpublish").param("reason", " ").with(csrf()).with(secretary))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl("/secretary/published-articles/" + A1));
+        assertThat(article(A1).getStatus()).isEqualTo(ArticleStatus.PUBLISHED);
+        // Gỡ thành công: về danh sách Đã xuất bản
+        mvc.perform(post("/secretary/published-articles/" + A1 + "/unpublish").param("reason", "Rút bài để sửa").with(csrf()).with(secretary))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl("/secretary/published-articles"));
+        assertThat(article(A1).getStatus()).isEqualTo(ArticleStatus.REVISION_REQUIRED);
+    }
+
+    // ------------------------------------------------------------ Từ trang công khai quay lại màn làm việc
+
+    @Test
+    void publicPageShowsWorkspaceLinkAndManageBarOnlyForSecretary() throws Exception {
+        // Thư ký đã đăng nhập: có link "Vào trang làm việc" và nút "Gỡ bài xuống"
+        mvc.perform(get("/news/" + A1).with(user(email("chau.le")).roles("EDITORIAL_SECRETARY")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("href=\"/dashboard\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/secretary/published-articles/" + A1)));
+        // Phóng viên đã đăng nhập: có link "Vào trang làm việc" nhưng không có thanh của Thư ký
+        mvc.perform(get("/news/" + A1).with(user(email("mai.vu")).roles("REPORTER")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("href=\"/dashboard\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("staff-bar"))));
+        // Độc giả chưa đăng nhập: không có cả hai
+        mvc.perform(get("/news/" + A1))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("href=\"/dashboard\""))))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("staff-bar"))));
     }
 
     // ------------------------------------------------------------ Hàm phụ

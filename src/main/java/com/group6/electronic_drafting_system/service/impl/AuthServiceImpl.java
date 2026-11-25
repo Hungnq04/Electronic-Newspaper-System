@@ -66,9 +66,9 @@ public class AuthServiceImpl implements AuthService {
         this.otpEmailService = otpEmailService;
     }
 
-    // [TV1-7.2] Nói với thầy: "Chỗ này em kiểm tra đăng nhập: tìm tài khoản theo email, so mật khẩu với bản băm
+    // [TV1-7.2] Kiểm tra đăng nhập: tìm tài khoản theo email, so mật khẩu với bản băm
     //   BCrypt, rồi xét trạng thái (bị khóa, chờ duyệt, chưa xác minh email). Hợp lệ thì báo Spring Security ghi nhận
-    //   đăng nhập kèm role."
+    //   đăng nhập kèm role.
     @Override
     @Transactional
     public GetAccountDTO login(String email, String password) {
@@ -97,8 +97,8 @@ public class AuthServiceImpl implements AuthService {
         return accountMapper.toGetAccountDTO(account);
     }
 
-    // [TV1-7.3] Nói với thầy: "Chỗ này em lưu đăng nhập vào session để các trang sau biết ai đang dùng, và đổi mã
-    //   phiên để chống session fixation."
+    // [TV1-7.3] Lưu đăng nhập vào session để các trang sau biết ai đang dùng, và đổi mã
+    //   phiên để chống session fixation.
     @Override
     public void persistSecurityContext(HttpServletRequest request) {
         // Chống session fixation: đổi mã phiên (JSESSIONID) ngay khi đăng nhập thành công.
@@ -110,8 +110,8 @@ public class AuthServiceImpl implements AuthService {
 
     // ===================== Đăng ký =====================
 
-    // [TV1-9.2] Nói với thầy: "Chỗ này em kiểm tra form đăng ký từng ô (họ tên, email @gmail.com chưa dùng, mật khẩu
-    //   từ 8 ký tự có chữ và số, nhập lại khớp), trả về lỗi theo từng ô."
+    // [TV1-9.2] Kiểm tra form đăng ký từng ô (họ tên, email @gmail.com chưa dùng, mật khẩu
+    //   từ 8 ký tự có chữ và số, nhập lại khớp), trả về lỗi theo từng ô.
     @Override
     @Transactional(readOnly = true)
     public Map<String, String> validateRegistration(String fullName, String email, String password, String confirmPassword) {
@@ -134,8 +134,8 @@ public class AuthServiceImpl implements AuthService {
         return errors;
     }
 
-    // [TV1-9.2b] Nói với thầy: "Chỗ này em tạo tài khoản mới trạng thái PENDING, mật khẩu băm BCrypt, rồi tạo và gửi
-    //   mã OTP [TV1-9.7]. Email đang PENDING thì chỉ gửi lại mã."
+    // [TV1-9.2b] Tạo tài khoản mới trạng thái PENDING, mật khẩu băm BCrypt, rồi tạo và gửi
+    //   mã OTP [TV1-9.7]. Email đang PENDING thì chỉ gửi lại mã.
     @Override
     @Transactional(noRollbackFor = ApplicationException.class)
     public void sendRegistrationCode(String fullName, String email, String password, String confirmPassword) {
@@ -164,8 +164,8 @@ public class AuthServiceImpl implements AuthService {
         issueOtp(account, OtpPurpose.VERIFY_EMAIL);
     }
 
-    // [TV1-9.4] Nói với thầy: "Chỗ này em kiểm tra mã OTP đăng ký [TV1-9.6], đúng thì chuyển tài khoản từ PENDING sang
-    //   AWAITING_APPROVAL để chờ Admin duyệt. Nhập sai vẫn lưu số lần sai nhờ noRollbackFor."
+    // [TV1-9.4] Kiểm tra mã OTP đăng ký [TV1-9.6], đúng thì chuyển tài khoản từ PENDING sang
+    //   AWAITING_APPROVAL để chờ Admin duyệt. Nhập sai vẫn lưu số lần sai nhờ noRollbackFor.
     @Override
     @Transactional(noRollbackFor = ApplicationException.class)   // vẫn lưu attempt_count khi nhập sai
     public void verifyAndRegister(String email, String code) {
@@ -181,8 +181,8 @@ public class AuthServiceImpl implements AuthService {
 
     // ===================== OTP dùng chung =====================
 
-    // [TV1-9.5b] Nói với thầy: "Chỗ này em gửi lại mã OTP: chưa đủ 60 giây thì báo lỗi, đủ thì tạo mã mới [TV1-9.7].
-    //   Email quên mật khẩu không hợp lệ thì im lặng."
+    // [TV1-9.5b] Gửi lại mã OTP: chưa đủ 60 giây thì báo lỗi, đủ thì tạo mã mới [TV1-9.7].
+    //   Email quên mật khẩu không hợp lệ thì im lặng.
     @Override
     @Transactional
     public void resendCode(String email, OtpPurpose purpose) {
@@ -213,8 +213,8 @@ public class AuthServiceImpl implements AuthService {
 
     // ===================== Quên / đặt lại mật khẩu =====================
 
-    // [TV1-10.1b] Nói với thầy: "Chỗ này em gửi mã quên mật khẩu: chỉ gửi cho tài khoản ACTIVE hoặc đang chờ duyệt,
-    //   còn lại im lặng không báo gì."
+    // [TV1-10.1b] Gửi mã quên mật khẩu: chỉ gửi cho tài khoản ACTIVE hoặc đang chờ duyệt,
+    //   còn lại im lặng không báo gì.
     @Override
     @Transactional
     public void sendPasswordResetCode(String email) {
@@ -250,7 +250,7 @@ public class AuthServiceImpl implements AuthService {
         return errors;
     }
 
-    // [TV1-10.3] Nói với thầy: "Chỗ này em kiểm tra lại mật khẩu mới, băm BCrypt rồi lưu vào tài khoản."
+    // [TV1-10.3] Kiểm tra lại mật khẩu mới, băm BCrypt rồi lưu vào tài khoản.
     @Override
     @Transactional
     public void resetPassword(String email, String password, String confirmPassword) {
@@ -266,8 +266,8 @@ public class AuthServiceImpl implements AuthService {
 
     // ===================== Google =====================
 
-    // [TV1-8.2] Nói với thầy: "Chỗ này em tạo tài khoản cho email Google chưa có: trạng thái AWAITING_APPROVAL (không
-    //   cần OTP vì Google đã xác minh email), vẫn chờ Admin duyệt."
+    // [TV1-8.2] Tạo tài khoản cho email Google chưa có: trạng thái AWAITING_APPROVAL (không
+    //   cần OTP vì Google đã xác minh email), vẫn chờ Admin duyệt.
     @Override
     @Transactional
     public void registerWithGoogle(String email, String fullName) {
@@ -327,8 +327,8 @@ public class AuthServiceImpl implements AuthService {
      * Kiểm tra mã OTP (dùng chung cho đăng ký và quên mật khẩu):
      * sai quá 5 lần thì vô hiệu; quá 5 phút thì hết hạn; sai thì tăng attempt_count; đúng thì đánh dấu đã dùng.
      */
-    // [TV1-9.6] Nói với thầy: "Chỗ này em kiểm tra mã OTP: sai quá 5 lần thì khóa mã, quá 5 phút thì hết hạn, sai thì
-    //   tăng số lần sai, đúng thì đánh dấu đã dùng (mỗi mã dùng 1 lần)."
+    // [TV1-9.6] Kiểm tra mã OTP: sai quá 5 lần thì khóa mã, quá 5 phút thì hết hạn, sai thì
+    //   tăng số lần sai, đúng thì đánh dấu đã dùng (mỗi mã dùng 1 lần).
     private void useOtp(Account account, OtpPurpose purpose, String code) {
         AccountOtp otp = otps.findFirstByAccountAndPurposeAndUsedAtIsNullOrderByLastSentAtDescIdDesc(account, purpose)
                 .orElseThrow(() -> new ApplicationException(ErrorCode.AUTH_VERIFICATION_FAILED));
@@ -368,8 +368,8 @@ public class AuthServiceImpl implements AuthService {
      * (ghi đè code_hash, last_sent_at, đặt lại attempt_count) nên mã cũ mất hiệu lực ngay lập tức,
      * mã mới có hiệu lực 5 phút tính từ bây giờ.
      */
-    // [TV1-9.7] Nói với thầy: "Chỗ này em tạo mã OTP 6 số, lưu bản băm vào bảng account_otp, rồi gửi mã gốc qua email
-    //   sau khi lưu DB thành công."
+    // [TV1-9.7] Tạo mã OTP 6 số, lưu bản băm vào bảng account_otp, rồi gửi mã gốc qua email
+    //   sau khi lưu DB thành công.
     private void issueOtp(Account account, OtpPurpose purpose) {
         OffsetDateTime now = now();
         AccountOtp otp = otps.findFirstByAccountAndPurposeAndUsedAtIsNullOrderByLastSentAtDescIdDesc(account, purpose)

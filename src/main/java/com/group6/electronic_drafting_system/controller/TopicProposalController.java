@@ -42,8 +42,8 @@ public class TopicProposalController {
     }
 
     // Topic Proposal List
-    // [TV1-3.1] Nói với thầy: "Chỗ này em mở danh sách đề tài của phóng viên: lấy tab đang chọn từ ?status=, gọi
-    //   service lấy dữ liệu [TV1-3.2], bỏ vào Model tên list rồi vẽ trang danh sách [TV1-3.3]."
+    // [TV1-3.1] Mở danh sách đề tài của phóng viên: lấy tab đang chọn từ ?status=, gọi
+    //   service lấy dữ liệu [TV1-3.2], bỏ vào Model tên list rồi vẽ trang danh sách [TV1-3.3].
     @GetMapping("/topics")
     public String list(@RequestParam(required = false) String status, Authentication auth, Model model) {
         model.addAttribute("list", topicService.getProposalList(currentEmail(auth), parseStatus(status)));
@@ -51,8 +51,8 @@ public class TopicProposalController {
     }
 
     // Create Topic Proposal
-    // [TV1-4.1] Nói với thầy: "Chỗ này em mở form đề xuất: tạo một form rỗng (topicForm) để các ô trong HTML gắn vào
-    //   [TV1-4.11]."
+    // [TV1-4.1] Mở form đề xuất: tạo một form rỗng (topicForm) để các ô trong HTML gắn vào
+    //   [TV1-4.11].
     @GetMapping("/topics/new")
     public String createForm(Authentication auth, Model model) {
         if (!model.containsAttribute("topicForm")) model.addAttribute("topicForm", new TopicCreateRequestDTO());
@@ -60,8 +60,8 @@ public class TopicProposalController {
     }
 
     // Submit Topic Confirmation đã được xác nhận trên modal -> lưu Topic (ban = ban của phóng viên)
-    // [TV1-4.2] Nói với thầy: "Chỗ này em nhận form đề xuất: Spring chép các ô vào topicForm và kiểm tra luật
-    //   [TV1-4.3]. Sai thì hiện lại form có chữ đỏ; đúng thì gọi service lưu [TV1-4.4] rồi quay về danh sách."
+    // [TV1-4.2] Nhận form đề xuất: Spring chép các ô vào topicForm và kiểm tra luật
+    //   [TV1-4.3]. Sai thì hiện lại form có chữ đỏ; đúng thì gọi service lưu [TV1-4.4] rồi quay về danh sách.
     @PostMapping("/topics")
     public String create(@Valid @ModelAttribute("topicForm") TopicCreateRequestDTO topicForm, BindingResult binding,
                          Authentication auth, Model model, RedirectAttributes redirect) {
@@ -77,8 +77,8 @@ public class TopicProposalController {
     }
 
     // Topic Feedback Viewer: lịch sử góp ý / kết quả duyệt (chỉ chủ đề tài)
-    // [TV1-5.1] Nói với thầy: "Chỗ này em mở màn xem góp ý của một đề tài: gọi service lấy đề tài và lịch sử góp ý
-    //   [TV1-5.2] rồi vẽ trang [TV1-5.3]."
+    // [TV1-5.1] Mở màn xem góp ý của một đề tài: gọi service lấy đề tài và lịch sử góp ý
+    //   [TV1-5.2] rồi vẽ trang [TV1-5.3].
     @GetMapping("/topics/{topicId}/feedback")
     public String feedback(@PathVariable Integer topicId, Authentication auth, Model model) {
         model.addAttribute("list", topicService.getProposalList(currentEmail(auth), null));
@@ -87,8 +87,8 @@ public class TopicProposalController {
     }
 
     // Edit & Resubmit Topic: dùng lại form Create ở chế độ sửa
-    // [TV1-4.6] Nói với thầy: "Chỗ này em mở form sửa: gọi service lấy tiêu đề, tóm tắt cũ và góp ý mới nhất, rồi dùng
-    //   lại file form đề xuất (có editTopicId nên form gửi tới /resubmit)."
+    // [TV1-4.6] Mở form sửa: gọi service lấy tiêu đề, tóm tắt cũ và góp ý mới nhất, rồi dùng
+    //   lại file form đề xuất (có editTopicId nên form gửi tới /resubmit).
     @GetMapping("/topics/{topicId}/edit")
     public String editForm(@PathVariable Integer topicId, Authentication auth, Model model) {
         // Kiểm tra quyền trước (ném 403 nếu không phải chủ đề tài hoặc không ở trạng thái cần sửa)
@@ -97,8 +97,8 @@ public class TopicProposalController {
         return formPage(auth, model, topicId);
     }
 
-    // [TV1-4.7] Nói với thầy: "Chỗ này em nhận form sửa: kiểm tra luật như form đề xuất, rồi gọi service resubmit
-    //   [TV1-4.8] và quay về danh sách."
+    // [TV1-4.7] Nhận form sửa: kiểm tra luật như form đề xuất, rồi gọi service resubmit
+    //   [TV1-4.8] và quay về danh sách.
     @PostMapping("/topics/{topicId}/resubmit")
     public String resubmit(@PathVariable Integer topicId, @Valid @ModelAttribute("topicForm") TopicCreateRequestDTO topicForm,
                            BindingResult binding, Authentication auth, Model model, RedirectAttributes redirect) {
@@ -118,8 +118,8 @@ public class TopicProposalController {
     }
 
     // Bấm một thông báo: đánh dấu đã đọc rồi mở trang góp ý của đề tài
-    // [TV1-3.7] Nói với thầy: "Chỗ này em xử lý khi bấm một thông báo: gọi service đánh dấu đã đọc [TV1-3.7b], rồi
-    //   chuyển sang trang xem góp ý của đề tài đó [TV1-5.1]."
+    // [TV1-3.7] Xử lý khi bấm một thông báo: gọi service đánh dấu đã đọc [TV1-3.7b], rồi
+    //   chuyển sang trang xem góp ý của đề tài đó [TV1-5.1].
     @GetMapping("/notifications/{notificationId}/open")
     public String openNotification(@PathVariable Integer notificationId, Authentication auth) {
         Integer topicId = notificationService.open(currentEmail(auth), notificationId);
@@ -141,8 +141,8 @@ public class TopicProposalController {
         return page(model, title, "reporter/topic-proposal-create", "topicProposalCreateContent");
     }
 
-    // [TV1-0.6] Nói với thầy: "Chỗ này em dựng trang: mọi trang đều trả về layout/app (khung có sidebar), chỉ báo cho
-    //   layout biết chèn file nội dung nào, CSS và JS nào của riêng trang."
+    // [TV1-0.6] Dựng trang: mọi trang đều trả về layout/app (khung có sidebar), chỉ báo cho
+    //   layout biết chèn file nội dung nào, CSS và JS nào của riêng trang.
     private static String page(Model model, String title, String view, String fragment) {
         model.addAttribute("pageTitle", title);
         model.addAttribute("contentView", view);

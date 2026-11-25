@@ -21,8 +21,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 // FL-01 Iter2: Topic Review Workspace của Trưởng ban (+ modal Approve Topic Confirmation, Request Changes Form).
 // /department-head/** chỉ cho DEPARTMENT_HEAD (SecurityConfig); service kiểm tra lại ban và trạng thái.
-// [TV1-1.1] Nói với thầy: "Chỗ này em khai báo controller cho các URL /department-head/topics và nhận
-//   TopicReviewService để gọi. SecurityConfig đã chỉ cho Trưởng ban vào các URL này."
+// [TV1-1.1] Khai báo controller cho các URL /department-head/topics và nhận
+//   TopicReviewService để gọi. SecurityConfig đã chỉ cho Trưởng ban vào các URL này.
 @Controller
 @RequestMapping("/department-head/topics")
 public class DepartmentHeadTopicController {
@@ -33,8 +33,8 @@ public class DepartmentHeadTopicController {
         this.topicReviewService = topicReviewService;
     }
 //dautienduyet
-    // [TV1-1.2] Nói với thầy: "Chỗ này em mở màn duyệt: lấy id đề tài từ ?topic= trên URL (khi bấm đề tài ở hàng chờ
-    //   [TV1-1.4]), gọi service lấy dữ liệu [TV1-1.7], bỏ vào Model tên ws rồi trả về layout để vẽ màn [TV1-1.3]."
+    // [TV1-1.2] Mở màn duyệt: lấy id đề tài từ ?topic= trên URL (khi bấm đề tài ở hàng chờ
+    //   [TV1-1.4]), gọi service lấy dữ liệu [TV1-1.7], bỏ vào Model tên ws rồi trả về layout để vẽ màn [TV1-1.3].
     @GetMapping
     public String workspace(@RequestParam(required = false) Integer topic, Principal principal, Model model) {
         model.addAttribute("ws", topicReviewService.getHeadWorkspace(currentEmail(principal), topic));
@@ -46,8 +46,8 @@ public class DepartmentHeadTopicController {
         return "layout/app";
     }
 
-    // [TV1-1.14] Nói với thầy: "Chỗ này em xử lý nút Duyệt: lấy id đề tài trên đường dẫn, gọi service headApprove
-    //   [TV1-1.15]. Xong thì quay lại màn duyệt kèm thông báo xanh; lỗi thì quay lại kèm chữ đỏ [TV1-11.1]."
+    // [TV1-1.14] Xử lý nút Duyệt: lấy id đề tài trên đường dẫn, gọi service headApprove
+    //   [TV1-1.15]. Xong thì quay lại màn duyệt kèm thông báo xanh; lỗi thì quay lại kèm chữ đỏ [TV1-11.1].
     @PostMapping("/{topicId}/approve")
     public String approve(@PathVariable Integer topicId, Principal principal, RedirectAttributes redirect) {
         try {
@@ -59,8 +59,8 @@ public class DepartmentHeadTopicController {
         }
     }
 
-    // [TV1-1.17] Nói với thầy: "Chỗ này em xử lý nút Yêu cầu sửa: lấy id đề tài và nội dung góp ý, gọi service
-    //   headRequestChanges [TV1-1.18]. Lỗi thì quay lại màn, giữ nguyên góp ý đã gõ."
+    // [TV1-1.17] Xử lý nút Yêu cầu sửa: lấy id đề tài và nội dung góp ý, gọi service
+    //   headRequestChanges [TV1-1.18]. Lỗi thì quay lại màn, giữ nguyên góp ý đã gõ.
     @PostMapping("/{topicId}/request-changes")
     public String requestChanges(@PathVariable Integer topicId, @RequestParam(required = false) String feedback,
                                  Principal principal, RedirectAttributes redirect) {
@@ -75,8 +75,8 @@ public class DepartmentHeadTopicController {
 
     // Lỗi nghiệp vụ (đã được xử lý, thiếu góp ý...): quay lại workspace và báo lỗi, giữ nội dung đã nhập.
     // Sai quyền / không tồn tại: ném tiếp để trả 403 / 404.
-    // [TV1-11.1] Nói với thầy: "Chỗ này em xử lý khi gặp lỗi: lỗi do thao tác (thiếu góp ý, đề tài đã được xử lý) thì
-    //   quay lại màn báo chữ đỏ; lỗi sai quyền hoặc không tìm thấy thì ném tiếp để hiện trang 403 / 404 [TV1-11.2]."
+    // [TV1-11.1] Xử lý khi gặp lỗi: lỗi do thao tác (thiếu góp ý, đề tài đã được xử lý) thì
+    //   quay lại màn báo chữ đỏ; lỗi sai quyền hoặc không tìm thấy thì ném tiếp để hiện trang 403 / 404 [TV1-11.2].
     private static String backWithError(ApplicationException ex, Integer topicId, String feedback, RedirectAttributes redirect) {
         HttpStatus status = ex.getErrorCode().getStatusCode();
         if (status == HttpStatus.FORBIDDEN || status == HttpStatus.NOT_FOUND) throw ex;
@@ -88,16 +88,16 @@ public class DepartmentHeadTopicController {
     // Lấy email người đăng nhập. Đăng nhập bằng mật khẩu: getName() chính là email.
     // Đăng nhập Google: getName() là mã định danh của Google ("sub"), nên phải đọc thuộc tính "email"
     // (cùng cách với TopicProposalController.currentEmail).
-    // [TV1-8.3] Nói với thầy: "Chỗ này em lấy email của người đang đăng nhập: đăng nhập mật khẩu thì lấy getName(),
-    //   đăng nhập Google thì đọc thuộc tính email. Service dùng email này để tìm tài khoản và kiểm tra quyền."
+    // [TV1-8.3] Lấy email của người đang đăng nhập: đăng nhập mật khẩu thì lấy getName(),
+    //   đăng nhập Google thì đọc thuộc tính email. Service dùng email này để tìm tài khoản và kiểm tra quyền.
     private static String currentEmail(Principal principal) {
         if (principal instanceof Authentication auth && auth.getPrincipal() instanceof OAuth2User google
                 && google.getAttribute("email") instanceof String email) return email;
         return principal.getName();
     }
 
-    // [TV1-11.2] Nói với thầy: "Chỗ này em bắt lỗi còn sót của controller này và trả đúng mã HTTP ghi trong ErrorCode
-    //   (403, 404...) để hiện trang lỗi."
+    // [TV1-11.2] Bắt lỗi còn sót của controller này và trả đúng mã HTTP ghi trong ErrorCode
+    //   (403, 404...) để hiện trang lỗi.
     @ExceptionHandler(ApplicationException.class)
     public void handleError(ApplicationException ex, HttpServletResponse response) throws IOException {
         response.sendError(ex.getErrorCode().getStatusCode().value(), ex.getMessage());

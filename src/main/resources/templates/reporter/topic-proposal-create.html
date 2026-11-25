@@ -25,7 +25,7 @@
             </div>
 
             <!-- Chế độ sửa: hiện góp ý yêu cầu sửa gần nhất của Trưởng ban -->
-            <!--/* [TV1-4.6b] Nói với thầy: "Chỗ này em hiện góp ý mới nhất của Trưởng ban phía trên form, chỉ khi đang sửa đề tài." */-->
+            <!--/* [TV1-4.6b] Hiện góp ý mới nhất của Trưởng ban phía trên form, chỉ khi đang sửa đề tài. */-->
             <div class="tp-feedback-box" th:if="${latestFeedback != null}">
                 <strong>Góp ý của Trưởng ban</strong>
                 <span class="tp-feedback-meta" th:text="${latestFeedback.authorName()} + ' · ' + ${#temporals.format(latestFeedback.createdAt(), 'dd/MM/yyyy HH:mm')}"></span>
@@ -35,8 +35,8 @@
             <div class="tp-flash tp-flash--error" role="alert" th:if="${error}" th:text="${error}">Lỗi</div>
 
             <!-- novalidate: dùng thông báo lỗi tiếng Việt của trang (JS) và của server thay cho bong bóng mặc định -->
-            <!--/* [TV1-4.11] Nói với thầy: "Chỗ này là form đề xuất / sửa: tạo mới thì gửi tới /reporter/topics [TV1-4.2], sửa thì
-            gửi tới /resubmit [TV1-4.7]. Các ô gắn với topicForm, lỗi từ server in ngay dưới ô." */-->
+            <!--/* [TV1-4.11] Form đề xuất / sửa: tạo mới thì gửi tới /reporter/topics [TV1-4.2], sửa thì
+            gửi tới /resubmit [TV1-4.7]. Các ô gắn với topicForm, lỗi từ server in ngay dưới ô. */-->
             <form class="tp-card tp-form" method="post" th:action="${editTopicId == null} ? @{/reporter/topics} : @{/reporter/topics/{id}/resubmit(id=${editTopicId})}" th:object="${topicForm}" novalidate data-tp-form>
                 <div class="tp-field" th:classappend="${#fields.hasErrors('title')} ? 'has-error'" data-tp-field="title">
                     <div class="tp-label-row">
@@ -83,8 +83,8 @@
         </main>
 
         <!-- Submit Topic Confirmation -->
-        <!--/* [TV1-4.12] Nói với thầy: "Chỗ này là hộp xác nhận gửi, ban đầu ẩn. JS mở hộp này khi bấm Gửi duyệt, bấm Xác nhận
-        thì mới gửi form [TV1-4.13]." */-->
+        <!--/* [TV1-4.12] Hộp xác nhận gửi, ban đầu ẩn. JS mở hộp này khi bấm Gửi duyệt, bấm Xác nhận
+        thì mới gửi form [TV1-4.13]. */-->
         <div class="tp-modal-backdrop" hidden data-tp-confirm>
             <div class="tp-modal" role="dialog" aria-modal="true" aria-labelledby="tp-confirm-title">
                 <h2 id="tp-confirm-title" th:text="${editTopicId == null} ? 'Xác nhận gửi đề tài' : 'Xác nhận gửi lại đề tài'">Xác nhận gửi đề tài</h2>

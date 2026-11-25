@@ -1,7 +1,7 @@
 // FL-01 Iter3: điều khiển các pop-up trên trang /login.
 // Chỉ lo phần giao diện; mọi kiểm tra thật đều ở server (AuthController / AuthService).
-// [TV1-6.5] Nói với thầy: "Chỗ này là JS của trang login: chuyển qua lại pop-up Đăng nhập / Đăng ký / Quên mật
-//   khẩu không tải lại trang, nút Hiện mật khẩu, 6 ô OTP tự nhảy ô, đếm ngược 60 giây cho nút Gửi lại mã."
+// [TV1-6.5] JS của trang login: chuyển qua lại pop-up Đăng nhập / Đăng ký / Quên mật
+//   khẩu không tải lại trang, nút Hiện mật khẩu, 6 ô OTP tự nhảy ô, đếm ngược 60 giây cho nút Gửi lại mã.
 (function () {
     // ----- Chuyển pop-up (Login <-> Register, Login -> Forgot) không cần tải lại trang -----
     function openPopup(name) {

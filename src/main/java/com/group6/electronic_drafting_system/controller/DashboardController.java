@@ -16,8 +16,8 @@ public class DashboardController {
             "ROLE_EDITORIAL_SECRETARY", "/secretary/final-reviews",
             "ROLE_ADMIN", "/admin/accounts");
 
-    // [TV1-7.4] Nói với thầy: "Chỗ này em xem role của người vừa đăng nhập rồi chuyển tới màn chính của role đó theo
-    //   bảng DASHBOARD_BY_ROLE ở trên (phóng viên tới danh sách đề tài, Trưởng ban tới màn duyệt...)."
+    // [TV1-7.4] Xem role của người vừa đăng nhập rồi chuyển tới màn chính của role đó theo
+    //   bảng DASHBOARD_BY_ROLE ở trên (phóng viên tới danh sách đề tài, Trưởng ban tới màn duyệt...).
     @GetMapping("/dashboard")
     public String dashboard(Authentication auth) {
         if (auth != null) {

@@ -7,8 +7,8 @@ import java.util.List;
 // canDecide: đề tài đang chọn còn chờ người này quyết định thì mới hiện nút Duyệt / Yêu cầu sửa / Từ chối.
 // departments + departmentFilter: bộ lọc theo ban (chỉ dùng ở màn Thư ký).
 // fullName + roleLabel + initials: người đăng nhập, hiện trên header (dùng chung fragment tpTopbar với màn Phóng viên).
-// [TV1-0.4] Nói với thầy: "Chỗ này em gom mọi dữ liệu màn duyệt cần vào một chỗ: hàng chờ, đề tài đang chọn, lịch
-//   sử, có được bấm nút không, danh sách ban, thông tin người đăng nhập. Template đọc qua ${ws...}."
+// [TV1-0.4] Gom mọi dữ liệu màn duyệt cần vào một chỗ: hàng chờ, đề tài đang chọn, lịch
+//   sử, có được bấm nút không, danh sách ban, thông tin người đăng nhập. Template đọc qua ${ws...}.
 public record TopicReviewWorkspaceDTO(String scopeLabel, List<TopicReviewItemDTO> queue, TopicReviewItemDTO selected,
                                       List<TopicHistoryEntryDTO> history, boolean canDecide,
                                       List<DepartmentOptionDTO> departments, Integer departmentFilter,

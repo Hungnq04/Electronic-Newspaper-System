@@ -21,6 +21,7 @@ public class OtpEmailService {
         this.from = from;
     }
 
+    // Gửi mã OTP qua email (chạy nền, không bắt người dùng chờ). Chưa cấu hình SMTP thì chỉ in mã ra log.
     @Async("otpMailExecutor")
     public void sendVerificationCode(String email, String code, OtpPurpose purpose) {
         String subject = purpose == OtpPurpose.RESET_PASSWORD

@@ -34,6 +34,8 @@ public class CloudinaryMediaStorageService implements MediaStorageService {
         this.rootFolder = rootFolder;
     }
 
+    // Tải một ảnh / video lên Cloudinary vào thư mục rootFolder/folder; trả về loại tệp, đường dẫn https và public_id.
+    // Kiểm tra trước: có tệp, đúng loại cho phép, không quá dung lượng, đã cấu hình Cloudinary.
     @Override
     public StoredMedia upload(MultipartFile file, String folder) {
         if (file == null || file.isEmpty()) throw new ApplicationException(ErrorCode.MEDIA_FILE_REQUIRED);
@@ -66,6 +68,7 @@ public class CloudinaryMediaStorageService implements MediaStorageService {
         }
     }
 
+    // Xóa tệp đã tải lên (dùng khi lưu DB lỗi). Xóa không được thì chỉ ghi log, không ném lỗi.
     @Override
     public void delete(StoredMedia media) {
         if (cloudinary == null || media == null) return;
@@ -76,6 +79,7 @@ public class CloudinaryMediaStorageService implements MediaStorageService {
         }
     }
 
+    // Xác định tệp là ảnh hay video theo Content-Type; loại khác thì báo lỗi không hỗ trợ
     private static MediaKind kindOf(MultipartFile file) {
         String type = file.getContentType() == null ? "" : file.getContentType().toLowerCase(Locale.ROOT);
         if (IMAGE_TYPES.contains(type)) return MediaKind.IMAGE;
@@ -83,6 +87,7 @@ public class CloudinaryMediaStorageService implements MediaStorageService {
         throw new ApplicationException(ErrorCode.MEDIA_TYPE_NOT_SUPPORTED);
     }
 
+    // Tên resource_type mà Cloudinary yêu cầu: "image" hoặc "video"
     private static String resourceType(MediaKind kind) {
         return kind == MediaKind.IMAGE ? "image" : "video";
     }

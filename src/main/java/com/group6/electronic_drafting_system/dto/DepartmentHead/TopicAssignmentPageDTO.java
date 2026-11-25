@@ -4,22 +4,23 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-// Dữ liệu trang "Giao việc / Quản lý nhóm" của một đề tài.
-// topic: tóm tắt đề tài (dùng lại DTO của danh sách); lead = null khi đề tài chưa có Lead.
+// Dữ liệu trang "Giao việc / Quản lý nhóm" của một đề tài. Chỉ chứa dữ liệu,
+// mọi giá trị đã được DepartmentHeadTopicServiceImpl tính sẵn.
+// topic: tóm tắt đề tài (dùng lại DTO của danh sách); lead = null khi đề tài chưa có Lead, hasLead cho biết điều đó.
+// leadDeadlineInput: deadline của Lead dạng chuỗi cho <input type="datetime-local">, ví dụ "2026-10-30T17:00" (null nếu chưa có).
 // supporters: Supporting đang có trên đề tài; candidates: phóng viên ACTIVE chưa tham gia đề tài.
 // editable = true: đề tài chưa giao xong -> hiện form giao việc lần đầu (FL-03).
 // editable = false: đã giao xong -> hiện phần quản lý nhóm (thêm / gỡ Supporting, đổi Lead, lịch sử).
 // leadOptions: người có thể nhận Lead mới (ứng viên + Supporting đang làm);
 // blockingArticleCount: số bài của Lead hiện tại đang trong quy trình duyệt -> > 0 thì không cho đổi Lead.
+// canChangeLead: true khi không có bài chặn và có người để chọn làm Lead mới.
 public record TopicAssignmentPageDTO(String fullName, String departmentName, String initials,
                                      DepartmentHeadTopicDTO topic, String rationale, LocalDate expectedDate,
-                                     Person lead, OffsetDateTime leadAssignedAt, OffsetDateTime leadDeadline, String leadRequirements,
+                                     Person lead, boolean hasLead, OffsetDateTime leadAssignedAt, OffsetDateTime leadDeadline,
+                                     String leadDeadlineInput, String leadRequirements,
                                      List<Supporter> supporters, List<Person> candidates, boolean editable,
-                                     List<LeadOption> leadOptions, long blockingArticleCount, List<HistoryItem> history) {
-
-    public boolean hasLead() { return lead != null; }
-
-    public boolean canChangeLead() { return blockingArticleCount == 0 && !leadOptions.isEmpty(); }
+                                     List<LeadOption> leadOptions, long blockingArticleCount, boolean canChangeLead,
+                                     List<HistoryItem> history) {
 
     // sameDepartment: cùng phòng ban với Trưởng phòng đang giao việc (được xếp lên đầu danh sách)
     public record Person(Integer accountId, String name, String initials, String email, String departmentName, boolean sameDepartment) {

@@ -81,7 +81,7 @@
                 <article class="rp-stat">
                     <div class="rp-stat-head"><span>TỔNG NHIỆM VỤ</span><span class="rp-stat-icon"><svg class="rp-icon"><use href="#rp-icon-clipboard"></use></svg></span></div>
                     <strong class="rp-stat-value" th:text="${#lists.size(board.tasks())}"></strong>
-                    <div class="rp-stat-foot"><span><b th:text="${board.count('todo') + board.count('doing')}"></b> việc đang mở</span><span th:text="|${board.count('todo')} chưa bắt đầu|"></span></div>
+                    <div class="rp-stat-foot"><span><b th:text="${board.openCount()}"></b> việc đang mở</span><span th:text="|${board.todoCount()} chưa bắt đầu|"></span></div>
                 </article>
                 <article class="rp-stat rp-stat--danger">
                     <div class="rp-stat-head"><span>CẦN NỘP GẤP <i class="rp-pulse" th:if="${board.urgentCount() > 0}"></i></span><span class="rp-stat-icon"><svg class="rp-icon"><use href="#rp-icon-alarm"></use></svg></span></div>
@@ -90,12 +90,12 @@
                 </article>
                 <article class="rp-stat rp-stat--warning">
                     <div class="rp-stat-head"><span>ĐÃ NỘP CHỜ DUYỆT</span><span class="rp-stat-icon"><svg class="rp-icon"><use href="#rp-icon-hourglass"></use></svg></span></div>
-                    <strong class="rp-stat-value" th:text="${board.count('review')}"></strong>
+                    <strong class="rp-stat-value" th:text="${board.reviewCount()}"></strong>
                     <div class="rp-stat-foot"><span>Trưởng ban đang thẩm định</span></div>
                 </article>
                 <article class="rp-stat rp-stat--success">
                     <div class="rp-stat-head"><span>HOÀN THÀNH</span><span class="rp-stat-icon"><svg class="rp-icon"><use href="#rp-icon-check-circle"></use></svg></span></div>
-                    <strong class="rp-stat-value" th:text="${board.count('done')}"></strong>
+                    <strong class="rp-stat-value" th:text="${board.doneCount()}"></strong>
                     <div class="rp-stat-foot"><span>Đã duyệt hoặc đã xuất bản</span></div>
                 </article>
             </section>
@@ -105,9 +105,9 @@
                     <div class="rp-tabs" role="tablist" aria-label="Lọc theo tiến độ">
                         <button class="rp-tab is-active" type="button" role="tab" aria-selected="true" data-rp-tab="all">Tất cả <b th:text="${#lists.size(board.tasks())}"></b></button>
                         <button class="rp-tab rp-tab--danger" type="button" role="tab" aria-selected="false" data-rp-tab="urgent">Cần nộp gấp <b th:text="${board.urgentCount()}"></b></button>
-                        <button class="rp-tab" type="button" role="tab" aria-selected="false" data-rp-tab="open">Đang làm <b th:text="${board.count('todo') + board.count('doing')}"></b></button>
-                        <button class="rp-tab" type="button" role="tab" aria-selected="false" data-rp-tab="review">Chờ duyệt <b th:text="${board.count('review')}"></b></button>
-                        <button class="rp-tab" type="button" role="tab" aria-selected="false" data-rp-tab="done">Hoàn thành <b th:text="${board.count('done')}"></b></button>
+                        <button class="rp-tab" type="button" role="tab" aria-selected="false" data-rp-tab="open">Đang làm <b th:text="${board.openCount()}"></b></button>
+                        <button class="rp-tab" type="button" role="tab" aria-selected="false" data-rp-tab="review">Chờ duyệt <b th:text="${board.reviewCount()}"></b></button>
+                        <button class="rp-tab" type="button" role="tab" aria-selected="false" data-rp-tab="done">Hoàn thành <b th:text="${board.doneCount()}"></b></button>
                     </div>
                     <label class="rp-filter-search">
                         <svg class="rp-icon"><use href="#rp-icon-search"></use></svg>

@@ -48,17 +48,17 @@
                 </article>
                 <article class="rp-stat rp-stat--danger">
                     <div class="rp-stat-head"><span>CHƯA CÓ LEAD</span><span class="rp-stat-icon"><svg class="rp-icon"><use href="#dht-icon-user-alert"></use></svg></span></div>
-                    <strong class="rp-stat-value" th:text="${board.count('NO_LEAD')}"></strong>
+                    <strong class="rp-stat-value" th:text="${board.noLeadCount()}"></strong>
                     <div class="rp-stat-foot">Thư ký giao xuống, cần chọn Lead</div>
                 </article>
                 <article class="rp-stat rp-stat--warning">
                     <div class="rp-stat-head"><span>CHỜ GIAO NHIỆM VỤ</span><span class="rp-stat-icon"><svg class="rp-icon"><use href="#dht-icon-hourglass"></use></svg></span></div>
-                    <strong class="rp-stat-value" th:text="${board.count('LEAD_PENDING')}"></strong>
+                    <strong class="rp-stat-value" th:text="${board.leadPendingCount()}"></strong>
                     <div class="rp-stat-foot">Đã có Lead, chưa có nhiệm vụ / deadline</div>
                 </article>
                 <article class="rp-stat rp-stat--success">
                     <div class="rp-stat-head"><span>ĐÃ GIAO</span><span class="rp-stat-icon"><svg class="rp-icon"><use href="#dht-icon-check-circle"></use></svg></span></div>
-                    <strong class="rp-stat-value" th:text="${board.count('ASSIGNED')}"></strong>
+                    <strong class="rp-stat-value" th:text="${board.assignedCount()}"></strong>
                     <div class="rp-stat-foot">Lead đã có nhiệm vụ và deadline</div>
                 </article>
             </section>
@@ -68,9 +68,9 @@
                 <div class="rp-filter-top">
                     <div class="rp-tabs" role="tablist" aria-label="Lọc theo tình trạng giao việc">
                         <button class="rp-tab is-active" type="button" role="tab" aria-selected="true" data-dht-tab="all">Tất cả <b th:text="${#lists.size(board.topics())}"></b></button>
-                        <button class="rp-tab" type="button" role="tab" aria-selected="false" data-dht-tab="NO_LEAD">Chưa có Lead <b th:text="${board.count('NO_LEAD')}"></b></button>
-                        <button class="rp-tab" type="button" role="tab" aria-selected="false" data-dht-tab="LEAD_PENDING">Chờ giao nhiệm vụ <b th:text="${board.count('LEAD_PENDING')}"></b></button>
-                        <button class="rp-tab" type="button" role="tab" aria-selected="false" data-dht-tab="ASSIGNED">Đã giao <b th:text="${board.count('ASSIGNED')}"></b></button>
+                        <button class="rp-tab" type="button" role="tab" aria-selected="false" data-dht-tab="NO_LEAD">Chưa có Lead <b th:text="${board.noLeadCount()}"></b></button>
+                        <button class="rp-tab" type="button" role="tab" aria-selected="false" data-dht-tab="LEAD_PENDING">Chờ giao nhiệm vụ <b th:text="${board.leadPendingCount()}"></b></button>
+                        <button class="rp-tab" type="button" role="tab" aria-selected="false" data-dht-tab="ASSIGNED">Đã giao <b th:text="${board.assignedCount()}"></b></button>
                     </div>
                     <label class="rp-filter-search">
                         <svg class="rp-icon"><use href="#dht-icon-search"></use></svg>

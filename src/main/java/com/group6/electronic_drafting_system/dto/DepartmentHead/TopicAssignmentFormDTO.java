@@ -19,14 +19,4 @@ public class TopicAssignmentFormDTO {
     private List<Integer> supporterIds = new ArrayList<>();
     private Map<Integer, String> supporterDeadlines = new HashMap<>();
     private Map<Integer, String> supporterRequirements = new HashMap<>();
-
-    // Form lúc mới mở trang: điền sẵn nhiệm vụ / deadline hiện có của Lead (nếu có)
-    public static TopicAssignmentFormDTO prefill(String leadDeadline, String leadRequirements) {
-        TopicAssignmentFormDTO form = new TopicAssignmentFormDTO();
-        form.setLeadDeadline(leadDeadline);
-        form.setLeadRequirements(leadRequirements);
-        return form;
-    }
-
-    public boolean isSupporter(Integer accountId) { return supporterIds.contains(accountId); }
 }

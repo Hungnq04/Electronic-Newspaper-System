@@ -1,6 +1,7 @@
 package com.group6.electronic_drafting_system.controller;
 
 import com.group6.electronic_drafting_system.dto.Article.ArticleCreateRequestDTO;
+import com.group6.electronic_drafting_system.dto.Article.ArticleCreatedWithMediaDTO;
 import com.group6.electronic_drafting_system.dto.Article.ArticleDraftRequestDTO;
 import com.group6.electronic_drafting_system.dto.Article.ArticleEditorDTO;
 import com.group6.electronic_drafting_system.dto.Article.ArticleMediaUploadResponseDTO;
@@ -178,6 +179,26 @@ public class ArticleController {
         } catch (Exception ex) {
             log.error("Upload media failed for article {}", id, ex);
             return ResponseEntity.internalServerError().body(ArticleMediaUploadResponseDTO.error(ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage()));
+        }
+    }
+
+    // Bài mới (chưa lưu) mà tải ảnh / video: multipart gồm file, caption + nội dung đang soạn
+    // (assignmentId, title, subtitle, sapo, category, content). Server tự tạo bản nháp rồi gắn tệp vào.
+    @PostMapping(value = "/new/media", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseBody
+    public ResponseEntity<ArticleCreatedWithMediaDTO> createDraftWithMedia(@ModelAttribute ArticleCreateRequestDTO form,
+                                                                           @RequestParam(required = false) MultipartFile file,
+                                                                           @RequestParam(required = false) String caption,
+                                                                           Authentication auth) {
+        try {
+            return ResponseEntity.ok(articleService.createDraftWithMedia(form, file, caption, currentEmail(auth)));
+        } catch (ApplicationException ex) {
+            return ResponseEntity.status(ex.getErrorCode().getStatusCode())
+                    .body(new ArticleCreatedWithMediaDTO(false, ex.getErrorCode().getMessage(), null, null));
+        } catch (Exception ex) {
+            log.error("Create draft with media failed for assignment {}", form.getAssignmentId(), ex);
+            return ResponseEntity.internalServerError()
+                    .body(new ArticleCreatedWithMediaDTO(false, ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage(), null, null));
         }
     }
 

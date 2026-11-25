@@ -1,6 +1,7 @@
 package com.group6.electronic_drafting_system.service;
 
 import com.group6.electronic_drafting_system.dto.Article.ArticleCreateRequestDTO;
+import com.group6.electronic_drafting_system.dto.Article.ArticleCreatedWithMediaDTO;
 import com.group6.electronic_drafting_system.dto.Article.ArticleDraftRequestDTO;
 import com.group6.electronic_drafting_system.dto.Article.ArticleEditorDTO;
 import com.group6.electronic_drafting_system.dto.Article.ArticleListPageDTO;
@@ -21,4 +22,7 @@ public interface ArticleService {
     void setFeaturedImage(Integer articleId, Integer articleSourceId, String email);
     ArticleMediaUploadResponseDTO attachTopicMedia(Integer articleId, Integer sourceId, String email);
     ArticleMediaUploadResponseDTO uploadMedia(Integer articleId, MultipartFile file, String caption, String email);
+
+    // Bài mới chưa lưu mà tải ảnh / video: tự tạo bản nháp từ nội dung đang soạn rồi gắn tệp vào
+    ArticleCreatedWithMediaDTO createDraftWithMedia(ArticleCreateRequestDTO request, MultipartFile file, String caption, String email);
 }

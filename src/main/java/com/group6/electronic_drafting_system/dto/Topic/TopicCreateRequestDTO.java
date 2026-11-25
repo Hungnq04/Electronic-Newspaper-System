@@ -7,6 +7,9 @@ import lombok.Setter;
 
 // Form "Create Topic Proposal" và "Edit & Resubmit Topic": tiêu đề + tóm tắt.
 // Ban phụ trách luôn là ban của phóng viên (service tự lấy), category / priority / status do service tự điền.
+// [TV1-4.3] Nói với thầy: "Chỗ này em khai báo dữ liệu của form đề xuất: 2 ô title và summary, kèm luật @NotBlank
+//   (không được rỗng) và @Size (giới hạn độ dài). Controller có @Valid nên Spring kiểm tra các luật này khi gửi
+//   form."
 @Getter @Setter
 public class TopicCreateRequestDTO {
     public static final int TITLE_MAX = 255;

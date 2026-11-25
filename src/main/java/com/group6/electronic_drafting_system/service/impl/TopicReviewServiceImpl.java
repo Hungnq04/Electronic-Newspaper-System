@@ -32,6 +32,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+// [TV1-1.6] Nói với thầy: "Chỗ này em khai báo những thứ màn duyệt đề tài cần dùng: các repository để đọc / ghi
+//   các bảng topic, topic_review, topic_feedback, assignment, account, department; mapper để đổi dữ liệu ra màn hình;
+//   notificationService để gửi thông báo. Constructor nhận chúng vào để các hàm bên dưới dùng."
 @Service
 public class TopicReviewServiceImpl implements TopicReviewService {
     private static final int FEEDBACK_MAX = 4000;
@@ -61,6 +64,9 @@ public class TopicReviewServiceImpl implements TopicReviewService {
 
     // ===================== Trưởng ban =====================
 
+    // [TV1-1.7] Nói với thầy: "Chỗ này em lấy dữ liệu để hiện màn duyệt của Trưởng ban: kiểm tra người đăng nhập là
+    //   Trưởng ban, lấy các đề tài đang chờ duyệt của ban mình, chọn đề tài đang xem, lấy lịch sử của nó,
+    //   rồi gói tất cả trả về cho controller."
     @Override
     @Transactional(readOnly = true) //2
     public TopicReviewWorkspaceDTO getHeadWorkspace(String email, Integer selectedTopicId) {
@@ -84,6 +90,8 @@ public class TopicReviewServiceImpl implements TopicReviewService {
                 ReporterTaskMapper.initials(head.getFullName()));
     }
 
+    // [TV1-1.15] Nói với thầy: "Chỗ này em xử lý nút Duyệt của Trưởng ban: kiểm tra quyền, khóa đề tài, lưu một dòng
+    //   'đã duyệt' vào topic_review, rồi đổi trạng thái đề tài sang SECRETARY_REVIEW để chuyển lên Thư ký."
     @Override
     @Transactional
     public void headApprove(String email, Integer topicId) {
@@ -103,6 +111,8 @@ public class TopicReviewServiceImpl implements TopicReviewService {
         topic.setStatus(TopicStatus.SECRETARY_REVIEW);
     }
 
+    // [TV1-1.18] Nói với thầy: "Chỗ này em xử lý nút Yêu cầu sửa: kiểm tra góp ý không rỗng, lưu góp ý vào topic_feedback,
+    //   bật cờ awaitingRevision để đề tài rời hàng chờ, rồi tạo thông báo cho phóng viên."
     @Override
     @Transactional //yeucausua
     public void headRequestChanges(String email, Integer topicId, String feedback) {
@@ -126,6 +136,8 @@ public class TopicReviewServiceImpl implements TopicReviewService {
 
     // ===================== Thư ký tòa soạn =====================
 
+    // [TV1-2.2] Nói với thầy: "Chỗ này em lấy dữ liệu màn duyệt của Thư ký: lấy đề tài SECRETARY_REVIEW của mọi ban,
+    //   có chọn ban thì lọc theo ban, chọn đề tài đang xem, rồi gói lại cùng danh sách ban cho ô lọc."
     @Override
     @Transactional(readOnly = true)
     public TopicReviewWorkspaceDTO getSecretaryWorkspace(String email, Integer departmentFilter, Integer selectedTopicId) {
@@ -149,6 +161,9 @@ public class TopicReviewServiceImpl implements TopicReviewService {
                 secretary.getFullName(), "Thư ký tòa soạn", ReporterTaskMapper.initials(secretary.getFullName()));
     }
 
+    // [TV1-2.4] Nói với thầy: "Chỗ này em xử lý nút Duyệt của Thư ký: kiểm tra phóng viên và Trưởng ban còn hoạt động,
+    //   lưu kết quả duyệt, tạo 2 dòng assignment (phóng viên là LEAD, Trưởng ban là DEPARTMENT_HEAD),
+    //   đổi đề tài sang ACTIVE và gửi thông báo cho phóng viên."
     @Override
     @Transactional
     public void secretaryApprove(String email, Integer topicId) {
@@ -187,6 +202,8 @@ public class TopicReviewServiceImpl implements TopicReviewService {
                 "Đề tài \"" + topic.getTitle() + "\" đã được duyệt. Bạn là phóng viên viết chính (Lead).");
     }
 
+    // [TV1-2.5] Nói với thầy: "Chỗ này em xử lý nút Từ chối của Thư ký: bắt buộc có lý do, lưu lý do vào topic_review,
+    //   đổi đề tài sang REJECTED và gửi thông báo cho phóng viên."
     @Override
     @Transactional
     public void secretaryReject(String email, Integer topicId, String reason) {
@@ -211,6 +228,8 @@ public class TopicReviewServiceImpl implements TopicReviewService {
 
     // ===================== Hàm phụ =====================
 
+    // [TV1-1.16] Nói với thầy: "Chỗ này em khóa dòng đề tài trong DB rồi kiểm tra 3 điều: thuộc ban mình, không phải
+    //   đề tài mình đề xuất, còn đang chờ duyệt. Sai điều nào thì báo lỗi và không lưu gì."
     // Khóa dòng Topic rồi kiểm tra lại: đúng ban, còn DEPARTMENT_REVIEW và không đang chờ phóng viên sửa
     private Topic lockForHead(Integer topicId, Account head) {
         Topic topic = topics.findByIdForUpdate(topicId).orElseThrow(() -> new ApplicationException(ErrorCode.TOPIC_NOT_FOUND));
@@ -222,6 +241,8 @@ public class TopicReviewServiceImpl implements TopicReviewService {
         return topic;
     }
 
+    // [TV1-2.6] Nói với thầy: "Chỗ này giống lockForHead nhưng cho Thư ký: khóa dòng đề tài, kiểm tra không phải đề tài
+    //   mình đề xuất và còn SECRETARY_REVIEW."
     // Khóa dòng Topic rồi kiểm tra lại: còn SECRETARY_REVIEW
     private Topic lockForSecretary(Integer topicId, Account secretary) {
         Topic topic = topics.findByIdForUpdate(topicId).orElseThrow(() -> new ApplicationException(ErrorCode.TOPIC_NOT_FOUND));
@@ -231,6 +252,8 @@ public class TopicReviewServiceImpl implements TopicReviewService {
         return topic;
     }
 
+    // [TV1-1.19] Nói với thầy: "Chỗ này em tìm tài khoản theo email đang đăng nhập, kiểm tra đúng role và đang ACTIVE
+    //   (Trưởng ban phải có ban). Không đúng thì báo lỗi 403."
     // Người đăng nhập phải đúng role và đang ACTIVE; Trưởng ban phải có ban
     private Account requireRole(String email, RoleName role) {
         Account me = email == null ? null : accounts.findByEmailIgnoreCase(email.trim()).orElse(null);
@@ -240,24 +263,32 @@ public class TopicReviewServiceImpl implements TopicReviewService {
         return me;
     }
 
+    // [TV1-1.8] ★ Nói với thầy: "Chỗ này em chọn đề tài để hiện ở cột chi tiết: URL có ?topic=id thì lấy đề tài đó,
+    //   không có thì lấy đề tài đầu tiên trong hàng chờ."
     // Đề tài đang mở chi tiết: theo URL, nếu không có thì lấy đề tài đầu hàng chờ
     private Topic pickSelected(Integer selectedTopicId, List<TopicReviewItemDTO> queue) {
         Integer id = selectedTopicId != null ? selectedTopicId : (queue.isEmpty() ? null : queue.get(0).id());
         if (id == null) return null;
         return topics.findWithPeopleById(id).orElseThrow(() -> new ApplicationException(ErrorCode.TOPIC_NOT_FOUND));
     }
+    // [TV1-1.10] Nói với thầy: "Chỗ này em đếm số lần đề tài bị yêu cầu sửa, rồi nhờ mapper chép thông tin đề tài
+    //   sang DTO để hiện lên màn hình."
     //demdong 
     private TopicReviewItemDTO toItem(Topic topic) {
         int rounds = (int) topicFeedbacks.countByTopic_IdAndType(topic.getId(), TopicFeedbackType.CHANGE_REQUEST);
         return mapper.toReviewItem(topic, rounds);
     }
 
+    // [TV1-1.12] Nói với thầy: "Chỗ này em lấy các góp ý và kết quả duyệt của đề tài, nhờ mapper gộp lại theo thời gian
+    //   để hiện phần lịch sử."
     private List<TopicHistoryEntryDTO> historyOf(Topic topic) {
         if (topic == null) return List.of();
         return mapper.toHistory(topicFeedbacks.findByTopic_IdOrderByCreatedAtAscIdAsc(topic.getId()),
                 topicReviews.findByTopic_IdOrderByReviewedAtAscIdAsc(topic.getId()));
     }
 
+    // Nói với thầy: "Chỗ này là các hàm nhỏ: tạo một dòng assignment, kiểm tra đề tài đang chờ Trưởng ban,
+    //   cùng ban, tài khoản đúng role và ACTIVE."
     private static Assignment newAssignment(Topic topic, Account account, Account assignedBy, AssignmentRole role) {
         Assignment assignment = new Assignment();
         assignment.setTopic(topic);
@@ -279,6 +310,7 @@ public class TopicReviewServiceImpl implements TopicReviewService {
         return account != null && account.getStatus() == AccountStatus.ACTIVE && account.getRole().getRoleName() == role;
     }
 
+    // [TV1-1.20] Nói với thầy: "Chỗ này em kiểm tra góp ý / lý do: không được rỗng, không quá 4000 ký tự."
     // Góp ý / lý do bắt buộc, tối đa 4000 ký tự
     private static String requireText(String text, ErrorCode missing) {
         if (text == null || text.isBlank()) throw new ApplicationException(missing);

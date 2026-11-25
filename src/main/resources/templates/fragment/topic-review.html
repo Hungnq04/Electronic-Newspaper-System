@@ -2,8 +2,11 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <body>
 <!-- FL-01 Iter2: các phần dùng chung cho màn duyệt đề tài của Trưởng ban và Thư ký (kiểu dáng tp- trong topic-proposal.css) -->
+<!--/* [TV1-1.3b] Nói với thầy: "Chỗ này là các mảnh giao diện dùng chung cho màn Trưởng ban và màn Thư ký: thống kê, hàng
+chờ, chi tiết, lịch sử, script hộp thoại." */-->
 
 <!-- Thẻ thống kê hàng chờ -->
+<!--/* [TV1-1.5] Nói với thầy: "Chỗ này em vẽ 3 thẻ thống kê, đếm ngay trên danh sách hàng chờ ws.queue()." */-->
 <th:block th:fragment="stats(ws)">
     <section class="tp-stats tp-stats--3" aria-label="Thống kê hàng chờ">
         <article class="tp-stat tp-stat--amber">
@@ -35,6 +38,8 @@
             <svg class="tp-icon"><use href="#tp-icon-inbox"></use></svg>
             <strong>Không có đề tài nào đang chờ duyệt</strong>
         </div>
+        <!--/* [TV1-1.4] Nói với thầy: "Chỗ này em vẽ hàng chờ: mỗi đề tài là một link ?topic=id. Bấm vào thì trang tải lại với id
+        đó [TV1-1.2], đề tài đang chọn được tô đậm." */-->
         <ul class="tp-queue" th:unless="${#lists.isEmpty(ws.queue())}">
             <li th:each="t : ${ws.queue()}" th:attr="data-tp-search-text=${#strings.toLowerCase(t.title() + ' ' + t.reporterName() + ' ' + t.code())}">
                 <a th:href="${department == null} ? @{${baseUrl}(topic=${t.id()})} : @{${baseUrl}(topic=${t.id()}, department=${department})}"
@@ -58,6 +63,8 @@
 </th:block>
 
 <!-- Thông tin của đề tài đang chọn (nút quyết định do từng màn tự thêm) -->
+<!--/* [TV1-1.4c] Nói với thầy: "Chỗ này em vẽ cột chi tiết: in tiêu đề, tóm tắt, phóng viên, ban... của ws.selected(), là
+đề tài service đã chọn [TV1-1.8]." */-->
 <th:block th:fragment="detail(ws)">
     <div class="tp-card-meta">
         <span class="tp-code" th:text="${ws.selected().code()}">TP-2026-0001</span>
@@ -76,6 +83,8 @@
 </th:block>
 
 <!-- Lịch sử góp ý / duyệt -->
+<!--/* [TV1-1.12b] Nói với thầy: "Chỗ này em vẽ lịch sử đề tài: lặp ws.history(), tô màu theo loại (duyệt xanh, yêu cầu
+sửa cam, từ chối đỏ)." */-->
 <th:block th:fragment="history(ws)">
     <section class="tp-card">
         <div class="tp-card-head">
@@ -100,6 +109,8 @@
 </th:block>
 
 <!-- Mở / đóng dialog + tìm nhanh trong hàng chờ -->
+<!--/* [TV1-1.14b] Nói với thầy: "Chỗ này là JS mở / đóng hộp thoại xác nhận, tự mở lại hộp khi gửi góp ý bị lỗi, và lọc
+nhanh hàng chờ. Không gọi server." */-->
 <th:block th:fragment="dialog-script">
     <script>
         (() => {

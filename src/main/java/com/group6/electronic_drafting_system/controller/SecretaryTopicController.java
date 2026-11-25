@@ -32,6 +32,8 @@ public class SecretaryTopicController {
     }
 
     // department: lọc theo ban (không có = mọi ban); topic: đề tài đang mở chi tiết
+    // [TV1-2.1] Nói với thầy: "Chỗ này em mở màn duyệt cuối của Thư ký: lấy ?department= (lọc ban) và ?topic= (đề tài
+    //   đang xem) trên URL, gọi service [TV1-2.2] rồi trả về layout để vẽ màn."
     @GetMapping
     public String workspace(@RequestParam(required = false) Integer department, @RequestParam(required = false) Integer topic,
                             Principal principal, Model model) {
@@ -44,6 +46,8 @@ public class SecretaryTopicController {
         return "layout/app";
     }
 
+    // [TV1-2.3] Nói với thầy: "Chỗ này em xử lý 2 nút Duyệt và Từ chối của Thư ký: lấy id đề tài (và lý do nếu từ
+    //   chối), gọi service [TV1-2.4] / [TV1-2.5], rồi quay lại màn kèm thông báo."
     @PostMapping("/{topicId}/approve")
     public String approve(@PathVariable Integer topicId, Principal principal, RedirectAttributes redirect) {
         try {

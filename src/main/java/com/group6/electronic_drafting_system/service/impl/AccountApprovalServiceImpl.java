@@ -46,6 +46,9 @@ public class AccountApprovalServiceImpl implements AccountApprovalService {
                 .toList();
     }
 
+    // [TV1-9.8] Nói với thầy: "Chỗ này Admin duyệt tài khoản đang chờ: kiểm tra role được cấp và phòng ban, đổi tài
+    //   khoản sang ACTIVE với role, ban đó, rồi gửi email báo. (Màn Admin là của bạn khác, hàm này nối tiếp luồng đăng
+    //   ký của em.)"
     @Override
     @Transactional
     public void approve(Integer accountId, RoleName roleName, Integer departmentId, String adminEmail) {

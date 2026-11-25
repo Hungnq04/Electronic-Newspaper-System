@@ -10,6 +10,9 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+// [TV1-0.2] Nói với thầy: "Chỗ này em nối class Topic với bảng topic trong DB: mỗi field là một cột, creator /
+//   department nối sang bảng account / department. Em đổi field (ví dụ setStatus) trong transaction thì DB được cập
+//   nhật theo."
 @Entity @Table(name = "topic", schema = "dbo") @Getter @Setter
 public class Topic {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) @Column(name = "topic_id") private Integer id;

@@ -30,25 +30,15 @@
 .fb-decision { margin-left: auto; font-size: 11px; font-weight: 600; color: var(--muted); }
 .fb-text { margin: 6px 0 0; font-size: 13px; white-space: pre-wrap; }
 
-/* Một góp ý trên chữ: viền trái vàng (Trưởng ban) hoặc xanh (Thư ký) */
+/* Một góp ý: viền trái vàng (Trưởng ban) hoặc xanh (Thư ký) */
 .fb-comment { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--line); border-left: 3px solid #b7791f; border-radius: 0 var(--radius) var(--radius) 0; }
 .fb-comment--secretary { border-left-color: #2457c5; }
-.fb-comment-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
-.fb-anchor { font-size: 12px; font-weight: 700; }
 .fb-status { padding: 1px 6px; border-radius: 3px; font-size: 10.5px; font-weight: 700; }
 .fb-status.open { background: #fbe7e9; color: var(--brand); }
 .fb-status.done { background: #e5f3ea; color: var(--ok); }
-.fb-quote { margin: 6px 0 0; padding: 0; font: italic 13px/1.5 var(--serif); color: var(--muted); }
 .fb-reply { margin-top: 6px; padding: 6px 8px; border-radius: 4px; background: var(--soft); font-size: 12px; }
-.fb-actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; margin-top: 8px; }
-/* Nút dạng chữ: "Tìm trong bài →", "Xem vị trí ở bản v1.0" */
-.fb-link { padding: 0; border: 0; background: none; color: var(--brand); font-size: 12px; font-weight: 700; cursor: pointer; }
-.fb-link:hover { text-decoration: underline; }
-.fb-link--muted { color: var(--muted); font-weight: 500; }
-/* Báo "không tìm thấy" khi phóng viên đã sửa mất đoạn được góp ý */
-.fb-not-found { margin: 8px 0 0; padding: 6px 8px; border-radius: 4px; background: var(--soft); font-size: 12px; color: var(--muted); }
 
-/* ===== 3. Popup "Chi tiết phiên bản": nội dung chia đoạn + chữ được góp ý tô vàng ===== */
+/* ===== 3. Popup "Chi tiết phiên bản": nội dung chia theo khối ===== */
 .fb-body > * + * { margin-top: .9em; }
 .fb-block { white-space: pre-line; }                 /* giữ xuống dòng trong đoạn như lúc nộp */
 .fb-h2 { font: 700 24px/1.35 var(--serif); }
@@ -59,16 +49,3 @@
 .fb-li { position: relative; padding-left: 1.3rem; }
 .fb-li::before { content: "•"; position: absolute; left: .3rem; color: var(--brand); }
 .fb-table { overflow-x: auto; }
-/* Chữ được góp ý: JS bọc trong <mark class="fb-mark"> */
-.fb-mark { padding: 0 2px; border-radius: 3px; background: #ffdf98; color: #251a00; font-weight: 600; cursor: pointer; }
-/* Góp ý trong popup có gắn vị trí: bấm vào để cuộn tới chữ được tô vàng */
-.comment-list > li.fb-old-comment[data-field] { cursor: pointer; }
-.comment-list > li.fb-old-comment[data-field]:hover { border-color: var(--brand); }
-.fb-click-hint { font-size: 11px; color: var(--brand); }
-
-/* Nháy viền vàng ở chỗ vừa được cuộn tới */
-.fb-flash { animation: fb-flash 1.2s ease-out; }
-@keyframes fb-flash {
-    0% { box-shadow: 0 0 0 4px #eec14b; }
-    100% { box-shadow: 0 0 0 0 transparent; }
-}

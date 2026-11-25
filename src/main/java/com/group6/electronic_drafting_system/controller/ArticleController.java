@@ -210,7 +210,7 @@ public class ArticleController {
         model.addAttribute("contentFragment", "articleEditorContent");
         // article-feedback: phần góp ý của Trưởng ban / Thư ký khi bài bị trả về (file riêng, nạp sau editor)
         model.addAttribute("pageCss", List.of(FONTS, "/reporter/css/reporter-tasks.css", "/css/editor.css", "/reporter/css/article-feedback.css"));
-        model.addAttribute("pageJs", List.of(LUCIDE, "/js/editor.js", "/reporter/js/article-feedback.js"));
+        model.addAttribute("pageJs", List.of(LUCIDE, "/js/editor.js"));
         model.addAttribute("activePath", activePath);
         return "layout/app";
     }

@@ -4,8 +4,8 @@
 <!--
   Trình soạn thảo bài viết, hiển thị trong layout/app (sidebar chung theo quyền).
   CSS/JS (editor.css, reporter-tasks.css, lucide, editor.js) do ArticleController khai báo qua pageCss / pageJs.
-  Phần góp ý của Trưởng ban / Thư ký (dải "Bài bị trả về", thẻ "Góp ý cần sửa", nội dung phiên bản có tô vàng)
-  nằm ở file riêng reporter/article-feedback.html (+ /reporter/css/article-feedback.css, /reporter/js/article-feedback.js).
+  Phần góp ý của Trưởng ban / Thư ký (dải "Bài bị trả về", thẻ "Góp ý cần sửa", nội dung phiên bản)
+  nằm ở file riêng reporter/article-feedback.html (+ /reporter/css/article-feedback.css).
 -->
 <th:block th:fragment="articleEditorContent">
 <svg th:replace="~{reporter/tasks :: reporterSprite}"></svg>
@@ -356,15 +356,8 @@
         <section class="version-section" th:unless="${v.comments().isEmpty()}">
             <h4><i data-lucide="messages-square"></i>Góp ý trên bài (<span th:text="${v.comments().size()}"></span>)</h4>
             <ul class="comment-list">
-                <!-- data-*: vị trí góp ý, article-feedback.js dùng để tô vàng chữ trong nội dung phiên bản bên dưới -->
-                <!-- Chỉ hiện lại góp ý (không trạng thái "cần xử lý / đã xử lý", không câu trả lời) -->
-                <li th:each="c : ${v.comments()}" class="fb-old-comment"
-                    th:attr="data-comment-id=${c.id()},data-field=${c.anchorField()},data-paragraph=${c.anchorParagraph()},data-start=${c.anchorStart()},data-end=${c.anchorEnd()}">
-                    <div class="comment-head">
-                        <span class="vtag" th:text="${c.anchorLabel()}"></span>
-                        <span class="fb-click-hint" th:if="${c.hasAnchor()}">Bấm để xem vị trí</span>
-                    </div>
-                    <blockquote class="comment-quote" th:if="${c.quotedText() != null}" th:text="${c.quotedText()}"></blockquote>
+                <!-- Chỉ hiện nội dung góp ý và người góp ý (không vị trí, không đoạn trích, không trạng thái, không câu trả lời) -->
+                <li th:each="c : ${v.comments()}">
                     <p class="pre-wrap" th:text="${c.content()}"></p>
                     <small th:text="${c.authorName()} + ' (' + ${c.stageLabel()} + ') · ' + ${#temporals.format(c.createdAt(), 'HH:mm dd/MM/yyyy')}"></small>
                 </li>
@@ -373,7 +366,7 @@
 
         <section class="version-section">
             <h4><i data-lucide="file-text"></i>Nội dung bài tại phiên bản này</h4>
-            <!-- Nội dung chia đoạn giống màn Trưởng ban, chữ được góp ý sẽ được tô vàng -->
+            <!-- Nội dung phiên bản, in theo từng khối (đoạn chữ, ảnh, video, bảng) giống màn Trưởng ban -->
             <article th:replace="~{reporter/article-feedback :: versionBody(${v}, ${article.category})}"></article>
         </section>
     </div>

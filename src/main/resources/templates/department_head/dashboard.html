@@ -74,16 +74,6 @@
                 </div>
             </div>
 
-            <!-- Ô thống kê. tone trong DashboardStatDTO: blue -> xanh lá, amber -> vàng, rose / slate -> đỏ đô mặc định -->
-            <section class="rp-stats" aria-label="Thống kê duyệt bản thảo" th:if="${!#lists.isEmpty(dashboard.stats)}">
-                <article class="rp-stat" th:each="stat : ${dashboard.stats}"
-                         th:classappend="${stat.tone == 'blue'} ? 'rp-stat--success' : (${stat.tone == 'amber'} ? 'rp-stat--warning' : '')">
-                    <div class="rp-stat-head"><span th:text="${stat.label}">CHỜ DUYỆT BÀI VIẾT</span><span class="rp-stat-icon"><svg class="rp-icon"><use th:href="|#dh-icon-${stat.icon}|" href="#dh-icon-calendar"></use></svg></span></div>
-                    <strong class="rp-stat-value"><th:block th:text="${stat.value}">12</th:block><small class="dh-stat-unit" th:text="${stat.unit}">bản thảo</small></strong>
-                    <div class="rp-stat-foot"><span th:text="${stat.note}">Đang chờ Trưởng ban thẩm định</span><span class="rp-deadline-tag is-urgent" th:if="${stat.badge != null}" th:text="${stat.badge}">3 HỎA TỐC</span></div>
-                </article>
-            </section>
-
             <!-- Danh sách chờ duyệt: bảng giống bảng nhiệm vụ của phóng viên -->
             <section class="rp-card">
                 <div class="rp-card-head">

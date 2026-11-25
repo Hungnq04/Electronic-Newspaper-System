@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Thân bài: đoạn chữ, ảnh, video, bảng theo đúng thứ tự Lead sắp xếp.
+     th:utext in HTML đã được lọc ở ReviewWorkspaceMapper (chỉ giữ in đậm, nghiêng, link) nên an toàn. -->
+<th:block th:fragment="blocks(list)">
+    <th:block th:each="block : ${list}" th:switch="${block.kind.name()}">
+        <p th:case="'TEXT'" class="pub-paragraph" th:utext="${block.html}"></p>
+        <figure th:case="'IMAGE'" class="pub-figure">
+            <img th:src="${block.url}" th:alt="${block.caption}" alt="" loading="lazy">
+            <figcaption th:if="${block.caption != null}" th:text="${block.caption}"></figcaption>
+        </figure>
+        <figure th:case="'VIDEO'" class="pub-figure">
+            <video th:src="${block.url}" controls preload="metadata" playsinline></video>
+            <figcaption th:if="${block.caption != null}" th:text="${block.caption}"></figcaption>
+        </figure>
+        <div th:case="'TABLE'" class="pub-table" th:utext="${block.html}"></div>
+    </th:block>
+</th:block>
+</body>
+</html>

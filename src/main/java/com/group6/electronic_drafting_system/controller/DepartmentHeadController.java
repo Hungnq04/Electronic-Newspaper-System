@@ -55,23 +55,8 @@ public class DepartmentHeadController {
     }
 
     // ===== Màn dashboard Trưởng ban: GET /department-head/dashboard =====
-    // AI ĐƯA REQUEST TỚI ĐÂY?
-    //   Đăng nhập xong, AuthController.login() trả "redirect:/dashboard"
-    //   -> DashboardController.dashboard() thấy ROLE_DEPARTMENT_HEAD, trả "redirect:/department-head/dashboard"
-    //   -> trình duyệt gửi GET /department-head/dashboard -> Spring (DispatcherServlet) tra bảng và gọi method này.
-    //   Trước đó SidebarAdvice.addSidebar() đã bỏ menu bên trái (sidebarGroups) vào model.
-    //
-    // Tham số do Spring TỰ điền, mình không truyền:
-    //   authentication = người đang đăng nhập (filter của SecurityConfig đọc từ session)
-    //   model          = "cái túi" để gửi dữ liệu sang file HTML
     @GetMapping("/dashboard")
     public String dashboard(Authentication authentication, Model model) {
-        // Đọc từ trong ra ngoài:
-        //   1. currentEmail(authentication) (cuối file): lấy email người đăng nhập
-        //   2. departmentHeadService.getDashboard(email) -> DepartmentHeadServiceImpl.getDashboard():
-        //      gọi repository, tính số liệu, trả về DepartmentHeadDashboardDTO
-        //   3. model.addAttribute("dashboard", ...): bỏ DTO vào túi với TÊN "dashboard"
-        //      -> trong HTML đọc bằng ${dashboard.stats}, ${dashboard.displayName}...
         model.addAttribute("dashboard", departmentHeadService.getDashboard(currentEmail(authentication)));
         // Tiêu đề tab trình duyệt; layout/app.html in vào thẻ <title>.
         model.addAttribute("pageTitle", "Duyệt bản thảo – Trưởng ban");
@@ -89,16 +74,8 @@ public class DepartmentHeadController {
     }
 
     // ===== Màn "Lịch sử duyệt" (UC-35): GET /department-head/review-history =====
-    // AI ĐƯA REQUEST TỚI ĐÂY?
-    //   - Nút "Nhật ký duyệt" trên dashboard (department_head/dashboard.html, link th:href="@{/department-head/review-history}")
-    //   - Mục "Lịch sử duyệt" ở menu trái (SidebarService)
-    // Chỉ XEM: không có nút ghi dữ liệu. Bấm "Xem bài" ở một dòng sẽ mở màn thẩm định (reviewWorkspace bên dưới) ở chế độ chỉ xem.
     @GetMapping("/review-history")
     public String reviewHistory(Authentication authentication, Model model) {
-        // 1. currentEmail(...) lấy email người đăng nhập
-        // 2. departmentHeadService.getReviewHistory(email) -> DepartmentHeadServiceImpl.getReviewHistory():
-        //    lấy các lượt mình đã duyệt + đếm góp ý, trả về ReviewHistoryPageDTO
-        // 3. Bỏ DTO vào model với TÊN "history" -> review-history.html đọc bằng ${history.items}, ${history.totalCount}...
         model.addAttribute("history", departmentHeadService.getReviewHistory(currentEmail(authentication)));
         model.addAttribute("pageTitle", "Lịch sử duyệt – Trưởng ban");
         // layout/app.html chèn fragment "reviewHistoryContent" của templates/department_head/review-history.html vào giữa trang
@@ -242,26 +219,6 @@ public class DepartmentHeadController {
 
     // ---------- Màn thẩm định bài viết (workspace) ----------
 
-    // =====================================================================================================
-    // ===== MÀN THẨM ĐỊNH BÀI VIẾT (workspace review, FL-05) =====
-    // Gồm 1 method GET (mở trang) + 4 method POST (các nút bấm trên trang). Tất cả gọi DepartmentHeadReviewService
-    // (object thật: service/impl/DepartmentHeadReviewServiceImpl.java).
-    //
-    //   URL                                                        Method              Gọi service
-    //   GET  /department-head/articles/{id}/review                 reviewWorkspace()   departmentHeadReviewService.openWorkspace()
-    //   POST /department-head/articles/{id}/comments               addComment()        departmentHeadReviewService.addComment()
-    //   POST /department-head/articles/{id}/comments/{c}/delete    deleteComment()     departmentHeadReviewService.deleteComment()
-    //   POST /department-head/articles/{id}/approve                approve()           departmentHeadReviewService.approve()
-    //   POST /department-head/articles/{id}/request-revision       requestRevision()   departmentHeadReviewService.requestRevision()
-    //
-    // CÁCH CÁC NÚT HOẠT ĐỘNG (kiểu "POST rồi redirect về GET"):
-    //   1. Trong workspacereview.html, mỗi nút nằm trong một <form method="post" th:action="@{/department-head/articles/...}">
-    //   2. Bấm nút -> trình duyệt gửi POST -> Spring gọi method POST tương ứng bên dưới
-    //   3. Method POST gọi service làm việc (ghi DB), rồi runAndReturn() trả "redirect:/department-head/articles/{id}/review"
-    //   4. Trình duyệt tự gửi GET lại trang -> reviewWorkspace() chạy lại -> trang hiện dữ liệu MỚI + thông báo nhỏ (toast)
-    //   Nhờ redirect, bấm F5 sau khi gửi form sẽ không gửi lại form lần nữa.
-    // =====================================================================================================
-    
     // ===== Màn "Lịch sử phiên bản" (UC-23): GET /department-head/articles/{articleId}/versions =====
     // AI ĐƯA REQUEST TỚI ĐÂY?
     //   - Nút "Lịch sử phiên bản" trên thanh trạng thái của màn thẩm định (workspacereview.html)
@@ -304,12 +261,6 @@ public class DepartmentHeadController {
     @GetMapping("/articles/{articleId}/review")
     // @PathVariable: lấy số nằm TRONG đường dẫn. Ví dụ URL /department-head/articles/15/review -> articleId = 15
     public String reviewWorkspace(@PathVariable Integer articleId, Authentication authentication, Model model) {
-        // Đọc từ trong ra ngoài:
-        //   1. currentEmail(authentication): email người đăng nhập (hàm phụ cuối file)
-        //   2. departmentHeadReviewService.openWorkspace(email, articleId) -> DepartmentHeadReviewServiceImpl.openWorkspace():
-        //      kiểm tra quyền, mở lượt duyệt nếu cần, gom dữ liệu, trả về ReviewWorkspaceDTO
-        //      (nếu không có quyền / không thấy bài -> ném ApplicationException -> handleError() bên dưới trả lỗi 403/404)
-        //   3. Bỏ DTO vào model với TÊN "workspace" -> workspacereview.html đọc bằng ${workspace...} 
         model.addAttribute("workspace", departmentHeadReviewService.openWorkspace(currentEmail(authentication), articleId));
         model.addAttribute("pageTitle", "Thẩm định bản thảo – Trưởng ban");
         // layout/app.html chèn fragment "reviewWorkspaceContent" (workspacereview.html dòng có th:fragment) vào giữa trang

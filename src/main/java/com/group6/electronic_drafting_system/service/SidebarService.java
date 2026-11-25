@@ -35,7 +35,9 @@ public class SidebarService {
                             // FL-07 (Vanh): bài đã duyệt cuối, chờ xuất bản
                             new SidebarItem("Chờ xuất bản", "/secretary/publications", "file-text", null),
                             // FL-07 Iter3 (Vanh): bài đã hẹn giờ đăng (icon null = icon đồng hồ mặc định)
-                            new SidebarItem("Đã hẹn giờ", "/secretary/scheduled-publications", null, null))));
+                            new SidebarItem("Đã hẹn giờ", "/secretary/scheduled-publications", null, null),
+                            // FL-07 (Vanh, sau góp ý hội đồng): bài đang hiển thị trên trang công khai, có thể gỡ bài
+                            new SidebarItem("Đã xuất bản", "/secretary/published-articles", "clipboard-check", null))));
             case ADMIN -> List.of(
                     new SidebarGroup("QUẢN TRỊ", List.of(
                             new SidebarItem("Tài khoản", "/admin/accounts", "users", null))));

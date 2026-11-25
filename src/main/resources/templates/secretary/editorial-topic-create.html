@@ -41,8 +41,10 @@
                 <div class="field-error" th:errors="*{priority}"></div>
             </div>
             <div class="field" th:classappend="${#fields.hasErrors('expectedDate')} ? 'has-error'">
-                <label for="expectedDate">Ngày dự kiến</label>
-                <input id="expectedDate" type="date" th:field="*{expectedDate}">
+                <label for="expectedDate">Ngày dự kiến <span class="req">*</span></label>
+                <!-- required + min = hôm nay: chỉ để tiện dùng; chặn thật nằm ở @NotNull / @FutureOrPresent trong EditorialTopicForm -->
+                <input id="expectedDate" type="date" th:field="*{expectedDate}" required
+                       th:min="${#temporals.format(#temporals.createToday(), 'yyyy-MM-dd')}">
                 <div class="field-error" th:errors="*{expectedDate}"></div>
             </div>
             <div class="field full" th:classappend="${#fields.hasErrors('description')} ? 'has-error'">

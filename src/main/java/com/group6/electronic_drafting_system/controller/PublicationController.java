@@ -16,6 +16,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 // FL-07 Iter2: Approved Article List + Publication Detail (kèm pop-up Đăng ngay / Hẹn giờ) của Thư ký tòa soạn.
 // Iter3: thêm pop-up Trả bài về Lead trên Publication Detail.
+// Gỡ bài đã đăng (thêm sau góp ý hội đồng) nằm ở menu riêng "Đã xuất bản": xem PublishedArticleController.
 // SecurityConfig đã chỉ cho Thư ký vào /secretary/**; service kiểm tra quyền thêm một lần nữa.
 @Controller
 @RequestMapping("/secretary/publications")

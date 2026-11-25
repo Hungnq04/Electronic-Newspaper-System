@@ -8,7 +8,7 @@
     <div class="page-head">
         <div>
             <nav class="breadcrumb" aria-label="Breadcrumb"><span>TOPIC TÒA SOẠN</span> › <strong>Giao Trưởng phòng</strong></nav>
-            <h1th:text="${page.currentHeadId} ? 'Giao lại Topic cho Trưởng phòng khác' : 'Giao Topic cho Trưởng phòng'"></h1>
+            <h1 th:text="${page.currentHeadId} ? 'Giao lại Topic cho Trưởng phòng khác' : 'Giao Topic cho Trưởng phòng'"></h1>
             <p th:text="${page.title}"></p>
         </div>
     </div>
@@ -41,9 +41,11 @@
 
             <div class="form-grid" style="margin-top:18px">
                 <div class="field">
-                    <label for="deadline">Deadline</label>
-                    <input id="deadline" type="datetime-local" th:field="*{deadline}">
-                    <div class="hint">Có thể để trống và bổ sung sau.</div>
+                    <label for="deadline">Deadline <span class="req">*</span></label>
+                    <!-- required + min = bây giờ: chỉ để tiện dùng; chặn thật ở @NotNull (TopicAssignForm) và ASSIGNMENT_DEADLINE_PAST (service) -->
+                    <input id="deadline" type="datetime-local" th:field="*{deadline}" required
+                           th:min="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd''T''HH:mm')}">
+                    <div class="hint">Bắt buộc, phải là thời điểm trong tương lai.</div>
                 </div>
                 <div class="field full">
                     <label for="requirements">Yêu cầu cho Trưởng phòng</label>

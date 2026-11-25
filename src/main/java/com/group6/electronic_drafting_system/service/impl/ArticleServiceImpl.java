@@ -46,8 +46,8 @@ import com.group6.electronic_drafting_system.service.MediaStorageService.MediaKi
 import com.group6.electronic_drafting_system.service.MediaStorageService.StoredMedia;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
@@ -283,62 +283,74 @@ public class ArticleServiceImpl implements ArticleService {
         return articleMapper.toTopicMedia(source, video, note, addedByName, caption);
     }
 
-    // Lịch sử phiên bản: mỗi bản kèm nhận xét của từng cấp duyệt và các góp ý
-    // (comment) gắn trên bản đó.
+    // =====================================================================================================
+    // LỊCH SỬ PHIÊN BẢN cho phóng viên (Lead). Gọi từ getEditor() khi mở trang soạn bài.
+    // Trả về danh sách phiên bản (MỚI NHẤT TRƯỚC); mỗi phiên bản kèm:
+    //   - các lượt duyệt ĐÃ CHỐT trên phiên bản đó (ai duyệt, cấp nào, kết quả, nhận xét)
+    //   - các góp ý trên phiên bản đó
     //
-    // Quy tắc phóng viên được xem gì (kiểm tra ở backend, không chỉ ẩn trên giao
-    // diện):
-    // 1. Lượt duyệt chưa có quyết định (decision = NULL) là lượt Trưởng ban / Thư
-    // ký đang duyệt dở: KHÔNG trả về.
-    // 2. Góp ý (comment) chỉ trả về khi phiên bản đó ĐÃ BỊ TRẢ VỀ (có lượt duyệt
-    // "Yêu cầu chỉnh sửa").
-    // Lúc đó trả cả góp ý của Trưởng ban lẫn Thư ký trên phiên bản đó, mỗi góp ý
-    // ghi rõ người góp ý và cấp.
+    // QUY TẮC PHÓNG VIÊN ĐƯỢC XEM GÌ (kiểm tra ở backend, không chỉ ẩn trên giao diện):
+    //   1. Lượt duyệt đang dở (decision = NULL) -> KHÔNG trả về (Trưởng phòng / Thư ký chưa quyết định).
+    //   2. Góp ý chỉ trả về khi phiên bản đó ĐÃ BỊ TRẢ VỀ (có lượt duyệt "Yêu cầu sửa").
+    //      Khi đó trả góp ý của cả Trưởng phòng lẫn Thư ký trên phiên bản đó.
+    //
+    // VÍ DỤ bài #11: v1.1 (Trưởng phòng đang duyệt dở), v1.0 (Trưởng phòng đã "Yêu cầu sửa", có 3 góp ý)
+    //   -> v1.1: 0 lượt duyệt, 0 góp ý      v1.0: 1 lượt duyệt, 3 góp ý
+    // =====================================================================================================
     private List<ArticleEditorDTO.Version> versionHistory(Article article) {
-        List<ArticleVersion> all = versions.findByArticle_IdOrderByVersionNumberDesc(article.getId());
-        if (all.isEmpty())
-            return List.of();
+        // ===== BƯỚC 1: lấy mọi phiên bản của bài, mới nhất trước [v1.1, v1.0] =====
+        List<ArticleVersion> allVersions = versions.findByArticle_IdOrderByVersionNumberDesc(article.getId());
+        if (allVersions.isEmpty()) {
+            return List.of();   // bài chưa nộp lần nào (DRAFT) -> chưa có lịch sử
+        }
 
-        // Quy tắc 1: chỉ giữ lượt duyệt đã có quyết định, xếp theo thứ tự thời gian
-        // (Trưởng ban trước, Thư ký sau)
-        List<ArticleReview> decidedReviews = reviews.findByVersionIn(all).stream()
-                .filter(r -> r.getDecision() != null)
-                .sorted(Comparator.comparing(ArticleReview::getId))
-                .toList();
-        Map<Integer, List<ArticleReview>> reviewsByVersion = decidedReviews.stream()
-                .collect(Collectors.groupingBy(r -> r.getVersion().getId()));
+        // ===== BƯỚC 2: hỏi DB một lần, lấy hết dữ liệu cần dùng =====
+        // Mọi lượt duyệt ĐÃ CHỐT (decision khác NULL) của bài, cũ trước mới sau (Trưởng phòng trước, Thư ký sau).
+        // Lượt đang duyệt dở đã bị loại ngay trong câu SQL -> đúng quy tắc 1.
+        List<ArticleReview> decidedReviews = reviews.findByVersionArticleAndDecisionIsNotNullOrderByReviewedAtAscIdAsc(article);
+        // Mọi góp ý trên mọi phiên bản của bài, cũ trước mới sau
+        List<Comment> allComments = comments.findByReviewVersionArticleOrderByCreatedAtAscIdAsc(article);
 
-        // Quy tắc 2: các phiên bản đã bị trả về (có lượt duyệt REQUEST_REVISION)
-        Set<Integer> returnedVersionIds = decidedReviews.stream()
-                .filter(r -> r.getDecision() == ArticleReviewDecision.REQUEST_REVISION)
-                .map(r -> r.getVersion().getId())
-                .collect(Collectors.toSet());
+        // ===== BƯỚC 3: đi qua từng phiên bản, gom lượt duyệt và góp ý của RIÊNG phiên bản đó =====
+        List<ArticleEditorDTO.Version> result = new ArrayList<>();
+        for (ArticleVersion version : allVersions) {
 
-        // Chỉ giữ góp ý thuộc lượt duyệt đã có quyết định, trên phiên bản đã bị trả về
-        List<Comment> visibleComments = comments.findByReviewVersionArticleOrderByCreatedAtAscIdAsc(article).stream()
-                .filter(c -> c.getReview().getDecision() != null)
-                .filter(c -> returnedVersionIds.contains(c.getReview().getVersion().getId()))
-                .toList();
-        Map<Integer, List<Comment>> repliesByParent = visibleComments.stream().filter(c -> c.getParent() != null)
-                .collect(Collectors.groupingBy(c -> c.getParent().getId()));
-        Map<Integer, List<ArticleEditorDTO.VersionComment>> commentsByVersion = visibleComments.stream()
-                .filter(c -> c.getParent() == null)
-                .collect(Collectors.groupingBy(c -> c.getReview().getVersion().getId(), Collectors.mapping(
-                        c -> toVersionComment(c,
-                                repliesByParent.getOrDefault(c.getId(), List.of()).stream()
-                                        .map(r -> toVersionComment(r, List.of())).toList()),
-                        Collectors.toList())));
+            // 3a. Lượt duyệt của phiên bản này + xem phiên bản này có từng bị "Yêu cầu sửa" không
+            List<ArticleEditorDTO.VersionReview> versionReviews = new ArrayList<>();
+            boolean wasReturned = false;
+            for (ArticleReview review : decidedReviews) {
+                // Lượt duyệt thuộc phiên bản khác -> bỏ qua
+                if (!review.getVersion().getId().equals(version.getId())) {
+                    continue;
+                }
+                // Service tính nhãn, mapper chỉ đóng gói thành DTO
+                versionReviews.add(articleMapper.toVersionReview(review, stageLabel(review.getReviewStage()),
+                        decisionLabel(review.getDecision())));
+                if (review.getDecision() == ArticleReviewDecision.REQUEST_REVISION) {
+                    wasReturned = true;   // phiên bản này đã bị trả về
+                }
+            }
 
-        return all.stream()
-                .map(v -> articleMapper.toVersionItem(v, versionLabel(v),
-                        reviewsByVersion.getOrDefault(v.getId(), List.of()).stream()
-                                .map(r -> articleMapper.toVersionReview(r, stageLabel(r.getReviewStage()),
-                                        decisionLabel(r.getDecision())))
-                                .toList(),
-                        commentsByVersion.getOrDefault(v.getId(), List.of()),
-                        // Chia đoạn bằng đúng mapper của màn Trưởng ban để vị trí góp ý khớp tuyệt đối
-                        versionViewMapper.toVersionView(v)))
-                .toList();
+            // 3b. Góp ý của phiên bản này: CHỈ lấy khi phiên bản đã bị trả về (quy tắc 2)
+            List<ArticleEditorDTO.VersionComment> versionComments = new ArrayList<>();
+            if (wasReturned) {
+                for (Comment comment : allComments) {
+                    boolean sameVersion = comment.getReview().getVersion().getId().equals(version.getId());
+                    boolean reviewDecided = comment.getReview().getDecision() != null;   // không lấy góp ý của lượt đang duyệt dở
+                    boolean rootComment = comment.getParent() == null;                  // hệ thống không có chức năng trả lời góp ý
+                    if (sameVersion && reviewDecided && rootComment) {
+                        // List.of() = danh sách câu trả lời rỗng
+                        versionComments.add(toVersionComment(comment, List.of()));
+                    }
+                }
+            }
+
+            // 3c. Đóng gói phiên bản: nội dung + lượt duyệt + góp ý.
+            // toVersionView: chia đoạn bằng ĐÚNG mapper của màn Trưởng phòng, để tô vàng đúng vị trí góp ý.
+            result.add(articleMapper.toVersionItem(version, versionLabel(version), versionReviews, versionComments,
+                    versionViewMapper.toVersionView(version)));
+        }
+        return result;
     }
 
     // Lưu nháp: chỉ cập nhật bản đang soạn trên bảng article, KHÔNG tạo version (CLAUDE.md mục 7).

@@ -149,20 +149,29 @@
             <section class="card hero-card">
                 <div class="card-head">
                     <h3><i data-lucide="image"></i>Ảnh đại diện trang nhất (Hero Cover)</h3>
-                    <button type="button" class="btn mini" id="heroChangeBtn" data-open="featuredModal" th:if="${article.editable}"
-                            th:hidden="${article.imageSources().isEmpty()}"><i data-lucide="replace"></i>Thay ảnh</button>
                 </div>
                 <th:block th:with="hero=${article.featuredImage()}">
                     <figure class="hero" th:if="${hero != null}" id="heroFigure">
-                        <img th:src="${hero.fileUrl()}" th:alt="${hero.title()}" id="heroImg">
+                        <!-- Bài đang sửa được: bấm thẳng vào ảnh để thay. Bài đã khóa: chỉ xem -->
+                        <button type="button" class="hero-pick" data-open="featuredModal" th:if="${article.editable}"
+                                aria-label="Thay ảnh đại diện">
+                            <img th:src="${hero.fileUrl()}" th:alt="${hero.title()}" id="heroImg">
+                            <span class="hero-overlay"><i data-lucide="replace"></i>Bấm để thay ảnh</span>
+                        </button>
+                        <img th:unless="${article.editable}" th:src="${hero.fileUrl()}" th:alt="${hero.title()}" id="heroImg">
                         <figcaption><i data-lucide="info"></i>
                             <span>Chú thích: <span id="heroCaption" th:text="${hero.caption() ?: hero.title()}"></span>
                             · Nguồn: <strong id="heroSource" th:text="${hero.title()}"></strong></span></figcaption>
                     </figure>
-                    <div class="hero-empty" th:if="${hero == null}" id="heroEmpty">
+                    <!-- Chưa có ảnh: cả khung là một nút, bấm vào để chọn hoặc tải ảnh -->
+                    <button type="button" class="hero-empty" id="heroEmpty" data-open="featuredModal" th:if="${hero == null and article.editable}">
+                        <i data-lucide="image-plus"></i>
+                        <strong>Bấm vào đây để chọn hoặc tải ảnh lên</strong>
+                        <small>Ảnh JPG, PNG, WebP, GIF ≤ 10MB</small>
+                    </button>
+                    <div class="hero-empty" th:if="${hero == null and !article.editable}">
                         <i data-lucide="image-off"></i>
-                        <p th:text="${article.isNew()} ? 'Tạo bản nháp xong có thể tải ảnh từ máy lên để làm ảnh đại diện.' : (${article.imageSources().isEmpty()} ? 'Bài viết chưa có ảnh. Bấm Ảnh / video trên thanh công cụ để tải ảnh từ máy lên.' : 'Chưa chọn ảnh đại diện. Bấm Thay ảnh để chọn từ tư liệu.')"></p>
-                        <button type="button" class="btn mini" data-open="featuredModal" th:if="${article.editable and !article.imageSources().isEmpty()}">Chọn ảnh</button>
+                        <p>Bài viết chưa có ảnh đại diện.</p>
                     </div>
                 </th:block>
             </section>
@@ -376,7 +385,8 @@
         <div class="modal-head"><h3>Chèn ảnh / video</h3><button type="button" class="close" data-close>&times;</button></div>
 
         <!-- Tải từ máy lên Cloudinary; DB chỉ lưu đường dẫn trả về -->
-        <section class="upload-box" th:unless="${article.isNew()}">
+        <!-- Bài mới chưa lưu: tải lên thì hệ thống tự tạo bản nháp trước (POST /articles/new/media) -->
+        <section class="upload-box">
             <label class="dropzone" id="mediaDrop" for="mediaFile">
                 <i data-lucide="upload-cloud"></i>
                 <strong id="mediaFileName">Chọn hoặc kéo thả ảnh / video từ máy</strong>
@@ -390,7 +400,7 @@
             </div>
             <div class="upload-progress" id="uploadProgress" hidden><span></span></div>
         </section>
-        <p class="hint" th:if="${article.isNew()}">Bấm <b>Tạo bản nháp</b> trước, sau đó có thể tải ảnh / video từ máy lên.</p>
+        <p class="hint" th:if="${article.isNew()}">Bài chưa lưu: khi tải ảnh / video lên, hệ thống sẽ tự tạo bản nháp (cần có tiêu đề và chuyên mục).</p>
 
         <!-- Ảnh / video do nhóm tác nghiệp (phóng viên hỗ trợ) tải vào tư liệu đề tài -->
         <p class="label section-label">Tư liệu của đề tài (ảnh / video nhóm tác nghiệp gửi)</p>
@@ -426,6 +436,38 @@
 <div class="modal" id="featuredModal" hidden th:if="${article.editable}">
     <div class="modal-box">
         <div class="modal-head"><h3>Chọn ảnh đại diện</h3><button type="button" class="close" data-close>&times;</button></div>
+
+        <!-- Tải ảnh mới từ máy. Bài mới chưa lưu: hệ thống tự tạo bản nháp trước -->
+        <section class="upload-box">
+            <label class="dropzone" id="heroDrop" for="heroFile">
+                <i data-lucide="upload-cloud"></i>
+                <strong id="heroFileName">Chọn hoặc kéo thả ảnh từ máy</strong>
+                <small>Ảnh JPG, PNG, WebP, GIF ≤ 10MB</small>
+            </label>
+            <input type="file" id="heroFile" hidden accept="image/jpeg,image/png,image/webp,image/gif">
+            <div class="upload-row">
+                <!-- Bắt buộc vì nộp bài yêu cầu mọi ảnh có chú thích (FR-07) -->
+                <input type="text" id="heroCaptionInput" class="text-input" maxlength="300" placeholder="Chú thích ảnh (bắt buộc)">
+                <button type="button" class="btn primary" id="uploadHeroBtn" disabled><i data-lucide="upload"></i>Tải lên &amp; đặt làm ảnh đại diện</button>
+            </div>
+            <div class="upload-progress" id="heroProgress" hidden><span></span></div>
+        </section>
+        <p class="hint" th:if="${article.isNew()}">Bài chưa lưu: khi tải ảnh lên, hệ thống sẽ tự tạo bản nháp (cần có tiêu đề và chuyên mục). Lưu nháp xong mới chọn được ảnh từ tư liệu đề tài.</p>
+
+        <!-- Ảnh của đề tài: bài phải được lưu rồi mới gắn vào bài được -->
+        <th:block th:unless="${article.isNew()}">
+            <p class="label section-label">Ảnh trong tư liệu đề tài</p>
+            <div class="image-grid" id="featuredTopicGrid">
+                <button type="button" class="image-option choose-topic-featured" th:each="m : ${article.topicMedia()}" th:unless="${m.video()}"
+                        th:attr="data-source-id=${m.sourceId()}" th:title="${m.title()}">
+                    <img th:src="${m.fileUrl()}" th:alt="${m.title()}" loading="lazy"><span th:text="${m.title()}"></span>
+                </button>
+            </div>
+            <p class="hint" th:if="${article.topicMedia().isEmpty()}">Đề tài chưa có ảnh.</p>
+        </th:block>
+
+        <p class="label section-label">Ảnh tư liệu của bài</p>
+        <p class="hint" id="noFeaturedHint" th:if="${article.imageSources().isEmpty()}">Bài viết chưa có ảnh tư liệu.</p>
         <div class="image-grid" id="featuredGrid">
             <button type="button" class="image-option choose-featured" th:each="s : ${article.imageSources()}"
                     th:classappend="${s.featured()} ? 'selected' : ''"
@@ -454,7 +496,11 @@
         draftUrl: /*[[${article.isNew()} ? null : @{/articles/{id}/draft(id=${article.id})}]]*/ '',
         featuredUrl: /*[[${article.isNew()} ? null : @{/articles/{id}/featured(id=${article.id})}]]*/ '',
         mediaUrl: /*[[${article.isNew()} ? null : @{/articles/{id}/media(id=${article.id})}]]*/ '',
-        topicMediaUrl: /*[[${article.isNew()} ? null : @{/articles/{id}/topic-media(id=${article.id})}]]*/ ''
+        topicMediaUrl: /*[[${article.isNew()} ? null : @{/articles/{id}/topic-media(id=${article.id})}]]*/ '',
+        // Chỉ dùng khi bài còn mới: tải ảnh / video kèm nội dung đang soạn để server tự tạo bản nháp
+        assignmentId: /*[[${article.assignmentId}]]*/ null,
+        newMediaUrl: /*[[${article.isNew()} ? @{/articles/new/media} : null]]*/ '',
+        articlesUrl: /*[[@{/articles/}]]*/ '/articles/'
     };
 </script>
 </th:block>

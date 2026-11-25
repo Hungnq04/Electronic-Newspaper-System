@@ -323,16 +323,39 @@
         $('#featuredGrid')?.insertAdjacentHTML('beforeend',
             `<button type="button" class="image-option choose-featured" ${attrs} data-title="${escapeHtml(data.title)}">${inner}</button>`);
         $('#noImageHint')?.remove();
-        const change = $('#heroChangeBtn');
-        if (change) change.hidden = false;
+        $('#noFeaturedHint')?.remove();
+    }
+    // Bài mới vừa được server tự tạo bản nháp: lưu lại nội dung (đã có ảnh / video vừa chèn) vào bản nháp đó,
+    // rồi mở trang sửa bài để mọi nút (Lưu nháp, Lịch sử phiên bản, ảnh đại diện...) hoạt động như bài đã lưu.
+    async function openCreatedDraft(articleId) {
+        try {
+            await fetch(`${A.articlesUrl}${articleId}/draft`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', [csrfHeader]: csrfToken },
+                body: JSON.stringify(payload())
+            });
+        } catch (ignored) { /* lưu lỗi thì vẫn mở trang sửa: ảnh đã nằm trong tư liệu của bài */ }
+        dirty = false;   // không hỏi "rời trang?" khi chuyển sang trang sửa bài
+        window.location.href = `${A.articlesUrl}${articleId}/edit`;
     }
     function uploadMedia() {
-        if (!mediaFile || !A.mediaUrl) return;
+        if (!mediaFile) return;
+        // Bài mới chưa lưu: gửi kèm nội dung đang soạn để server tạo bản nháp trước rồi gắn tệp vào
+        const url = A.isNew ? A.newMediaUrl : A.mediaUrl;
+        if (!url) return;
+        if (A.isNew && (!titleEl.value.trim() || !categoryEl.value.trim())) {
+            toast('Nhập tiêu đề và chuyên mục trước khi tải ảnh / video', true);
+            return;
+        }
         const form = new FormData();
         form.append('file', mediaFile);
         form.append('caption', $('#mediaCaption').value.trim());
+        if (A.isNew) {
+            Object.entries(payload()).forEach(([name, value]) => form.append(name, value));
+            form.append('assignmentId', A.assignmentId);
+        }
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', A.mediaUrl);
+        xhr.open('POST', url);
         xhr.setRequestHeader(csrfHeader, csrfToken);
         xhr.upload.onprogress = e => { if (e.lengthComputable) $('span', progress).style.width = `${Math.round(e.loaded / e.total * 100)}%`; };
         const done = () => { uploadBtn.disabled = !mediaFile; progress.hidden = true; $('span', progress).style.width = '0'; };
@@ -341,12 +364,19 @@
             try { data = JSON.parse(xhr.responseText); } catch (ignored) { /* lỗi không phải JSON */ }
             done();
             if (xhr.status !== 200 || !data.success) { toast(data.message || 'Tải tệp lên không thành công', true); return; }
-            if (data.kind === 'VIDEO') {
-                insertVideo(data.url, data.caption);
+            // Bài mới: kết quả tải tệp nằm trong data.media; bài đã lưu: chính là data
+            const media = A.isNew ? data.media : data;
+            if (media.kind === 'VIDEO') {
+                insertVideo(media.url, media.caption);
             } else {
-                addImageOption(data);
-                insertFigure(data.url, data.caption || data.title, data.articleSourceId);
-                if (data.featured) showHero(data.url, data.caption || data.title, data.title);
+                addImageOption(media);
+                insertFigure(media.url, media.caption || media.title, media.articleSourceId);
+                if (media.featured) showHero(media.url, media.caption || media.title, media.title);
+            }
+            if (A.isNew) {
+                toast(data.message);
+                openCreatedDraft(data.articleId);
+                return;
             }
             mediaFile = null;
             mediaInput.value = '';
@@ -536,7 +566,9 @@
     function showHero(src, caption, title) {
         if (!$('#heroImg')) {
             const empty = $('#heroEmpty');
-            empty.insertAdjacentHTML('afterend', '<figure class="hero" id="heroFigure"><img id="heroImg" alt="">' +
+            empty.insertAdjacentHTML('afterend', '<figure class="hero" id="heroFigure">' +
+                '<button type="button" class="hero-pick" data-open="featuredModal" aria-label="Thay ảnh đại diện"><img id="heroImg" alt="">' +
+                '<span class="hero-overlay"><i data-lucide="replace"></i>Bấm để thay ảnh</span></button>' +
                 '<figcaption><i data-lucide="info"></i><span>Chú thích: <span id="heroCaption"></span> · Nguồn: <strong id="heroSource"></strong></span></figcaption></figure>');
             empty.remove();
             if (window.lucide) window.lucide.createIcons();
@@ -547,17 +579,120 @@
         $('#heroSource').textContent = title || '';
         $$('.choose-featured').forEach(b => b.classList.toggle('selected', b.dataset.src === src));
     }
-    $('#featuredGrid')?.addEventListener('click', async e => {
+    // Báo server đặt ảnh (đã gắn vào bài) làm ảnh đại diện, thành công thì đổi ảnh trên trang
+    async function setFeatured(articleSourceId, src, caption, title) {
+        try {
+            const body = new URLSearchParams({ articleSourceId });
+            const res = await fetch(A.featuredUrl, { method: 'POST', headers: { [csrfHeader]: csrfToken }, body });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.success) { toast(data.message || 'Không đổi được ảnh đại diện', true); return; }
+            showHero(src, caption, title);
+            closeModals();
+            toast(data.message);
+        } catch (ignored) {
+            toast('Mất kết nối khi đổi ảnh đại diện', true);
+        }
+    }
+
+    // Cách 1: chọn ảnh đã có trong tư liệu của bài
+    $('#featuredGrid')?.addEventListener('click', e => {
         const btn = e.target.closest('.choose-featured');
-        if (!btn) return;
-        const body = new URLSearchParams({ articleSourceId: btn.dataset.id });
-        const res = await fetch(A.featuredUrl, { method: 'POST', headers: { [csrfHeader]: csrfToken }, body });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.success) { toast(data.message || 'Không đổi được ảnh đại diện', true); return; }
-        showHero(btn.dataset.src, btn.dataset.caption, btn.dataset.title);
-        closeModals();
-        toast(data.message);
+        if (btn) setFeatured(btn.dataset.id, btn.dataset.src, btn.dataset.caption, btn.dataset.title);
     });
+
+    // Cách 2: chọn ảnh từ tư liệu đề tài: gắn vào bài trước, rồi mới đặt làm ảnh đại diện
+    $('#featuredTopicGrid')?.addEventListener('click', async e => {
+        const btn = e.target.closest('.choose-topic-featured');
+        if (!btn) return;
+        btn.disabled = true;
+        try {
+            const body = new URLSearchParams({ sourceId: btn.dataset.sourceId });
+            const res = await fetch(A.topicMediaUrl, { method: 'POST', headers: { [csrfHeader]: csrfToken }, body });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.success) { toast(data.message || 'Không lấy được ảnh từ đề tài', true); return; }
+            if (!$(`#insertImageGrid .insert-image[data-id="${data.articleSourceId}"]`)) addImageOption(data);
+            await setFeatured(data.articleSourceId, data.url, data.caption || data.title, data.title);
+        } catch (ignored) {
+            toast('Mất kết nối khi lấy ảnh từ đề tài', true);
+        } finally {
+            btn.disabled = false;
+        }
+    });
+
+    // Cách 3: tải ảnh mới từ máy
+    const heroInput = $('#heroFile'), heroDrop = $('#heroDrop'), uploadHeroBtn = $('#uploadHeroBtn');
+    const heroCaptionInput = $('#heroCaptionInput'), heroProgress = $('#heroProgress');
+    let heroFile = null;
+
+    function pickHero(file) {
+        if (!file) return;
+        if (!IMAGE_TYPES.includes(file.type)) { toast('Ảnh đại diện chỉ hỗ trợ JPG, PNG, WebP, GIF', true); return; }
+        if (file.size > 10 * MB) { toast('Ảnh tối đa 10MB', true); return; }
+        heroFile = file;
+        uploadHeroBtn.disabled = false;
+        $('#heroFileName').textContent = `${file.name} (${(file.size / MB).toFixed(1)} MB)`;
+        heroCaptionInput.focus();
+    }
+    function uploadHero() {
+        if (!heroFile) return;
+        const caption = heroCaptionInput.value.trim();
+        if (!caption) { toast('Nhập chú thích cho ảnh đại diện', true); heroCaptionInput.focus(); return; }
+        if (A.isNew && (!titleEl.value.trim() || !categoryEl.value.trim())) {
+            toast('Nhập tiêu đề và chuyên mục trước khi tải ảnh', true);
+            return;
+        }
+        const form = new FormData();
+        form.append('file', heroFile);
+        form.append('caption', caption);
+        // Bài mới chưa lưu: gửi kèm nội dung đang soạn để server tạo bản nháp trước
+        if (A.isNew) {
+            Object.entries(payload()).forEach(([name, value]) => form.append(name, value));
+            form.append('assignmentId', A.assignmentId);
+        }
+        const bar = $('span', heroProgress);
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', A.isNew ? A.newMediaUrl : A.mediaUrl);
+        xhr.setRequestHeader(csrfHeader, csrfToken);
+        xhr.upload.onprogress = e => { if (e.lengthComputable) bar.style.width = `${Math.round(e.loaded / e.total * 100)}%`; };
+        const done = () => { uploadHeroBtn.disabled = !heroFile; heroProgress.hidden = true; bar.style.width = '0'; };
+        xhr.onload = () => {
+            let data = {};
+            try { data = JSON.parse(xhr.responseText); } catch (ignored) { /* lỗi không phải JSON */ }
+            if (xhr.status !== 200 || !data.success) { done(); toast(data.message || 'Tải ảnh lên không thành công', true); return; }
+            // Bài mới: ảnh đầu tiên được server tự đặt làm ảnh đại diện, chỉ cần mở trang sửa bài
+            if (A.isNew) {
+                toast(data.message);
+                openCreatedDraft(data.articleId);
+                return;
+            }
+            heroFile = null;
+            heroInput.value = '';
+            heroCaptionInput.value = '';
+            $('#heroFileName').textContent = 'Chọn hoặc kéo thả ảnh từ máy';
+            done();
+            addImageOption(data);
+            // Bài chưa có ảnh đại diện: server đã tự đặt ảnh này. Có rồi: gọi thêm để thay ảnh cũ
+            if (data.featured) {
+                showHero(data.url, data.caption || data.title, data.title);
+                closeModals();
+                toast('Đã đặt ảnh đại diện');
+            } else {
+                setFeatured(data.articleSourceId, data.url, data.caption || data.title, data.title);
+            }
+        };
+        xhr.onerror = () => { done(); toast('Mất kết nối khi tải ảnh lên', true); };
+        uploadHeroBtn.disabled = true;
+        heroProgress.hidden = false;
+        xhr.send(form);
+    }
+    // Bài đã khóa thì không có hộp chọn ảnh đại diện
+    if (heroInput) {
+        heroInput.addEventListener('change', () => pickHero(heroInput.files[0]));
+        uploadHeroBtn.addEventListener('click', uploadHero);
+        ['dragenter', 'dragover'].forEach(t => heroDrop.addEventListener(t, e => { e.preventDefault(); heroDrop.classList.add('over'); }));
+        ['dragleave', 'drop'].forEach(t => heroDrop.addEventListener(t, () => heroDrop.classList.remove('over')));
+        heroDrop.addEventListener('drop', e => { e.preventDefault(); pickHero(e.dataTransfer.files[0]); });
+    }
 
     // Chọn cả khối ảnh khi bấm vào ảnh trong nội dung (để xóa / di chuyển dễ hơn)
     editor.addEventListener('click', e => {

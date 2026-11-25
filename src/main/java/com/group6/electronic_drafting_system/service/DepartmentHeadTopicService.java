@@ -8,6 +8,7 @@ import com.group6.electronic_drafting_system.dto.DepartmentHead.TopicAssignmentP
 public interface DepartmentHeadTopicService {
     DepartmentHeadTopicBoardDTO getBoard(String email);
     TopicAssignmentPageDTO getAssignmentPage(Integer topicId, String email);
+    TopicAssignmentFormDTO prefillAssignmentForm(TopicAssignmentPageDTO page);
     void confirmAssignment(Integer topicId, TopicAssignmentFormDTO form, String email);
     void addSupporters(Integer topicId, TopicAssignmentFormDTO form, String email);
     void removeSupporter(Integer topicId, Integer assignmentId, String email);

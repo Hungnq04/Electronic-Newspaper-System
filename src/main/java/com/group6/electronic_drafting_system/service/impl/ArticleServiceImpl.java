@@ -1,8 +1,10 @@
 package com.group6.electronic_drafting_system.service.impl;
 
 import com.group6.electronic_drafting_system.dto.Article.ArticleCreateRequestDTO;
+import com.group6.electronic_drafting_system.dto.Article.ArticleCreatedWithMediaDTO;
 import com.group6.electronic_drafting_system.dto.Article.ArticleDraftRequestDTO;
 import com.group6.electronic_drafting_system.dto.Article.ArticleEditorDTO;
+import com.group6.electronic_drafting_system.dto.Article.ArticleListItemDTO;
 import com.group6.electronic_drafting_system.dto.Article.ArticleListPageDTO;
 import com.group6.electronic_drafting_system.dto.Article.ArticleMediaUploadResponseDTO;
 import com.group6.electronic_drafting_system.dto.Article.AssignedTopicDTO;
@@ -14,18 +16,21 @@ import com.group6.electronic_drafting_system.entity.ArticleVersion;
 import com.group6.electronic_drafting_system.entity.Assignment;
 import com.group6.electronic_drafting_system.entity.Comment;
 import com.group6.electronic_drafting_system.entity.Source;
+import com.group6.electronic_drafting_system.entity.Topic;
 import com.group6.electronic_drafting_system.entity.TopicSource;
+import com.group6.electronic_drafting_system.entity.enums.AnchorField;
 import com.group6.electronic_drafting_system.entity.enums.ArticleReviewDecision;
 import com.group6.electronic_drafting_system.entity.enums.ArticleStatus;
 import com.group6.electronic_drafting_system.entity.enums.AssignmentRole;
 import com.group6.electronic_drafting_system.entity.enums.AssignmentStatus;
+import com.group6.electronic_drafting_system.entity.enums.Priority;
+import com.group6.electronic_drafting_system.entity.enums.ReviewStage;
 import com.group6.electronic_drafting_system.entity.enums.SourceType;
 import com.group6.electronic_drafting_system.entity.enums.TopicStatus;
 import com.group6.electronic_drafting_system.exception.ApplicationException;
 import com.group6.electronic_drafting_system.exception.ErrorCode;
 import com.group6.electronic_drafting_system.mapper.Article.ArticleMapper;
 import com.group6.electronic_drafting_system.mapper.DepartmentHead.ReviewWorkspaceMapper;
-import com.group6.electronic_drafting_system.mapper.Reporter.ReporterTaskMapper;
 import com.group6.electronic_drafting_system.repository.AccountRepository;
 import com.group6.electronic_drafting_system.repository.ArticleRepository;
 import com.group6.electronic_drafting_system.repository.ArticleReviewRepository;
@@ -42,8 +47,10 @@ import com.group6.electronic_drafting_system.service.MediaStorageService.StoredM
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -91,6 +98,7 @@ public class ArticleServiceImpl implements ArticleService {
     // ý tính theo cách chia này)
     private final ReviewWorkspaceMapper versionViewMapper;
 
+    // Spring tự truyền các repository / mapper / service cần dùng vào đây (constructor injection)
     public ArticleServiceImpl(ArticleRepository articles, ArticleVersionRepository versions,
             ArticleSourceRepository articleSources,
             ArticleReviewRepository reviews, CommentRepository comments, AssignmentRepository assignments,
@@ -111,6 +119,7 @@ public class ArticleServiceImpl implements ArticleService {
         this.versionViewMapper = versionViewMapper;
     }
 
+    // Trang "Bài viết của tôi": các bài mình là Lead + các nhiệm vụ viết chính còn được viết bài mới.
     @Override
     @Transactional(readOnly = true)
     public ArticleListPageDTO getListPage(String email) {
@@ -124,26 +133,37 @@ public class ArticleServiceImpl implements ArticleService {
                 me.getId(), AssignmentRole.LEAD, AssignmentStatus.ASSIGNED, TopicStatus.ACTIVE).stream()
                 .map(a -> articleMapper.toAssignedTopicDTO(a, countByTopic.getOrDefault(a.getTopic().getId(), 0L)))
                 .toList();
-        String department = me.getDepartment() == null ? null : me.getDepartment().getDepartmentName();
-        return new ArticleListPageDTO(me.getFullName(), department, ReporterTaskMapper.initials(me.getFullName()),
-                writable, mine.stream().map(articleMapper::toListItemDTO).toList());
+        List<ArticleListItemDTO> items = mine.stream()
+                .map(a -> articleMapper.toListItemDTO(a, statusLabel(a.getStatus()), statusGroup(a.getStatus())))
+                .toList();
+        return new ArticleListPageDTO(me.getFullName(), departmentName(me), initials(me.getFullName()),
+                writable, items);
     }
 
+    // Trang "Viết bài mới" từ một nhiệm vụ viết chính. form: dữ liệu đã nhập (khi nộp lỗi phải hiện lại), có thể trống.
     @Override
     @Transactional(readOnly = true)
     public ArticleEditorDTO getNewArticleForm(ArticleCreateRequestDTO form, String email) {
         Account me = currentAccount(email);
-        Assignment assignment = writableAssignment(form.getAssignmentId(), me);
-        Integer topicId = assignment.getTopic().getId();
-        return articleMapper.toNewEditorDTO(form, assignment, me, reviewerName(topicId), topicMedia(topicId));
+        Assignment assignment = writableAssignment(form.getAssignmentId(), me);   // Kiểm tra quyền: phải là Lead của nhiệm vụ
+        Topic topic = assignment.getTopic();
+        // Chưa nhập gì thì lấy sẵn tít và chuyên mục theo đề tài
+        String title = form.getTitle() != null ? form.getTitle() : topic.getTitle();
+        String category = form.getCategory() != null ? form.getCategory() : topic.getCategory();
+        String content = form.getContent() == null ? "" : form.getContent();
+        return articleMapper.toNewEditorDTO(form, assignment, me, title, category, content,
+                statusLabel(ArticleStatus.DRAFT), priorityLabel(topic.getPriority()), initials(me.getFullName()),
+                departmentName(me), reviewerName(topic.getId()), topicMedia(topic.getId()));
     }
 
+    // Tạo bài mới (DRAFT) từ nhiệm vụ viết chính; submit = true thì nộp luôn (tạo version 1.0).
     @Override
     @Transactional
     public Integer create(ArticleCreateRequestDTO request, boolean submit, String email) {
         Account me = currentAccount(email);
-        Assignment assignment = writableAssignment(request.getAssignmentId(), me);
+        Assignment assignment = writableAssignment(request.getAssignmentId(), me);   // Kiểm tra quyền: phải là Lead của nhiệm vụ
         validateDraft(request);
+        normalizeDraft(request);
 
         Article article = articleMapper.toEntity(request, assignment.getTopic(), me);
         article.setContent(sanitize(article.getContent()));
@@ -153,6 +173,7 @@ public class ArticleServiceImpl implements ArticleService {
         return article.getId();
     }
 
+    // Trang soạn / xem một bài của chính mình: nội dung, lịch sử phiên bản, góp ý, tư liệu và ảnh / video của đề tài.
     @Override
     @Transactional(readOnly = true)
     public ArticleEditorDTO getEditor(Integer articleId, String email) {
@@ -176,16 +197,27 @@ public class ArticleServiceImpl implements ArticleService {
                 .filter(v -> v.id().equals(article.getRestoredFromVersionId()))
                 .map(ArticleEditorDTO.Version::label)
                 .findFirst().orElse(null);
+        // Chỉ lấy phản hồi đã có quyết định: lượt đang duyệt dở thì phóng viên chưa
+        // được thấy
+        ArticleEditorDTO.Review latestReview = reviews.findFirstByVersion_Article_IdAndDecisionIsNotNullOrderByIdDesc(articleId)
+                .map(r -> articleMapper.toReviewItem(r, stageLabel(r.getReviewStage()))).orElse(null);
+
+        // Tư liệu của bài; tách riêng các ảnh và ảnh đại diện để trang soạn bài dùng
+        List<ArticleEditorDTO.Source> sources = articleSources.findByArticleOrdered(articleId).stream()
+                .map(articleMapper::toSourceItem).toList();
+        List<ArticleEditorDTO.Source> imageSources = sources.stream().filter(ArticleServiceImpl::isImageSource).toList();
+        ArticleEditorDTO.Source featuredImage = imageSources.stream().filter(ArticleEditorDTO.Source::featured)
+                .findFirst().orElse(null);
+
+        Account leadAccount = article.getLead();
         return articleMapper.toEditorDTO(article, lead != null && EDITABLE.contains(article.getStatus()), lead,
-                reviewerName(topicId),
-                // Chỉ lấy phản hồi đã có quyết định: lượt đang duyệt dở thì phóng viên chưa
-                // được thấy
-                reviews.findFirstByVersion_Article_IdAndDecisionIsNotNullOrderByIdDesc(articleId)
-                        .map(articleMapper::toReviewItem).orElse(null),
+                statusLabel(article.getStatus()), priorityLabel(article.getTopic().getPriority()),
+                initials(leadAccount.getFullName()), departmentName(leadAccount), reviewerName(topicId),
+                latestReview,
                 history,
                 returnedVersion,
                 restoredFromLabel,
-                articleSources.findByArticleOrdered(articleId).stream().map(articleMapper::toSourceItem).toList(),
+                sources, featuredImage, imageSources,
                 topicMedia(topicId));
     }
 
@@ -228,10 +260,27 @@ public class ArticleServiceImpl implements ArticleService {
         return version.getVersionLabel();
     }
 
-    // Ảnh / video trong kho tư liệu của đề tài để chèn vào bài
+    // Ảnh / video trong kho tư liệu của đề tài để chèn vào bài (tư liệu khác bị bỏ qua)
     private List<ArticleEditorDTO.TopicMedia> topicMedia(Integer topicId) {
         return topicSources.findByTopic_IdOrderByAttachedAtAsc(topicId).stream()
-                .map(articleMapper::toTopicMedia).filter(Objects::nonNull).toList();
+                .map(this::toTopicMedia).filter(Objects::nonNull).toList();
+    }
+
+    // Một tư liệu đề tài -> TopicMedia. Trả null nếu tư liệu không phải ảnh / video.
+    // Video được lưu với source_type khác IMAGE, nhận ra qua đường dẫn Cloudinary.
+    private ArticleEditorDTO.TopicMedia toTopicMedia(TopicSource topicSource) {
+        Source source = topicSource.getSource();
+        boolean video = source.getSourceType() != SourceType.IMAGE
+                && MediaStorageService.isVideoUrl(source.getFileUrl());
+        boolean image = source.getSourceType() == SourceType.IMAGE && source.getFileUrl() != null
+                && !source.getFileUrl().isBlank();
+        if (!image && !video)
+            return null;
+        String note = trimToNull(topicSource.getNote());
+        String addedByName = source.getAddedBy() == null ? null : source.getAddedBy().getFullName();
+        // Chú thích hiển thị: ghi chú nếu có, không thì tên tư liệu
+        String caption = note != null ? note : source.getTitle();
+        return articleMapper.toTopicMedia(source, video, note, addedByName, caption);
     }
 
     // =====================================================================================================
@@ -274,7 +323,9 @@ public class ArticleServiceImpl implements ArticleService {
                 if (!review.getVersion().getId().equals(version.getId())) {
                     continue;
                 }
-                versionReviews.add(articleMapper.toVersionReview(review));   // đổi sang DTO để hiển thị
+                // Service tính nhãn, mapper chỉ đóng gói thành DTO
+                versionReviews.add(articleMapper.toVersionReview(review, stageLabel(review.getReviewStage()),
+                        decisionLabel(review.getDecision())));
                 if (review.getDecision() == ArticleReviewDecision.REQUEST_REVISION) {
                     wasReturned = true;   // phiên bản này đã bị trả về
                 }
@@ -289,19 +340,21 @@ public class ArticleServiceImpl implements ArticleService {
                     boolean rootComment = comment.getParent() == null;                  // hệ thống không có chức năng trả lời góp ý
                     if (sameVersion && reviewDecided && rootComment) {
                         // List.of() = danh sách câu trả lời rỗng
-                        versionComments.add(articleMapper.toVersionComment(comment, List.of()));
+                        versionComments.add(toVersionComment(comment, List.of()));
                     }
                 }
             }
 
             // 3c. Đóng gói phiên bản: nội dung + lượt duyệt + góp ý.
             // toVersionView: chia đoạn bằng ĐÚNG mapper của màn Trưởng phòng, để tô vàng đúng vị trí góp ý.
-            result.add(articleMapper.toVersionItem(version, versionReviews, versionComments,
+            result.add(articleMapper.toVersionItem(version, versionLabel(version), versionReviews, versionComments,
                     versionViewMapper.toVersionView(version)));
         }
         return result;
     }
 
+    // Lưu nháp: chỉ cập nhật bản đang soạn trên bảng article, KHÔNG tạo version (CLAUDE.md mục 7).
+    // Trả về thời điểm lưu để giao diện hiện "Đã lưu lúc ...".
     @Override
     @Transactional
     public OffsetDateTime saveDraft(Integer articleId, ArticleDraftRequestDTO request, String email) {
@@ -310,6 +363,7 @@ public class ArticleServiceImpl implements ArticleService {
         return article.getUpdatedAt();
     }
 
+    // Nộp / nộp lại bài đang soạn: lưu nháp rồi tạo version mới, chuyển sang DEPARTMENT_REVIEW.
     // noRollbackFor: nếu bị lỗi kiểm tra (thiếu ghi chú, thiếu tư liệu...) thì VẪN
     // GIỮ bản nháp vừa sửa,
     // chỉ không tạo version. Không có dòng này, transaction bị hủy và Lead mất phần
@@ -324,6 +378,7 @@ public class ArticleServiceImpl implements ArticleService {
         submitVersion(article, request.getChangeSummary());
     }
 
+    // Chọn ảnh đại diện: bật featured cho tư liệu được chọn, tắt cho mọi tư liệu khác (mỗi bài tối đa một ảnh đại diện)
     @Override
     @Transactional
     public void setFeaturedImage(Integer articleId, Integer articleSourceId, String email) {
@@ -331,7 +386,14 @@ public class ArticleServiceImpl implements ArticleService {
         List<ArticleSource> all = articleSources.findByArticleOrdered(articleId);
         ArticleSource chosen = all.stream().filter(s -> s.getId().equals(articleSourceId)).findFirst()
                 .orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_SOURCE_NOT_FOUND));
-        all.forEach(s -> s.setFeatured(s == chosen));
+        // Ảnh đại diện phải là tư liệu loại IMAGE (R16)
+        if (chosen.getSource().getSourceType() != SourceType.IMAGE)
+            throw new ApplicationException(ErrorCode.ARTICLE_SOURCE_NOT_FOUND);
+        // Tắt ảnh cũ và ghi xuống DB trước (flush), rồi mới bật ảnh mới: nếu hai ảnh cùng bật
+        // dù chỉ trong chốc lát thì vi phạm unique index uq_article_featured
+        all.forEach(s -> s.setFeatured(false));
+        articleSources.flush();
+        chosen.setFeatured(true);
     }
 
     // Lấy ảnh / video từ tư liệu đề tài vào bài: gắn source đó vào article_source
@@ -342,7 +404,7 @@ public class ArticleServiceImpl implements ArticleService {
         Article article = editableArticle(articleId, email);
         TopicSource topicSource = topicSources.findByTopic_IdAndSource_Id(article.getTopic().getId(), sourceId)
                 .orElseThrow(() -> new ApplicationException(ErrorCode.TOPIC_SOURCE_NOT_FOUND));
-        ArticleEditorDTO.TopicMedia media = articleMapper.toTopicMedia(topicSource);
+        ArticleEditorDTO.TopicMedia media = toTopicMedia(topicSource);
         if (media == null)
             throw new ApplicationException(ErrorCode.TOPIC_SOURCE_NOT_FOUND);
         MediaKind kind = media.video() ? MediaKind.VIDEO : MediaKind.IMAGE;
@@ -410,11 +472,28 @@ public class ArticleServiceImpl implements ArticleService {
         }
     }
 
+    // Bài mới chưa lưu mà Lead tải ảnh / video: tự tạo bản nháp từ nội dung đang soạn, rồi tải tệp và gắn vào bài đó.
+    // Cả hai bước nằm trong MỘT transaction: tải tệp lỗi (sai loại, quá lớn, Cloudinary lỗi...) thì bài nháp
+    // cũng không được tạo, không để lại bài rác. Quyền được kiểm tra bên trong create() (phải là Lead của nhiệm vụ)
+    // và uploadMedia() (phải là Lead của bài, bài đang sửa được).
+    @Override
+    @Transactional
+    public ArticleCreatedWithMediaDTO createDraftWithMedia(ArticleCreateRequestDTO request, MultipartFile file,
+            String caption, String email) {
+        // 1. Tạo bài DRAFT (giống bấm "Tạo bản nháp"): chưa tạo version
+        Integer articleId = create(request, false, email);
+        // 2. Tải tệp lên và gắn vào bài vừa tạo (giống tải ảnh ở bài đã lưu)
+        ArticleMediaUploadResponseDTO media = uploadMedia(articleId, file, caption, email);
+        return new ArticleCreatedWithMediaDTO(true, "Đã tạo bản nháp. " + media.message(), articleId, media);
+    }
+
+    // Tên tư liệu khi người dùng không nhập chú thích: lấy tên tệp (tối đa 255 ký tự)
     private static String fileTitle(String filename) {
         String name = filename == null || filename.isBlank() ? "Ảnh tải lên" : filename.trim();
         return trimTo(name, 255);
     }
 
+    // Bỏ khoảng trắng hai đầu và cắt còn tối đa max ký tự; chuỗi rỗng thì trả null
     private static String trimTo(String value, int max) {
         if (value == null || value.isBlank())
             return null;
@@ -458,7 +537,7 @@ public class ArticleServiceImpl implements ArticleService {
 
         // 4. Hợp lệ: chụp version mới (1.0, 1.1...) và chuyển sang chờ Trưởng ban duyệt
         int nextNumber = latest.map(ArticleVersion::getVersionNumber).orElse(0) + 1;
-        versions.save(articleMapper.toVersion(article, nextNumber, changeSummary));
+        versions.save(articleMapper.toVersion(article, nextNumber, trimToNull(changeSummary)));
         article.setStatus(ArticleStatus.DEPARTMENT_REVIEW);
         article.setSubmittedAt(OffsetDateTime.now().truncatedTo(ChronoUnit.SECONDS));
         // Đã nộp thì xóa dấu "vừa khôi phục": DB chỉ cho có giá trị này khi bài DRAFT /
@@ -482,21 +561,36 @@ public class ArticleServiceImpl implements ArticleService {
         return left.equals(right);
     }
 
+    // Chép dữ liệu trình soạn thảo vào bản đang soạn: kiểm tra, chuẩn hóa, lọc HTML, cập nhật mốc thời gian
     private void applyDraft(Article article, ArticleDraftRequestDTO request) {
         validateDraft(request);
+        normalizeDraft(request);
         articleMapper.updateEntity(request, article);
         article.setContent(sanitize(article.getContent()));
         // Article không có @PreUpdate nên tự cập nhật mốc thời gian
         article.setUpdatedAt(OffsetDateTime.now().truncatedTo(ChronoUnit.SECONDS));
     }
 
+    // Tít và chuyên mục bắt buộc ngay cả khi chỉ lưu nháp
     private static void validateDraft(ArticleDraftRequestDTO request) {
         if (request.getTitle() == null || request.getTitle().isBlank())
             throw new ApplicationException(ErrorCode.ARTICLE_TITLE_REQUIRED);
         if (request.getCategory() == null || request.getCategory().isBlank())
             throw new ApplicationException(ErrorCode.ARTICLE_CATEGORY_REQUIRED);
     }
-    //
+
+    // Chuẩn hóa dữ liệu form trước khi mapper chép vào entity:
+    // bỏ khoảng trắng hai đầu (chuỗi rỗng -> null), cắt theo độ dài cột DB, nội dung null -> ""
+    private static void normalizeDraft(ArticleDraftRequestDTO request) {
+        request.setTitle(truncate(trimToNull(request.getTitle()), 255));
+        request.setSubtitle(truncate(trimToNull(request.getSubtitle()), 255));
+        request.setSapo(trimToNull(request.getSapo()));
+        request.setCategory(truncate(trimToNull(request.getCategory()), 100));
+        request.setContent(request.getContent() == null ? "" : request.getContent());
+    }
+
+    // Kiểm tra quyền sửa bài: đúng Lead của bài, còn assignment LEAD hiệu lực trên đề tài,
+    // và bài đang ở DRAFT / REVISION_REQUIRED. Sai điều kiện nào thì báo lỗi tương ứng.
     private Article editableArticle(Integer articleId, String email) {
         Account me = currentAccount(email);
         Article article = articles.findById(articleId)
@@ -510,7 +604,7 @@ public class ArticleServiceImpl implements ArticleService {
         return article;
     }
 
-    // Chỉ viết bài mới từ nhiệm vụ giao cho chính mình, vai trò viết chính, còn
+    // Kiểm tra quyền tạo bài: chỉ viết bài mới từ nhiệm vụ giao cho chính mình, vai trò viết chính, còn
     // hiệu lực, trên đề tài đã duyệt
     private Assignment writableAssignment(Integer assignmentId, Account me) {
         if (assignmentId == null)
@@ -522,11 +616,13 @@ public class ArticleServiceImpl implements ArticleService {
                 .orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_ASSIGNMENT_NOT_LEAD));
     }
 
+    // Assignment LEAD còn hiệu lực (chưa REMOVED) của một người trên đề tài; rỗng nếu họ không phải Lead
     private Optional<Assignment> leadAssignment(Integer topicId, Integer accountId) {
         return assignments.findFirstByTopic_IdAndAccount_IdAndAssignmentRoleAndStatusNot(
                 topicId, accountId, AssignmentRole.LEAD, AssignmentStatus.REMOVED);
     }
 
+    // Tên Trưởng phòng đang phụ trách đề tài (người sẽ duyệt bài); null nếu chưa có
     private String reviewerName(Integer topicId) {
         return assignments
                 .findFirstByTopic_IdAndAssignmentRoleAndStatusNot(topicId, AssignmentRole.DEPARTMENT_HEAD,
@@ -534,6 +630,7 @@ public class ArticleServiceImpl implements ArticleService {
                 .map(a -> a.getAccount().getFullName()).orElse(null);
     }
 
+    // Tài khoản đang đăng nhập (tìm theo email); không thấy thì báo lỗi 403
     private Account currentAccount(String email) {
         if (email == null)
             throw new ApplicationException(ErrorCode.ARTICLE_FORBIDDEN);
@@ -541,9 +638,116 @@ public class ArticleServiceImpl implements ArticleService {
                 .orElseThrow(() -> new ApplicationException(ErrorCode.ARTICLE_FORBIDDEN));
     }
 
+    // Lọc HTML nội dung bài: chỉ giữ thẻ / thuộc tính trong CONTENT_SAFELIST (chặn script, on*, javascript:)
     private static String sanitize(String html) {
         if (html == null || html.isBlank())
             return "";
         return Jsoup.clean(html, "http://localhost/", CONTENT_SAFELIST, OUTPUT);
+    }
+
+    // ===================== Tính dữ liệu hiển thị =====================
+
+    // Tính nhãn vị trí và nhãn cấp duyệt của một góp ý rồi đưa cho mapper đóng gói.
+    // replies: các trả lời của góp ý này (đã đóng gói)
+    private ArticleEditorDTO.VersionComment toVersionComment(Comment comment, List<ArticleEditorDTO.VersionComment> replies) {
+        return articleMapper.toVersionComment(comment, anchorLabel(comment), stageLabel(comment.getReview().getReviewStage()),
+                replies);
+    }
+
+    // Nhãn hiển thị của phiên bản: dùng version_label ("1.0", "1.1"...), thiếu thì dùng số version
+    private static String versionLabel(ArticleVersion version) {
+        return version.getVersionLabel() != null ? version.getVersionLabel() : String.valueOf(version.getVersionNumber());
+    }
+
+    // Tư liệu là ảnh có đường dẫn (dùng làm ảnh đại diện / chèn vào bài được)
+    private static boolean isImageSource(ArticleEditorDTO.Source source) {
+        return source.type() == SourceType.IMAGE && source.fileUrl() != null && !source.fileUrl().isBlank();
+    }
+
+    // Chữ hiển thị của trạng thái bài
+    private static String statusLabel(ArticleStatus status) {
+        return switch (status) {
+            case DRAFT -> "Bản thảo";
+            case DEPARTMENT_REVIEW -> "Chờ trưởng ban duyệt";
+            case REVISION_REQUIRED -> "Cần chỉnh sửa";
+            case DEPARTMENT_APPROVED -> "Trưởng ban đã duyệt";
+            case APPROVED -> "Đã duyệt xuất bản";
+            case SCHEDULED -> "Đã lên lịch đăng";
+            case PUBLISHED -> "Đã xuất bản";
+        };
+    }
+
+    // Nhóm màu của trạng thái bài, giống bảng nhiệm vụ: doing (đang ở tay phóng viên) / review (đang duyệt) / done
+    private static String statusGroup(ArticleStatus status) {
+        return switch (status) {
+            case DRAFT, REVISION_REQUIRED -> "doing";
+            case DEPARTMENT_REVIEW, DEPARTMENT_APPROVED -> "review";
+            case APPROVED, SCHEDULED, PUBLISHED -> "done";
+        };
+    }
+
+    // Chữ hiển thị của mức ưu tiên đề tài (trang soạn bài); không có mức ưu tiên thì chuỗi rỗng
+    private static String priorityLabel(Priority priority) {
+        if (priority == null) return "";
+        return switch (priority) {
+            case LOW -> "Thấp";
+            case NORMAL -> "Bình thường";
+            case HIGH -> "Cao";
+            case URGENT -> "Khẩn";
+        };
+    }
+
+    // Chữ hiển thị của cấp duyệt
+    private static String stageLabel(ReviewStage stage) {
+        return stage == ReviewStage.DEPARTMENT ? "Trưởng ban" : "Thư ký tòa soạn";
+    }
+
+    // Chữ hiển thị của quyết định duyệt (null = lượt duyệt đang mở, chưa quyết định)
+    private static String decisionLabel(ArticleReviewDecision decision) {
+        if (decision == null) return "Đang duyệt";
+        return decision == ArticleReviewDecision.APPROVED ? "Đã duyệt" : "Yêu cầu chỉnh sửa";
+    }
+
+    // Chữ mô tả vị trí góp ý: "Tiêu đề", "Sa-pô", "Đoạn 3"...; không gắn vị trí thì "Góp ý chung"
+    private static String anchorLabel(Comment comment) {
+        AnchorField field = comment.getAnchorField();
+        if (field == null)
+            return "Góp ý chung";
+        return switch (field) {
+            case TITLE -> "Tiêu đề";
+            case SUBTITLE -> "Tiêu đề phụ";
+            case SAPO -> "Sa-pô";
+            case CONTENT -> comment.getAnchorParagraph() == null ? "Nội dung" : "Đoạn " + comment.getAnchorParagraph();
+        };
+    }
+
+    // ===================== Hàm phụ: chuỗi =====================
+
+    // Tên phòng ban của tài khoản (null nếu chưa gán phòng)
+    private static String departmentName(Account account) {
+        return account.getDepartment() == null ? null : account.getDepartment().getDepartmentName();
+    }
+
+    // Bỏ khoảng trắng hai đầu; chuỗi rỗng thì trả null
+    private static String trimToNull(String value) {
+        if (value == null)
+            return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    // Cắt chuỗi còn tối đa max ký tự (độ dài cột DB)
+    private static String truncate(String value, int max) {
+        return value == null || value.length() <= max ? value : value.substring(0, max);
+    }
+
+    // Chữ viết tắt cho avatar: "Nguyễn Thu Hà" -> "TH" (chữ cái đầu của hai từ cuối)
+    private static String initials(String fullName) {
+        if (fullName == null || fullName.isBlank()) return "?";
+        String[] words = fullName.trim().split("\\s+");
+        return Arrays.stream(words, Math.max(0, words.length - 2), words.length)
+                .map(w -> w.substring(0, 1))
+                .collect(Collectors.joining())
+                .toUpperCase(Locale.ROOT);
     }
 }

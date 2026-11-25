@@ -6,7 +6,6 @@ import com.group6.electronic_drafting_system.dto.DepartmentHead.TopicAssignmentF
 import com.group6.electronic_drafting_system.dto.DepartmentHead.TopicAssignmentPageDTO;
 import com.group6.electronic_drafting_system.exception.ApplicationException;
 import com.group6.electronic_drafting_system.exception.ErrorCode;
-import com.group6.electronic_drafting_system.mapper.DepartmentHead.DepartmentHeadTopicMapper;
 import com.group6.electronic_drafting_system.service.DepartmentHeadReviewService;
 import com.group6.electronic_drafting_system.service.DepartmentHeadService;
 import com.group6.electronic_drafting_system.service.DepartmentHeadTopicService;
@@ -110,8 +109,7 @@ public class DepartmentHeadController {
             redirect.addFlashAttribute("error", ex.getErrorCode().getMessage());
             return "redirect:" + APPROVED_TOPICS_PATH;
         }
-        TopicAssignmentFormDTO form = TopicAssignmentFormDTO.prefill(
-                DepartmentHeadTopicMapper.toInputValue(page.leadDeadline()), page.leadRequirements());
+        TopicAssignmentFormDTO form = departmentHeadTopicService.prefillAssignmentForm(page);
         return assignmentPage(model, page, form, new ChangeLeadFormDTO());
     }
 

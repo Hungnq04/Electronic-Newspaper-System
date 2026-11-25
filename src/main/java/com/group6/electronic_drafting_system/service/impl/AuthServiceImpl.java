@@ -53,6 +53,7 @@ public class AuthServiceImpl implements AuthService {
     private final OtpEmailService otpEmailService;
     private final SecureRandom random = new SecureRandom();
 
+    // Spring tự truyền các thành phần cần dùng vào đây (constructor injection)
     public AuthServiceImpl(AuthenticationManager authenticationManager, AccountRepository accounts,
                            RoleRepository roles, AccountOtpRepository otps,
                            AccountMapper accountMapper, PasswordEncoder encoder, OtpEmailService otpEmailService) {
@@ -286,6 +287,7 @@ public class AuthServiceImpl implements AuthService {
 
     // ===================== Hàm phụ =====================
 
+    // Chuẩn hóa email: kiểm tra định dạng, bỏ khoảng trắng, đổi sang chữ thường
     private String normalize(String email) {
         if (emailError(email) != null) throw new ApplicationException(ErrorCode.AUTH_REGISTRATION_FAILED);
         return email.trim().toLowerCase(Locale.ROOT);
@@ -381,14 +383,17 @@ public class AuthServiceImpl implements AuthService {
         return OffsetDateTime.now().truncatedTo(ChronoUnit.SECONDS);
     }
 
+    // Thời điểm mã OTP hết hạn: lúc gửi + thời hạn hiệu lực
     private static OffsetDateTime validUntil(AccountOtp otp) {
         return otp.getLastSentAt().plus(OTP_VALIDITY);
     }
 
+    // Số giây còn lại đến mốc time (không âm)
     private static int secondsUntil(OffsetDateTime time) {
         return (int) Math.max(0, Duration.between(OffsetDateTime.now(), time).getSeconds());
     }
 
+    // Role REPORTER cho tài khoản mới đăng ký; DB chưa có thì tạo
     private Role getReporterRole() {
         return roles.findByRoleName(RoleName.REPORTER).orElseGet(() -> {
             Role role = new Role();
@@ -398,6 +403,7 @@ public class AuthServiceImpl implements AuthService {
         });
     }
 
+    // Tạo username từ phần trước @ của email (tối đa 50 ký tự); trùng thì thêm hậu tố ngẫu nhiên
     private String createUsername(String normalizedEmail) {
         String username = normalizedEmail.substring(0, normalizedEmail.indexOf('@'));
         if (username.length() > 50) username = username.substring(0, 50);

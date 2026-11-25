@@ -326,7 +326,7 @@
 
     <div class="dha-candidates">
         <div class="dha-candidate" th:each="c : ${page.candidates()}" data-dha-candidate
-             th:with="picked=${form.isSupporter(c.accountId())}"
+             th:with="picked=${#lists.contains(form.supporterIds, c.accountId())}"
              th:classappend="${picked} ? ' is-picked' : ''"
              th:attr="data-search=${#strings.toLowerCase(c.name() + ' ' + c.email() + ' ' + (c.departmentName() ?: ''))},data-name=${c.name()}">
             <div class="dha-candidate-row">

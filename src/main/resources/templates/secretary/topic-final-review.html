@@ -24,6 +24,8 @@
         <th:block th:replace="~{fragment/topic-review :: stats(${ws})}"></th:block>
 
         <!-- Lọc theo ban (server) + tìm nhanh trong hàng chờ (trên trang) -->
+        <!--/* [TV1-2.1b] Nói với thầy: "Chỗ này là ô lọc theo ban: chọn ban thì form tự gửi, trang tải lại với ?department=
+        [TV1-2.1] và chỉ hiện đề tài của ban đó." */-->
         <section class="tp-filter-panel" aria-label="Bộ lọc đề tài">
             <form method="get" th:action="@{/secretary/topic-reviews}">
                 <label class="tp-select-field">BAN:
@@ -77,6 +79,8 @@
 
     <th:block th:if="${ws.selected() != null and ws.canDecide()}">
         <!-- Final Topic Approval Confirmation -->
+        <!--/* [TV1-2.3b] Nói với thầy: "Chỗ này là 2 hộp thoại của Thư ký: Duyệt gửi tới /approve, Từ chối có ô lý do bắt buộc
+        gửi tới /reject [TV1-2.3]." */-->
         <dialog id="approve-dialog" class="tp-dialog">
             <form method="post" th:action="@{/secretary/topic-reviews/{id}/approve(id=${ws.selected().id()})}">
                 <h2>Duyệt đề tài lần cuối?</h2>

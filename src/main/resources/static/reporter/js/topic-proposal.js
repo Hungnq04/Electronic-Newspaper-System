@@ -1,9 +1,13 @@
 // FL-01: Topic Proposal List (tìm nhanh, chuông thông báo) + Create / Edit Topic (đếm ký tự, kiểm tra form, modal xác nhận).
 // Server vẫn kiểm tra lại toàn bộ; phần này chỉ để báo lỗi ngay trên form.
+// [TV1-0.7] Nói với thầy: "Chỗ này là JS của trang phóng viên, chạy trên trình duyệt sau khi trang đã tải: tìm
+//   nhanh, mở chuông, đếm ký tự và hộp xác nhận của form. Không đọc / ghi DB."
 (function () {
     'use strict';
 
     // ---------- Topic Proposal List: tìm nhanh trong các dòng đang hiển thị ----------
+    // [TV1-3.8] Nói với thầy: "Chỗ này em làm ô tìm nhanh: mỗi lần gõ thì so từ khóa với từng dòng trong bảng, dòng
+    //   không khớp thì ẩn đi. Không gửi lên server."
     var search = document.querySelector('[data-tp-search]');
     if (search) {
         var cards = Array.prototype.slice.call(document.querySelectorAll('[data-tp-search-text]'));
@@ -21,6 +25,8 @@
     }
 
     // ---------- Chuông thông báo (chỉ phóng viên): bấm để mở / đóng danh sách ----------
+    // [TV1-3.9] Nói với thầy: "Chỗ này em làm cái chuông: bấm chuông thì mở / đóng khung danh sách thông báo (server
+    //   đã vẽ sẵn), bấm ra ngoài thì đóng."
     var bell = document.querySelector('[data-tp-bell]');
     if (bell) {
         var panel = document.querySelector('[data-tp-bell-panel]');
@@ -39,6 +45,8 @@
     }
 
     // ---------- Create Topic Proposal / Edit & Resubmit Topic ----------
+    // [TV1-4.13] Nói với thầy: "Chỗ này em làm form đề xuất: đếm ký tự khi gõ, báo ô trống ngay, bấm Gửi duyệt thì mở
+    //   hộp xác nhận, bấm Xác nhận thì khóa nút rồi gửi form lên server [TV1-4.2]."
     var form = document.querySelector('[data-tp-form]');
     if (!form) return;
 

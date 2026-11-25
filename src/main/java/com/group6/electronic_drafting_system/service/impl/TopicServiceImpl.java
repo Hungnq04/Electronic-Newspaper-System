@@ -53,6 +53,9 @@ public class TopicServiceImpl implements TopicService {
         this.mapper = mapper;
     }
 
+    // [TV1-3.2] Nói với thầy: "Chỗ này em lấy dữ liệu trang Đề tài của tôi: các đề tài do phóng viên đề xuất, số đếm
+    //   từng trạng thái cho thẻ và tab, lọc theo tab đang chọn, cùng số thông báo chưa đọc và danh sách thông báo cho
+    //   chuông."
     @Override
     @Transactional(readOnly = true)
     public TopicProposalListDTO getProposalList(String email, TopicStatus statusFilter) {
@@ -83,6 +86,9 @@ public class TopicServiceImpl implements TopicService {
         return currentAccount(email).map(Account::getDepartment).map(mapper::toOption).orElse(null);
     }
 
+    // [TV1-4.4] Nói với thầy: "Chỗ này em lưu đề xuất mới: kiểm tra là phóng viên đang ACTIVE, kiểm tra lại tiêu đề /
+    //   tóm tắt [TV1-4.10], ban phải có Trưởng ban, rồi tạo Topic [TV1-4.5] và lưu vào bảng topic. Đề tài vào thẳng hàng
+    //   chờ Trưởng ban [TV1-1.9]."
     @Override
     @Transactional
     public Integer createProposal(String email, TopicCreateRequestDTO request) {
@@ -102,6 +108,8 @@ public class TopicServiceImpl implements TopicService {
         return topics.save(mapper.toNewTopic(request, department, me)).getId();
     }
 
+    // [TV1-5.2] Nói với thầy: "Chỗ này em lấy dữ liệu màn xem góp ý: chỉ chủ đề tài được xem, lấy lịch sử góp ý và kết
+    //   quả duyệt, và cho biết có hiện nút Sửa không."
     @Override
     @Transactional(readOnly = true)
     public TopicFeedbackViewDTO getFeedbackView(String email, Integer topicId) {
@@ -129,6 +137,8 @@ public class TopicServiceImpl implements TopicService {
         return form;
     }
 
+    // [TV1-4.8] Nói với thầy: "Chỗ này em lưu đề tài đã sửa: khóa dòng, kiểm tra được sửa không [TV1-4.9], cập nhật
+    //   tiêu đề, tóm tắt, tắt cờ chờ sửa để đề tài quay lại hàng chờ Trưởng ban."
     @Override
     @Transactional
     public void resubmit(String email, Integer topicId, TopicCreateRequestDTO request) {
@@ -146,6 +156,8 @@ public class TopicServiceImpl implements TopicService {
     }
 
     // Chỉ chủ đề tài, và chỉ khi Trưởng ban đang yêu cầu sửa
+    // [TV1-4.9] Nói với thầy: "Chỗ này em kiểm tra được sửa không: phải là người đề xuất và đề tài đang bị Trưởng ban
+    //   yêu cầu sửa, không thì báo lỗi 403."
     private static void checkCanEdit(Topic topic, Account me) {
         if (!topic.getCreator().getId().equals(me.getId()) || !isWaitingForReporter(topic)) {
             throw new ApplicationException(ErrorCode.TOPIC_EDIT_FORBIDDEN);
@@ -162,6 +174,7 @@ public class TopicServiceImpl implements TopicService {
                 .orElseThrow(() -> new ApplicationException(error));
     }
 
+    // [TV1-4.10] Nói với thầy: "Chỗ này em kiểm tra lại tiêu đề và tóm tắt ở service: không được rỗng, không quá dài."
     private static void validate(TopicCreateRequestDTO request) {
         if (request == null || isBlank(request.getTitle()) || isBlank(request.getSummary())
                 || request.getTitle().trim().length() > TopicCreateRequestDTO.TITLE_MAX

@@ -79,7 +79,7 @@
 
     <th:block th:if="${ws.selected() != null and ws.canDecide()}">
         <!-- Final Topic Approval Confirmation -->
-        <!--/* [TV1-2.3b] Nói với thầy: "Chỗ này là 2 hộp thoại của Thư ký: Duyệt gửi tới /approve, Từ chối có ô lý do bắt buộc
+        <!--/* [TV1-2.3b]"Chỗ này là 2 hộp thoại của Thư ký: Duyệt gửi tới /approve, Từ chối có ô lý do bắt buộc
         gửi tới /reject [TV1-2.3]." */-->
         <dialog id="approve-dialog" class="tp-dialog">
             <form method="post" th:action="@{/secretary/topic-reviews/{id}/approve(id=${ws.selected().id()})}">

@@ -80,9 +80,8 @@ public class DepartmentHeadController {
         // layout/app.html chèn fragment "reviewHistoryContent" của templates/department_head/review-history.html vào giữa trang
         model.addAttribute("contentView", "department_head/review-history");
         model.addAttribute("contentFragment", "reviewHistoryContent");
-        // Dùng chung giao diện rp- của màn /reporter/tasks + vài dòng CSS riêng; JS lọc bảng ngay trên trình duyệt
+        // Dùng chung giao diện rp- của màn /reporter/tasks + vài dòng CSS riêng. Màn này không có file JS riêng.
         model.addAttribute("pageCss", List.of("/reporter/css/reporter-tasks.css", "/department_head/css/department-head-review-history.css"));
-        model.addAttribute("pageJs", List.of("/department_head/js/department-head-review-history.js"));
         return "layout/app";
     }
 

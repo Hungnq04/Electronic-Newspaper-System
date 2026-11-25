@@ -19,9 +19,9 @@ public class ReviewHistoryItemDTO {
     private String articleCode;         // mã hiển thị, ví dụ "BT-15"
     private String articleTitle;        // tít của PHIÊN BẢN đã duyệt (đúng bản mình đã đọc lúc đó)
     private String topicTitle;          // tên đề tài
-    private String category;            // chuyên mục -> dùng cho ô lọc "Chuyên mục"
+    private String category;            // chuyên mục
     private String versionLabel;        // phiên bản đã duyệt, ví dụ "1.0", "1.1"
-    private boolean approved;           // true = Đã duyệt, false = Yêu cầu sửa -> dùng cho ô lọc "Quyết định"
+    private boolean approved;           // true = Đã duyệt, false = Yêu cầu sửa -> chọn màu nhãn quyết định
     private String decisionText;        // chữ hiển thị: "Đã duyệt" / "Yêu cầu sửa"
     private String feedback;            // nhận xét lúc chốt (Duyệt thì có thể để trống)
     private long commentCount;          // số góp ý mình đã viết trong lượt duyệt đó

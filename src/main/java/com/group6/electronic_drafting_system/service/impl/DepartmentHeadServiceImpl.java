@@ -160,8 +160,6 @@ public class DepartmentHeadServiceImpl implements DepartmentHeadService {
                 .departmentName(head.getDepartment() != null ? head.getDepartment().getDepartmentName() : null)
                 .userInitials(entryMapper.initials(head.getFullName()))
                 .items(rows)
-                // Chuyên mục có trong bảng (không trùng, xếp A -> Z) cho ô lọc "Chuyên mục"
-                .categories(rows.stream().map(ReviewHistoryItemDTO::getCategory).distinct().sorted().toList())
                 .build();
     }
 

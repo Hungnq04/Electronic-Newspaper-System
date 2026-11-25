@@ -6,24 +6,20 @@
   Dữ liệu: ${history} (ReviewHistoryPageDTO) do DepartmentHeadController.reviewHistory() truyền vào.
   Giao diện dùng chung class rp- của màn /reporter/tasks (static/reporter/css/reporter-tasks.css)
   + vài dòng riêng trong static/department_head/css/department-head-review-history.css.
-  Lọc theo quyết định / chuyên mục / từ khóa do static/department_head/js/department-head-review-history.js xử lý
-  ngay trên trình duyệt (không gửi lại server), dựa vào các thuộc tính data-* trên từng dòng.
+  Màn này KHÔNG có JavaScript riêng: bảng in sẵn từ server, mới nhất trước (DepartmentHeadServiceImpl.getReviewHistory).
 -->
 <th:block th:fragment="reviewHistoryContent">
     <!-- Bộ icon dùng trong trang (SVG sprite nội bộ, không cần thư viện ngoài). Dùng bằng <use href="#rh-icon-..."> -->
     <svg class="rp-svg-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-        <symbol id="rh-icon-search" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.7"/><path d="m16 16 4.5 4.5"/></symbol>
         <symbol id="rh-icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
         <symbol id="rh-icon-folder" viewBox="0 0 24 24"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2h8.5A1.5 1.5 0 0 1 21 9.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5Z"/></symbol>
         <symbol id="rh-icon-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
-        <symbol id="rh-icon-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
         <symbol id="rh-icon-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
         <symbol id="rh-icon-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
     </svg>
 
-    <!-- class rh-page: điểm bám của department-head-review-history.js -->
-    <section class="rp-page rh-page" aria-label="Lịch sử duyệt bài của Trưởng ban">
-        <!-- Thanh trên cùng: dùng lại fragment dhTopbar trong department_head/dashboard.html (ô tìm nhanh tắt, vì lọc nằm ở dưới) -->
+    <section class="rp-page" aria-label="Lịch sử duyệt bài của Trưởng ban">
+        <!-- Thanh trên cùng: dùng lại fragment dhTopbar trong department_head/dashboard.html -->
         <header th:replace="~{department_head/dashboard :: dhTopbar(${history.displayName}, ${history.departmentName}, ${history.userInitials}, false)}"></header>
 
         <main class="rp-main">
@@ -40,32 +36,9 @@
                 </div>
             </div>
 
-            <!-- Bộ lọc: chỉ ẩn / hiện dòng trên trình duyệt (JS), không tải lại trang -->
-            <section class="rp-filter-panel" aria-label="Bộ lọc lịch sử duyệt" th:unless="${#lists.isEmpty(history.items)}">
-                <div class="rp-filter-top">
-                    <div class="rp-view-switch" role="group" aria-label="Lọc theo quyết định">
-                        <!-- data-rh-decision: all = tất cả, approved = Đã duyệt, revision = Yêu cầu sửa -->
-                        <button class="is-active" type="button" data-rh-decision="all">Tất cả</button>
-                        <button type="button" data-rh-decision="approved">Đã duyệt</button>
-                        <button type="button" data-rh-decision="revision">Yêu cầu sửa</button>
-                    </div>
-                    <label class="rp-filter-search">
-                        <svg class="rp-icon"><use href="#rh-icon-search"></use></svg>
-                        <input id="rh-search" type="search" placeholder="Tìm theo tít bài, đề tài, mã bài…" aria-label="Tìm trong lịch sử duyệt">
-                    </label>
-                </div>
-                <div class="rp-filter-row">
-                    <label class="rp-select-field"><span><svg class="rp-icon"><use href="#rh-icon-folder"></use></svg>CHUYÊN MỤC:</span>
-                        <select id="rh-category">
-                            <option value="all">Toàn bộ chuyên mục</option>
-                            <option th:each="category : ${history.categories}" th:value="${category}" th:text="${category}">Kinh tế</option>
-                        </select><svg class="rp-icon rp-select-chevron"><use href="#rh-icon-chevron-down"></use></svg></label>
-                </div>
-            </section>
-
             <section class="rp-card">
                 <div class="rp-card-head">
-                    <h2>Các lượt đã duyệt <span class="rp-count-pill"><b id="rh-visible-count" th:text="${#lists.size(history.items)}">12</b> bản ghi</span></h2>
+                    <h2>Các lượt đã duyệt <span class="rp-count-pill"><b th:text="${#lists.size(history.items)}">12</b> bản ghi</span></h2>
                     <span class="rp-sort-note">Mới nhất trước</span>
                 </div>
 
@@ -89,11 +62,9 @@
                             <th class="rp-right">Thao tác</th>
                         </tr>
                         </thead>
-                        <tbody id="rh-list">
-                        <!-- Mỗi dòng = 1 ReviewHistoryItemDTO. Các data-* để JS lọc:
-                               data-decision = approved / revision, data-category = chuyên mục, data-search = chữ để tìm -->
-                        <tr class="rh-row" th:each="item : ${history.items}"
-                            th:attr="data-decision=${item.approved} ? 'approved' : 'revision',data-category=${item.category},data-search=|${item.articleCode} ${item.articleTitle} ${item.topicTitle}|">
+                        <tbody>
+                        <!-- Mỗi dòng = 1 ReviewHistoryItemDTO -->
+                        <tr th:each="item : ${history.items}">
                             <td class="rp-col-task">
                                 <span class="rp-priority rp-priority--low" th:text="|#${item.articleCode}|">#BT-15</span>
                                 <span class="rp-task-title" th:text="${item.articleTitle}">Tít bài</span>
@@ -127,11 +98,6 @@
                         </tr>
                         </tbody>
                     </table>
-                    <!-- Hiện khi bộ lọc không khớp dòng nào (JS bật / tắt bằng thuộc tính hidden) -->
-                    <div class="rp-empty rp-empty--compact" id="rh-no-match" hidden>
-                        <svg class="rp-icon"><use href="#rh-icon-search"></use></svg>
-                        <strong>Không có lượt duyệt nào khớp bộ lọc</strong>
-                    </div>
                 </div>
             </section>
         </main>

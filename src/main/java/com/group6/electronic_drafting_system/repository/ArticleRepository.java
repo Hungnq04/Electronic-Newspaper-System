@@ -35,12 +35,6 @@ public interface ArticleRepository extends JpaRepository<Article, Integer> {
                                             @Param("departmentId") Integer departmentId,
                                             @Param("headId") Integer headId);
 
-    // Đếm số bài có trạng thái :status, cùng quy tắc với findByStatusForDepartment (để các con số khớp với danh sách)
-    @Query("select count(a) from Article a where a.status = :status and " + IN_MY_DEPARTMENT_OR_ASSIGNED)
-    long countByStatusForDepartment(@Param("status") ArticleStatus status,
-                                    @Param("departmentId") Integer departmentId,
-                                    @Param("headId") Integer headId);
-
     // Đếm nguồn của nhiều bài trong 1 query (tránh N+1 khi gọi article.getSources().size()); mỗi dòng: [articleId, count]
     @Query("select s.article.id, count(s) from ArticleSource s where s.article.id in :articleIds group by s.article.id")
     List<Object[]> countSourcesByArticleIds(@Param("articleIds") Collection<Integer> articleIds);

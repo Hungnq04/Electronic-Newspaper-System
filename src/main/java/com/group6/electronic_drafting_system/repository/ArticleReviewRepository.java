@@ -3,7 +3,6 @@ package com.group6.electronic_drafting_system.repository;
 import com.group6.electronic_drafting_system.entity.ArticleReview;
 import com.group6.electronic_drafting_system.entity.enums.ArticleReviewDecision;
 import com.group6.electronic_drafting_system.entity.enums.ReviewStage;
-import java.time.OffsetDateTime;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -31,11 +30,6 @@ public interface ArticleReviewRepository extends JpaRepository<ArticleReview, In
     // Lượt duyệt gần nhất ĐÃ có quyết định của một bài (bỏ qua lượt đang duyệt dở, phóng viên chưa được thấy)
     @EntityGraph(attributePaths = "reviewer")
     Optional<ArticleReview> findFirstByVersion_Article_IdAndDecisionIsNotNullOrderByIdDesc(Integer articleId);
-
-    @Query("select count(r) from ArticleReview r where r.reviewStage = :stage and r.decision = :decision "
-            + "and r.reviewedAt >= :from and r.reviewer.id = :reviewerId")
-    long countDecisionsSince(@Param("stage") ReviewStage stage, @Param("decision") ArticleReviewDecision decision,
-                             @Param("from") OffsetDateTime from, @Param("reviewerId") Integer reviewerId);
 
     // Màn "Lịch sử duyệt" (UC-35): mọi lượt duyệt ĐÃ CHỐT (decision khác NULL) của MỘT người ở MỘT cấp, mới nhất trước.
     // "join fetch" = lấy luôn version, bài và đề tài trong CÙNG câu SQL, để khi hiển thị không phải hỏi DB thêm từng dòng.

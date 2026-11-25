@@ -24,11 +24,6 @@ public interface TopicRepository extends JpaRepository<Topic, Integer> {
     @EntityGraph(attributePaths = "department")
     List<Topic> findByStatusOrderByCreatedAtDescIdDesc(TopicStatus status);
 
-    // Phòng ban của đề tài = phòng ban của người tạo đề tài
-    @Query("select t from Topic t join fetch t.creator c "
-            + "where t.status = :status and c.department.id = :departmentId order by t.createdAt desc")
-    List<Topic> findByStatusAndDepartment(@Param("status") TopicStatus status, @Param("departmentId") Integer departmentId);
-
     // FL-01 Iter2 – hàng chờ Trưởng ban: Topic của ban mình (topic.department_id), đang chờ duyệt cấp ban
     // và KHÔNG đang chờ phóng viên sửa (awaiting_revision = 0)
     @EntityGraph(attributePaths = {"department", "creator"})

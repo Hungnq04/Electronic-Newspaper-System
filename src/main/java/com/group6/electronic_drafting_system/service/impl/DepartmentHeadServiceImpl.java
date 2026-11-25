@@ -1,7 +1,6 @@
 package com.group6.electronic_drafting_system.service.impl;
 
 import com.group6.electronic_drafting_system.dto.Article.ArticleEditorDTO;
-import com.group6.electronic_drafting_system.dto.DepartmentHead.DashboardStatDTO;
 import com.group6.electronic_drafting_system.dto.DepartmentHead.DepartmentHeadDashboardDTO;
 import com.group6.electronic_drafting_system.dto.DepartmentHead.DraftEntryDTO;
 import com.group6.electronic_drafting_system.dto.DepartmentHead.ReviewHistoryItemDTO;
@@ -11,11 +10,9 @@ import com.group6.electronic_drafting_system.entity.Article;
 import com.group6.electronic_drafting_system.entity.ArticleReview;
 import com.group6.electronic_drafting_system.entity.ArticleVersion;
 import com.group6.electronic_drafting_system.entity.Department;
-import com.group6.electronic_drafting_system.entity.Topic;
 import com.group6.electronic_drafting_system.entity.enums.ArticleReviewDecision;
 import com.group6.electronic_drafting_system.entity.enums.ArticleStatus;
 import com.group6.electronic_drafting_system.entity.enums.ReviewStage;
-import com.group6.electronic_drafting_system.entity.enums.TopicStatus;
 import com.group6.electronic_drafting_system.exception.ApplicationException;
 import com.group6.electronic_drafting_system.exception.ErrorCode;
 import com.group6.electronic_drafting_system.mapper.DepartmentHead.DraftEntryMapper;
@@ -23,11 +20,7 @@ import com.group6.electronic_drafting_system.repository.AccountRepository;
 import com.group6.electronic_drafting_system.repository.ArticleRepository;
 import com.group6.electronic_drafting_system.repository.ArticleReviewRepository;
 import com.group6.electronic_drafting_system.repository.CommentRepository;
-import com.group6.electronic_drafting_system.repository.TopicRepository;
 import com.group6.electronic_drafting_system.service.DepartmentHeadService;
-import java.time.LocalDate;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -38,7 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 // Service của 2 màn CHỈ XEM của Trưởng phòng:
-//   - DASHBOARD (getDashboard): lấy dữ liệu từ DB, tính các con số, đóng gói vào DepartmentHeadDashboardDTO.
+//   - DASHBOARD (getDashboard): lấy các bài chờ duyệt từ DB, đóng gói vào DepartmentHeadDashboardDTO.
 //   - LỊCH SỬ DUYỆT (getReviewHistory, UC-35): ở cuối file, trả về ReviewHistoryPageDTO.
 //
 // AI GỌI? DepartmentHeadController.dashboard() gọi departmentHeadService.getDashboard(email).
@@ -46,15 +39,12 @@ import org.springframework.transaction.annotation.Transactional;
 //   (vì có "implements DepartmentHeadService" và nhãn @Service).
 //
 // QUY TẮC LỌC BÀI (cách A): Trưởng phòng thấy bài khi Topic của bài thuộc PHÒNG mình HOẶC được GIAO cho mình.
-//   Câu truy vấn nằm ở ArticleRepository.findByStatusForDepartment / countByStatusForDepartment.
+//   Câu truy vấn nằm ở ArticleRepository.findByStatusForDepartment.
 //
 // SERVICE NÀY GỌI AI? (theo thứ tự chạy trong getDashboard)
 //   accounts.findByEmailIgnoreCase(...)        -> tìm tài khoản Trưởng phòng
 //   articles.findByStatusForDepartment(...)    -> bài chờ duyệt
 //   articles.countSourcesByArticleIds(...)     -> đếm nguồn của các bài (trong hàm phụ countSources)
-//   topics.findByStatusAndDepartment(...)      -> đề tài chờ duyệt của phóng viên cùng phòng
-//   articleReviews.countDecisionsSince(...)    -> số lượt mình đã duyệt hôm nay
-//   articles.countByStatusForDepartment(...)   -> số bài đang trả về sửa
 //   entryMapper.fromArticle                    -> đổi Article thành một dòng bảng hiển thị (không phải SQL)
 //
 // @Transactional(readOnly = true): mọi method chỉ ĐỌC dữ liệu, không ghi gì vào DB.
@@ -64,20 +54,18 @@ public class DepartmentHeadServiceImpl implements DepartmentHeadService {
     // Định dạng thời gian cho màn Lịch sử duyệt, ví dụ "09:30 07/11/2026". Hằng số (static final) vì không bao giờ đổi.
     private static final DateTimeFormatter HISTORY_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
 
-    // 6 "dụng cụ" service cần dùng. Spring điền object thật vào qua constructor bên dưới (Dependency Injection).
+    // 5 "dụng cụ" service cần dùng. Spring điền object thật vào qua constructor bên dưới (Dependency Injection).
     private final AccountRepository accounts;              // bảng account
     private final ArticleRepository articles;              // bảng article (và article_source)
-    private final TopicRepository topics;                  // bảng topic
     private final ArticleReviewRepository articleReviews;  // bảng article_review
     private final CommentRepository comments;              // bảng comment (đếm góp ý cho màn Lịch sử duyệt)
-    private final DraftEntryMapper entryMapper;            // đổi Article / Topic thành thẻ hiển thị DraftEntryDTO
+    private final DraftEntryMapper entryMapper;            // đổi Article thành thẻ hiển thị DraftEntryDTO
 
-    public DepartmentHeadServiceImpl(AccountRepository accounts, ArticleRepository articles, TopicRepository topics,
+    public DepartmentHeadServiceImpl(AccountRepository accounts, ArticleRepository articles,
                                      ArticleReviewRepository articleReviews, CommentRepository comments,
                                      DraftEntryMapper entryMapper) {
         this.accounts = accounts;
         this.articles = articles;
-        this.topics = topics;
         this.articleReviews = articleReviews;
         this.comments = comments;
         this.entryMapper = entryMapper;
@@ -85,10 +73,6 @@ public class DepartmentHeadServiceImpl implements DepartmentHeadService {
 
     @Override
     public DepartmentHeadDashboardDTO getDashboard(String email) {
-        // 00:00 hôm nay. Phải tính BÊN TRONG method: bean chỉ tạo một lần lúc chạy app,
-        // nếu để ngoài method (field) thì qua ngày mới vẫn còn giá trị của ngày cũ.
-        OffsetDateTime startOfToday = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime();
-
         // ===== BƯỚC 1: tìm tài khoản Trưởng phòng =====
         // Optional = hộp "có thể có hoặc không"; orElseThrow: không có thì báo lỗi và DỪNG method.
         Account head = accounts.findByEmailIgnoreCase(email)
@@ -103,25 +87,23 @@ public class DepartmentHeadServiceImpl implements DepartmentHeadService {
                 .userInitials(entryMapper.initials(head.getFullName()));   // chữ viết tắt cho avatar, ví dụ "NH"
 
         // ===== BƯỚC 2: chưa có phòng ban thì trả hộp rỗng =====
-        // List.of() = danh sách rỗng. stats rỗng nên dashboard.html ẩn cả khu hộp thống kê.
+        // List.of() = danh sách rỗng, nên dashboard.html in khung "Không có bản thảo nào chờ duyệt".
         if (headDepartment == null) {
-            return dashboard.stats(List.of()).entries(List.of()).build();
+            return dashboard.entries(List.of()).build();
         }
         Integer departmentId = headDepartment.getId();
 
-        // ===== BƯỚC 3: lấy bài + đề tài chờ duyệt, đổi thành thẻ hiển thị =====
+        // ===== BƯỚC 3: lấy bài chờ duyệt, đổi thành thẻ hiển thị =====
         // Bài chờ duyệt: Topic thuộc phòng mình HOẶC được giao cho mình (cách A).
         List<Article> articleList = articles.findByStatusForDepartment(
                 ArticleStatus.DEPARTMENT_REVIEW, departmentId, head.getId());
-        // Đề tài chờ duyệt: đề tài DEPARTMENT_REVIEW chưa có assignment, nên lọc theo phòng ban của người đề xuất.
-        List<Topic> topicList = topics.findByStatusAndDepartment(TopicStatus.DEPARTMENT_REVIEW, departmentId);
 
         // Đếm nguồn của MỌI bài trong 1 câu SQL (hàm phụ countSources cuối file).
         // Kết quả là bảng tra "mã bài -> số nguồn", ví dụ {12 -> 3, 15 -> 1}.
         Map<Integer, Long> sourceCountByArticleId = countSources(articleList);
 
         // cards = danh sách THẺ hiển thị trong bảng dashboard, mỗi thẻ là một DraftEntryDTO.
-        // Chỉ gồm BÀI VIẾT chờ duyệt. Đề tài chờ duyệt có màn riêng; ở đây chỉ dùng topicList để đếm số (hộp thống kê).
+        // Chỉ gồm BÀI VIẾT chờ duyệt. Đề tài chờ duyệt có màn riêng.
         List<DraftEntryDTO> cards = new ArrayList<>();
         for (Article article : articleList) {
             long sourceCount = sourceCountByArticleId.getOrDefault(article.getId(), 0L);   // không có trong bảng tra thì 0
@@ -132,42 +114,11 @@ public class DepartmentHeadServiceImpl implements DepartmentHeadService {
         // Ngày dự kiến đăng gần nhất xếp trước; bài chưa có ngày xếp cuối (nullsLast).
         cards.sort(Comparator.comparing(DraftEntryDTO::getExpectedDate, Comparator.nullsLast(Comparator.naturalOrder())));
 
-        // ===== BƯỚC 5: tính các con số =====
-        long pendingArticleCount = articleList.size();      // bài chờ duyệt
-        long pendingTopicCount = topicList.size();          // đề tài chờ duyệt
-        // Bài hỏa tốc: thẻ là bài viết VÀ urgent = true
-        long urgentCount = 0;
-        for (DraftEntryDTO card : cards) {
-            if ("article".equals(card.getKind()) && card.isUrgent()) {
-                urgentCount++;
-            }
-        }
-        // Số lượt chính mình bấm Duyệt ở cấp phòng, tính từ 00:00 hôm nay
-        long approvedTodayCount = articleReviews.countDecisionsSince(
-                ReviewStage.DEPARTMENT, ArticleReviewDecision.APPROVED, startOfToday, head.getId());
-        // Bài đang bị trả về cho phóng viên sửa. Dùng CÙNG quy tắc với danh sách chờ duyệt (cách A)
-        // để một bài lúc chờ duyệt được tính thì lúc bị trả về cũng được tính.
-        long revisionCount = articles.countByStatusForDepartment(
-                ArticleStatus.REVISION_REQUIRED, departmentId, head.getId());
-
-        // ===== BƯỚC 6: điền nốt vào DTO và trả về controller =====
+        // ===== BƯỚC 5: điền nốt vào DTO và trả về controller =====
         // Mỗi .tenField(...) điền vào field cùng tên trong DepartmentHeadDashboardDTO; HTML đọc bằng ${dashboard.tenField}.
-        // stats = 4 hộp thống kê. Thứ tự tham số của DashboardStatDTO: label, value, unit, note, badge, icon, tone.
         return dashboard
                 .departmentName(headDepartment.getDepartmentName())
                 .entries(cards)
-                .articleCount(pendingArticleCount)
-                .topicCount(pendingTopicCount)
-                .urgentCount(urgentCount)
-                .stats(List.of(
-                        new DashboardStatDTO("CHỜ DUYỆT BÀI VIẾT", String.valueOf(pendingArticleCount), "bản thảo",
-                                "Đang chờ Trưởng ban thẩm định", urgentCount > 0 ? urgentCount + " HỎA TỐC" : null, "calendar", "rose"),
-                        new DashboardStatDTO("ĐÃ DUYỆT HÔM NAY", String.valueOf(approvedTodayCount), "bài",
-                                "Đã chuyển Ban Thư ký tòa soạn", null, "check-circle", "blue"),
-                        new DashboardStatDTO("ĐANG TRẢ VỀ SỬA", String.valueOf(revisionCount), "bài",
-                                "Chờ phóng viên chỉnh sửa", null, "edit", "amber"),
-                        new DashboardStatDTO("ĐỀ TÀI CHỜ DUYỆT", String.valueOf(pendingTopicCount), "đề tài",
-                                "Đề cương chờ thẩm định", null, "book-open", "slate")))
                 .build();
     }
 

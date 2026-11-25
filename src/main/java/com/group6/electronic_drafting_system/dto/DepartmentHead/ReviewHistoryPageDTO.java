@@ -8,7 +8,7 @@ import lombok.Getter;
 //
 // TẠO Ở ĐÂU: DepartmentHeadServiceImpl.getReviewHistory(email)
 // GỬI SANG HTML: DepartmentHeadController.reviewHistory() -> model.addAttribute("history", ...)
-// HTML ĐỌC:  ${history.displayName}, ${history.items}, ${history.approvedCount}...
+// HTML ĐỌC:  ${history.displayName}, ${history.items}, ${history.categories}...
 @Getter
 @Builder
 public class ReviewHistoryPageDTO {
@@ -17,7 +17,4 @@ public class ReviewHistoryPageDTO {
     private String userInitials;             // chữ viết tắt trên avatar, ví dụ "NH"
     private List<ReviewHistoryItemDTO> items; // các dòng của bảng, mới nhất trước
     private List<String> categories;         // các chuyên mục có trong bảng (không trùng, A -> Z) cho ô lọc
-    private long totalCount;                 // tổng số lượt đã duyệt
-    private long approvedCount;              // số lượt "Đã duyệt"
-    private long revisionCount;              // số lượt "Yêu cầu sửa"
 }

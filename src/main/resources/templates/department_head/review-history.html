@@ -14,8 +14,6 @@
     <svg class="rp-svg-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
         <symbol id="rh-icon-search" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.7"/><path d="m16 16 4.5 4.5"/></symbol>
         <symbol id="rh-icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
-        <symbol id="rh-icon-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16.5 9"/></symbol>
-        <symbol id="rh-icon-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="m16.5 3.5 4 4L8 20l-5 1 1-5Z"/></symbol>
         <symbol id="rh-icon-folder" viewBox="0 0 24 24"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2h8.5A1.5 1.5 0 0 1 21 9.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5Z"/></symbol>
         <symbol id="rh-icon-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
         <symbol id="rh-icon-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
@@ -42,30 +40,14 @@
                 </div>
             </div>
 
-            <!-- 3 ô số liệu: tổng / đã duyệt / yêu cầu sửa (tính ở DepartmentHeadServiceImpl.getReviewHistory, BƯỚC 4) -->
-            <section class="rp-stats rh-stats" aria-label="Số liệu lịch sử duyệt">
-                <article class="rp-stat">
-                    <div class="rp-stat-head"><span>TỔNG LƯỢT ĐÃ DUYỆT</span><span class="rp-stat-icon"><svg class="rp-icon"><use href="#rh-icon-clock"></use></svg></span></div>
-                    <strong class="rp-stat-value" th:text="${history.totalCount}">12</strong>
-                </article>
-                <article class="rp-stat rp-stat--success">
-                    <div class="rp-stat-head"><span>ĐÃ DUYỆT, CHUYỂN THƯ KÝ</span><span class="rp-stat-icon"><svg class="rp-icon"><use href="#rh-icon-check-circle"></use></svg></span></div>
-                    <strong class="rp-stat-value" th:text="${history.approvedCount}">8</strong>
-                </article>
-                <article class="rp-stat rp-stat--warning">
-                    <div class="rp-stat-head"><span>YÊU CẦU SỬA</span><span class="rp-stat-icon"><svg class="rp-icon"><use href="#rh-icon-edit"></use></svg></span></div>
-                    <strong class="rp-stat-value" th:text="${history.revisionCount}">4</strong>
-                </article>
-            </section>
-
             <!-- Bộ lọc: chỉ ẩn / hiện dòng trên trình duyệt (JS), không tải lại trang -->
             <section class="rp-filter-panel" aria-label="Bộ lọc lịch sử duyệt" th:unless="${#lists.isEmpty(history.items)}">
                 <div class="rp-filter-top">
                     <div class="rp-view-switch" role="group" aria-label="Lọc theo quyết định">
                         <!-- data-rh-decision: all = tất cả, approved = Đã duyệt, revision = Yêu cầu sửa -->
-                        <button class="is-active" type="button" data-rh-decision="all">Tất cả <b th:text="${history.totalCount}">12</b></button>
-                        <button type="button" data-rh-decision="approved">Đã duyệt <b th:text="${history.approvedCount}">8</b></button>
-                        <button type="button" data-rh-decision="revision">Yêu cầu sửa <b th:text="${history.revisionCount}">4</b></button>
+                        <button class="is-active" type="button" data-rh-decision="all">Tất cả</button>
+                        <button type="button" data-rh-decision="approved">Đã duyệt</button>
+                        <button type="button" data-rh-decision="revision">Yêu cầu sửa</button>
                     </div>
                     <label class="rp-filter-search">
                         <svg class="rp-icon"><use href="#rh-icon-search"></use></svg>
@@ -83,7 +65,7 @@
 
             <section class="rp-card">
                 <div class="rp-card-head">
-                    <h2>Các lượt đã duyệt <span class="rp-count-pill"><b id="rh-visible-count" th:text="${history.totalCount}">12</b> bản ghi</span></h2>
+                    <h2>Các lượt đã duyệt <span class="rp-count-pill"><b id="rh-visible-count" th:text="${#lists.size(history.items)}">12</b> bản ghi</span></h2>
                     <span class="rp-sort-note">Mới nhất trước</span>
                 </div>
 

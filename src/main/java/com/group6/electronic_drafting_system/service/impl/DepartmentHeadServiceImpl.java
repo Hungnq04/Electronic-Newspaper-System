@@ -147,19 +147,11 @@ public class DepartmentHeadServiceImpl implements DepartmentHeadService {
         // ===== BƯỚC 3: đếm góp ý của mọi lượt trong 1 câu SQL -> bảng tra "mã lượt duyệt -> số góp ý" =====
         Map<Integer, Long> commentCountByReviewId = countComments(myReviews);
 
-        // ===== BƯỚC 4: đổi từng lượt duyệt thành 1 dòng của bảng, đồng thời đếm số lượt Duyệt / Yêu cầu sửa =====
+        // ===== BƯỚC 4: đổi từng lượt duyệt thành 1 dòng của bảng =====
         List<ReviewHistoryItemDTO> rows = new ArrayList<>();
-        long approvedCount = 0;
-        long revisionCount = 0;
         for (ArticleReview review : myReviews) {
             long commentCount = commentCountByReviewId.getOrDefault(review.getId(), 0L);   // không có trong bảng tra thì 0
-            ReviewHistoryItemDTO row = toHistoryItem(review, commentCount);
-            rows.add(row);
-            if (row.isApproved()) {
-                approvedCount++;
-            } else {
-                revisionCount++;
-            }
+            rows.add(toHistoryItem(review, commentCount));
         }
 
         // ===== BƯỚC 5: đóng gói vào ReviewHistoryPageDTO và trả về controller =====
@@ -170,9 +162,6 @@ public class DepartmentHeadServiceImpl implements DepartmentHeadService {
                 .items(rows)
                 // Chuyên mục có trong bảng (không trùng, xếp A -> Z) cho ô lọc "Chuyên mục"
                 .categories(rows.stream().map(ReviewHistoryItemDTO::getCategory).distinct().sorted().toList())
-                .totalCount(rows.size())
-                .approvedCount(approvedCount)
-                .revisionCount(revisionCount)
                 .build();
     }
 

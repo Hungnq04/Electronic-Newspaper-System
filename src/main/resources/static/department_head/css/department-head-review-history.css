@@ -1,10 +1,6 @@
 /* Màn "Lịch sử duyệt" (templates/department_head/review-history.html).
    Phần lớn giao diện dùng chung reporter-tasks.css (class rp-). File này chỉ thêm vài chi tiết riêng. */
 
-/* 3 ô số liệu (rp-stats mặc định chia 4 cột) */
-.rh-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-@media (max-width: 720px) { .rh-stats { grid-template-columns: 1fr; } }
-
 /* Dòng "Đề tài: ..." dưới tít bài */
 .rh-topic { display: block; margin-bottom: 4px; color: var(--rp-muted); font-size: 12px; }
 

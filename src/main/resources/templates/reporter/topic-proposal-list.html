@@ -34,8 +34,8 @@
     </div>
     <div class="tp-topbar-right">
         <!-- Chuông thông báo: chỉ hiện cho phóng viên. Bấm một thông báo -> đánh dấu đã đọc và mở đề tài -->
-        <!--/* [TV1-3.6b] Nói với thầy: "Chỗ này em vẽ cái chuông cho phóng viên: số đỏ là số thông báo chưa đọc, bên trong là
-        danh sách thông báo, mỗi cái là link mở thông báo [TV1-3.7]." */-->
+        <!--/* [TV1-3.6b] Vẽ cái chuông cho phóng viên: số đỏ là số thông báo chưa đọc, bên trong là
+        danh sách thông báo, mỗi cái là link mở thông báo [TV1-3.7]. */-->
         <div class="tp-bell-wrap" sec:authorize="hasRole('REPORTER')">
             <button type="button" class="tp-bell" aria-label="Thông báo" aria-expanded="false" data-tp-bell>
                 <svg class="tp-icon"><use href="#tp-icon-bell"></use></svg>
@@ -66,8 +66,8 @@
 
 
 <!-- Topic Proposal List -->
-<!--/* [TV1-3.3] Nói với thầy: "Chỗ này là giao diện trang Đề tài của tôi: in dữ liệu trong list mà controller gửi sang
-[TV1-3.1]: thông báo, thẻ thống kê, tab lọc, bảng đề tài." */-->
+<!--/* [TV1-3.3] Giao diện trang Đề tài của tôi: in dữ liệu trong list mà controller gửi sang
+[TV1-3.1]: thông báo, thẻ thống kê, tab lọc, bảng đề tài. */-->
 <th:block th:fragment="topicProposalListContent">
     <svg th:replace="~{reporter/topic-proposal-list :: tpSprite}"></svg>
 
@@ -94,7 +94,7 @@
             </div>
 
             <!-- Thống kê theo status (trên toàn bộ đề tài của mình) -->
-            <!--/* [TV1-3.4] Nói với thầy: "Chỗ này em vẽ 5 thẻ thống kê, lấy số đếm service đã tính sẵn cho từng trạng thái." */-->
+            <!--/* [TV1-3.4] Vẽ 5 thẻ thống kê, lấy số đếm service đã tính sẵn cho từng trạng thái. */-->
             <section class="tp-stats" aria-label="Thống kê đề tài">
                 <article class="tp-stat">
                     <div class="tp-stat-head"><span>TỔNG ĐỀ TÀI</span><span class="tp-stat-icon"><svg class="tp-icon"><use href="#tp-icon-clipboard"></use></svg></span></div>
@@ -124,8 +124,8 @@
             </section>
 
             <!-- Tab lọc theo status (lọc ở server) + tìm nhanh (lọc trên trang) -->
-            <!--/* [TV1-3.5] Nói với thầy: "Chỗ này em vẽ tab lọc và ô tìm kiếm: bấm tab thì gửi ?status= lên server lọc lại
-            [TV1-3.1], gõ ô tìm kiếm thì JS lọc ngay trên trang [TV1-3.8]." */-->
+            <!--/* [TV1-3.5] Vẽ tab lọc và ô tìm kiếm: bấm tab thì gửi ?status= lên server lọc lại
+            [TV1-3.1], gõ ô tìm kiếm thì JS lọc ngay trên trang [TV1-3.8]. */-->
             <section class="tp-filter-panel" aria-label="Bộ lọc đề tài">
                 <nav class="tp-tabs" aria-label="Lọc theo trạng thái">
                     <a th:each="tab : ${list.tabs()}" class="tp-tab" th:classappend="${tab.active()} ? 'is-active'"
@@ -157,8 +157,8 @@
                         </tr>
                         </thead>
                         <tbody>
-                        <!--/* [TV1-3.3b] Nói với thầy: "Chỗ này em vẽ từng dòng bảng đề tài từ list.topics(), tô màu theo trạng thái, nút Sửa chỉ
-                        hiện khi đề tài đang bị yêu cầu sửa [TV1-4.6]." */-->
+                        <!--/* [TV1-3.3b] Vẽ từng dòng bảng đề tài từ list.topics(), tô màu theo trạng thái, nút Sửa chỉ
+                        hiện khi đề tài đang bị yêu cầu sửa [TV1-4.6]. */-->
                         <tr th:each="t : ${list.topics()}" th:classappend="|tp-row--${t.statusKey()}|"
                             th:attr="data-tp-search-text=${#strings.toLowerCase(t.title() + ' ' + (t.summary() ?: ''))}">
                             <td class="tp-col-topic">

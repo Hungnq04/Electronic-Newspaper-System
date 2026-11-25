@@ -20,15 +20,15 @@ import java.util.Comparator;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
-// [TV1-0.5] Nói với thầy: "Chỗ này là mapper: các hàm bên dưới chép dữ liệu từ Entity Topic sang DTO để hiện lên
-//   màn hình, và chép từ form sang Topic mới."
+// [TV1-0.5] Mapper: các hàm bên dưới chép dữ liệu từ Entity Topic sang DTO để hiện lên
+//   màn hình, và chép từ form sang Topic mới.
 @Component
 public class TopicMapper {
     private static final String DEPARTMENT_PREFIX = "Phòng ";
     private static final int CATEGORY_MAX = 100;
 
-    // [TV1-3.2b] Nói với thầy: "Chỗ này em chép một đề tài sang một dòng trong bảng Đề tài của tôi: mã TP-..., tiêu
-    //   đề, tóm tắt, ban, trạng thái, ngày tạo."
+    // [TV1-3.2b] Chép một đề tài sang một dòng trong bảng Đề tài của tôi: mã TP-..., tiêu
+    //   đề, tóm tắt, ban, trạng thái, ngày tạo.
     public TopicListItemDTO toListItem(Topic topic) {
         Department department = topic.getDepartment();
         return new TopicListItemDTO(topic.getId(), codeOf(topic), topic.getTitle(), topic.getDescription(),
@@ -37,8 +37,8 @@ public class TopicMapper {
     }
 
     // FL-01 Iter2: một dòng trên màn duyệt của Trưởng ban / Thư ký (cần creator + department đã nạp)
-    // [TV1-1.11] Nói với thầy: "Chỗ này em chép một đề tài sang DTO dùng cho cả hàng chờ và cột chi tiết: mã, tiêu đề,
-    //   tóm tắt, ban, phóng viên, ngày gửi, số vòng sửa, trạng thái."
+    // [TV1-1.11] Chép một đề tài sang DTO dùng cho cả hàng chờ và cột chi tiết: mã, tiêu đề,
+    //   tóm tắt, ban, phóng viên, ngày gửi, số vòng sửa, trạng thái.
     public TopicReviewItemDTO toReviewItem(Topic topic, int revisionRounds) {
         Department department = topic.getDepartment();
         return new TopicReviewItemDTO(topic.getId(), codeOf(topic), topic.getTitle(), topic.getDescription(),
@@ -48,8 +48,8 @@ public class TopicMapper {
 
     // FL-01 Iter2: lịch sử của đề tài = các vòng góp ý (topic_feedback) + kết quả duyệt từng cấp (topic_review),
     // xếp theo thời gian, cũ nhất trước
-    // [TV1-1.13] Nói với thầy: "Chỗ này em gộp góp ý (topic_feedback) và kết quả duyệt (topic_review) thành một danh
-    //   sách lịch sử, mỗi dòng có tiêu đề, màu, người làm, thời gian, nội dung, rồi xếp theo thời gian."
+    // [TV1-1.13] Gộp góp ý (topic_feedback) và kết quả duyệt (topic_review) thành một danh
+    //   sách lịch sử, mỗi dòng có tiêu đề, màu, người làm, thời gian, nội dung, rồi xếp theo thời gian.
     public List<TopicHistoryEntryDTO> toHistory(List<TopicFeedback> feedbacks, List<TopicReview> reviews) {
         List<TopicHistoryEntryDTO> history = new ArrayList<>();
         for (TopicFeedback f : feedbacks) {
@@ -74,8 +74,8 @@ public class TopicMapper {
     // Topic mới vừa gửi: vào thẳng hàng chờ Trưởng ban (không có DRAFT).
     // category theo quy ước dữ liệu cũ = tên phòng bỏ "Phòng " ('Phòng Kinh tế' -> 'Kinh tế');
     // priority mặc định NORMAL, rationale / expected_date để trống.
-    // [TV1-4.5] Nói với thầy: "Chỗ này em tạo Topic mới từ form: tiêu đề, tóm tắt lấy từ form; người tạo, ban, chuyên
-    //   mục, priority NORMAL, trạng thái DEPARTMENT_REVIEW thì hệ thống tự điền."
+    // [TV1-4.5] Tạo Topic mới từ form: tiêu đề, tóm tắt lấy từ form; người tạo, ban, chuyên
+    //   mục, priority NORMAL, trạng thái DEPARTMENT_REVIEW thì hệ thống tự điền.
     public Topic toNewTopic(TopicCreateRequestDTO request, Department department, Account reporter) {
         Topic topic = new Topic();
         topic.setCreator(reporter);

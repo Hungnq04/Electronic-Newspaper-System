@@ -27,8 +27,8 @@ public class AuthController {
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AuthController.class);
 
     // Khóa lưu trong session
-    // [TV1-6.3] Nói với thầy: "Chỗ này em đặt tên 4 khóa lưu trong session: email đang nhập OTP, OTP dùng cho việc gì,
-    //   lúc gửi mã, và email được phép đặt lại mật khẩu. Các hàm bên dưới đọc / ghi session bằng các tên này."
+    // [TV1-6.3] Đặt tên 4 khóa lưu trong session: email đang nhập OTP, OTP dùng cho việc gì,
+    //   lúc gửi mã, và email được phép đặt lại mật khẩu. Các hàm bên dưới đọc / ghi session bằng các tên này.
     static final String OTP_EMAIL = "OTP_EMAIL";          // email đang chờ nhập OTP
     static final String OTP_PURPOSE = "OTP_PURPOSE";      // VERIFY_EMAIL hoặc RESET_PASSWORD
     static final String OTP_SENT_AT = "OTP_SENT_AT";      // thời điểm bấm gửi mã (ms), để đếm ngược 60 giây trên giao diện
@@ -42,8 +42,8 @@ public class AuthController {
 
     // ===================== Trang /login (chứa tất cả pop-up) =====================
 
-    // [TV1-6.1] Nói với thầy: "Chỗ này em mở trang /login: xem cần mở pop-up nào (đăng nhập, đăng ký, OTP, quên mật
-    //   khẩu...) rồi bỏ vào biến popup, đổi ?error= trên URL thành câu thông báo, rồi trả về login.html [TV1-6.4]."
+    // [TV1-6.1] Mở trang /login: xem cần mở pop-up nào (đăng nhập, đăng ký, OTP, quên mật
+    //   khẩu...) rồi bỏ vào biến popup, đổi ?error= trên URL thành câu thông báo, rồi trả về login.html [TV1-6.4].
     @GetMapping("/login")
     public String loginPage(@RequestParam(required = false) String error, @RequestParam(required = false) String logout,
                             @RequestParam(required = false) String awaiting, @RequestParam(required = false) String registered,
@@ -73,8 +73,8 @@ public class AuthController {
     }
 
     // Không cho mở pop-up OTP / Reset bằng cách gõ URL khi chưa tới bước đó
-    // [TV1-6.2] Nói với thầy: "Chỗ này em chặn mở pop-up bằng cách gõ URL: OTP chỉ mở khi session có email đang xác
-    //   minh, Đặt lại mật khẩu chỉ mở khi session có RESET_EMAIL. Không có thì mở pop-up Đăng nhập."
+    // [TV1-6.2] Chặn mở pop-up bằng cách gõ URL: OTP chỉ mở khi session có email đang xác
+    //   minh, Đặt lại mật khẩu chỉ mở khi session có RESET_EMAIL. Không có thì mở pop-up Đăng nhập.
     private String allowedPopup(String popup, HttpSession session) {
         if (popup == null) return "login";
         return switch (popup) {
@@ -99,9 +99,9 @@ public class AuthController {
 
     // ===================== Đăng nhập =====================
 
-    // [TV1-7.1] Nói với thầy: "Chỗ này em xử lý nút Đăng nhập: gọi authService.login [TV1-7.2] kiểm tra email, mật
+    // [TV1-7.1] Xử lý nút Đăng nhập: gọi authService.login [TV1-7.2] kiểm tra email, mật
     //   khẩu. Đúng thì lưu đăng nhập vào session [TV1-7.3] rồi chuyển tới /dashboard; tài khoản chưa xác minh email thì
-    //   mở pop-up OTP; sai thì quay lại /login báo lỗi."
+    //   mở pop-up OTP; sai thì quay lại /login báo lỗi.
     @PostMapping("/login")
     public String login(@ModelAttribute LoginRequestDTO loginRequest, HttpServletRequest request,
                         RedirectAttributes redirect) {
@@ -134,8 +134,8 @@ public class AuthController {
 
     // ===================== Đăng ký =====================
 
-    // [TV1-9.1] Nói với thầy: "Chỗ này em xử lý nút Đăng ký: kiểm tra từng ô [TV1-9.2], sai thì mở lại pop-up Đăng ký
-    //   có chữ đỏ. Đúng thì tạo tài khoản PENDING và gửi mã OTP [TV1-9.2b], lưu email vào session rồi mở pop-up OTP."
+    // [TV1-9.1] Xử lý nút Đăng ký: kiểm tra từng ô [TV1-9.2], sai thì mở lại pop-up Đăng ký
+    //   có chữ đỏ. Đúng thì tạo tài khoản PENDING và gửi mã OTP [TV1-9.2b], lưu email vào session rồi mở pop-up OTP.
     @PostMapping("/register")
     public String register(@RequestParam(required = false) String fullName, @RequestParam(required = false) String email,
                            @RequestParam(required = false) String password,
@@ -177,9 +177,9 @@ public class AuthController {
 
     // ===================== OTP (dùng chung đăng ký + quên mật khẩu) =====================
 
-    // [TV1-9.3] Nói với thầy: "Chỗ này em xử lý nút Xác nhận mã OTP: lấy email và mục đích từ session, ghép 6 ô thành
+    // [TV1-9.3] Xử lý nút Xác nhận mã OTP: lấy email và mục đích từ session, ghép 6 ô thành
     //   mã. Đăng ký thì xác minh rồi chuyển tài khoản sang chờ Admin duyệt [TV1-9.4]; quên mật khẩu thì ghi RESET_EMAIL
-    //   vào session rồi mở pop-up Đặt lại mật khẩu. Sai mã thì mở lại pop-up OTP báo lỗi."
+    //   vào session rồi mở pop-up Đặt lại mật khẩu. Sai mã thì mở lại pop-up OTP báo lỗi.
     @PostMapping("/otp/verify")
     public String verifyOtp(@RequestParam(name = "digit", required = false) List<String> digits,
                             HttpSession session, RedirectAttributes redirect) {
@@ -216,8 +216,8 @@ public class AuthController {
         return "redirect:/login";
     }
 
-    // [TV1-9.5] Nói với thầy: "Chỗ này em xử lý nút Gửi lại mã: chưa đủ 60 giây thì báo lỗi, đủ thì gọi service tạo mã
-    //   mới [TV1-9.5b] và ghi lại thời điểm gửi vào session."
+    // [TV1-9.5] Xử lý nút Gửi lại mã: chưa đủ 60 giây thì báo lỗi, đủ thì gọi service tạo mã
+    //   mới [TV1-9.5b] và ghi lại thời điểm gửi vào session.
     @PostMapping("/otp/resend")
     public String resendOtp(HttpSession session, RedirectAttributes redirect) {
         String email = (String) session.getAttribute(OTP_EMAIL);
@@ -244,8 +244,8 @@ public class AuthController {
 
     // ===================== Quên / đặt lại mật khẩu =====================
 
-    // [TV1-10.1] Nói với thầy: "Chỗ này em xử lý Quên mật khẩu: kiểm tra định dạng email, gọi service gửi mã
-    //   [TV1-10.1b], rồi luôn mở pop-up OTP với cùng một câu thông báo, dù email có tồn tại hay không."
+    // [TV1-10.1] Xử lý Quên mật khẩu: kiểm tra định dạng email, gọi service gửi mã
+    //   [TV1-10.1b], rồi luôn mở pop-up OTP với cùng một câu thông báo, dù email có tồn tại hay không.
     @PostMapping("/forgot-password")
     public String forgotPassword(@RequestParam(required = false) String email, HttpSession session,
                                  RedirectAttributes redirect) {
@@ -267,8 +267,8 @@ public class AuthController {
         return "redirect:/login";
     }
 
-    // [TV1-10.2] Nói với thầy: "Chỗ này em xử lý Đặt lại mật khẩu: lấy email từ session (RESET_EMAIL), kiểm tra mật
-    //   khẩu mới, gọi service lưu mật khẩu [TV1-10.3], xóa RESET_EMAIL rồi về pop-up Đăng nhập."
+    // [TV1-10.2] Xử lý Đặt lại mật khẩu: lấy email từ session (RESET_EMAIL), kiểm tra mật
+    //   khẩu mới, gọi service lưu mật khẩu [TV1-10.3], xóa RESET_EMAIL rồi về pop-up Đăng nhập.
     @PostMapping("/reset-password")
     public String resetPassword(@RequestParam(required = false) String password,
                                 @RequestParam(required = false) String confirmPassword,

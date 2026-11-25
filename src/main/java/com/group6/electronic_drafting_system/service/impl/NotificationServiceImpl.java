@@ -27,8 +27,8 @@ public class NotificationServiceImpl implements NotificationService {
         this.accounts = accounts;
     }
 
-    // [TV1-3.6] Nói với thầy: "Chỗ này em tạo thông báo: lưu một dòng vào bảng notification (người nhận, đề tài, nội
-    //   dung, chưa đọc). Phóng viên thấy khi mở hoặc tải lại trang danh sách [TV1-3.2]."
+    // [TV1-3.6] Tạo thông báo: lưu một dòng vào bảng notification (người nhận, đề tài, nội
+    //   dung, chưa đọc). Phóng viên thấy khi mở hoặc tải lại trang danh sách [TV1-3.2].
     @Override
     @Transactional
     public void notify(Account recipient, Topic topic, String message) {
@@ -54,8 +54,8 @@ public class NotificationServiceImpl implements NotificationService {
                 .toList();
     }
 
-    // [TV1-3.7b] Nói với thầy: "Chỗ này em mở thông báo: kiểm tra đúng người nhận, đánh dấu đã đọc, trả về id đề tài
-    //   để controller chuyển sang trang góp ý."
+    // [TV1-3.7b] Mở thông báo: kiểm tra đúng người nhận, đánh dấu đã đọc, trả về id đề tài
+    //   để controller chuyển sang trang góp ý.
     @Override
     @Transactional
     public Integer open(String email, Integer notificationId) {

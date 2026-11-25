@@ -3,15 +3,15 @@
 <body>
 <!-- FL-01 Iter2: Topic Review Workspace của Trưởng ban + Approve Topic Confirmation + Request Changes Form -->
 <th:block th:fragment="content">
-<!--/* [TV1-1.3] Nói với thầy: "Chỗ này là giao diện màn duyệt của Trưởng ban: in dữ liệu trong ws mà controller gửi sang
-[TV1-1.2], gọi các mảnh hàng chờ, chi tiết, lịch sử từ file fragment dùng chung [TV1-1.3b]." */-->
+<!--/* [TV1-1.3] Giao diện màn duyệt của Trưởng ban: in dữ liệu trong ws mà controller gửi sang
+[TV1-1.2], gọi các mảnh hàng chờ, chi tiết, lịch sử từ file fragment dùng chung [TV1-1.3b]. */-->
 <svg th:replace="~{reporter/topic-proposal-list :: tpSprite}"></svg>
 
 <div class="tp-page">
     <header th:replace="~{reporter/topic-proposal-list :: tpTopbar(${ws})}"></header>
     <main class="tp-main">
-        <!--/* [TV1-1.14c] Nói với thầy: "Chỗ này em hiện thông báo xanh / đỏ sau khi bấm Duyệt hoặc Yêu cầu sửa (controller gửi
-        kèm khi quay lại màn)." */-->
+        <!--/* [TV1-1.14c] Hiện thông báo xanh / đỏ sau khi bấm Duyệt hoặc Yêu cầu sửa (controller gửi
+        kèm khi quay lại màn). */-->
         <div class="tp-flash tp-flash--ok" role="status" th:if="${message}" th:text="${message}"></div>
         <div class="tp-flash tp-flash--error" role="alert" th:if="${error}" th:text="${error}"></div>
 
@@ -36,8 +36,8 @@
         </section>
 
         <div class="tp-workspace">
-            <!--/* [TV1-1.3c] Nói với thầy: "Chỗ này em chia màn làm 2 cột: bên trái chèn mảnh hàng chờ [TV1-1.4], bên phải chèn mảnh
-            chi tiết đề tài đang chọn [TV1-1.4c]." */-->
+            <!--/* [TV1-1.3c] Chia màn làm 2 cột: bên trái chèn mảnh hàng chờ [TV1-1.4], bên phải chèn mảnh
+            chi tiết đề tài đang chọn [TV1-1.4c]. */-->
             <th:block th:replace="~{fragment/topic-review :: queue(${ws}, '/department-head/topics', null)}"></th:block>
 
             <div class="tp-workspace-detail">
@@ -51,8 +51,8 @@
                         <th:block th:replace="~{fragment/topic-review :: detail(${ws})}"></th:block>
 
                         <!-- Trưởng ban chỉ Duyệt hoặc Yêu cầu sửa, không có quyền Từ chối -->
-                        <!--/* [TV1-1.14d] Nói với thầy: "Chỗ này 2 nút Duyệt và Yêu cầu sửa, chỉ hiện khi ws.canDecide() là true. Bấm nút
-                        thì mở hộp thoại xác nhận [TV1-1.14b]." */-->
+                        <!--/* [TV1-1.14d] 2 nút Duyệt và Yêu cầu sửa, chỉ hiện khi ws.canDecide() là true. Bấm nút
+                        thì mở hộp thoại xác nhận [TV1-1.14b]. */-->
                         <div class="tp-detail-actions" th:if="${ws.canDecide()}">
                             <button type="button" class="tp-button tp-button--primary" data-open="approve-dialog">
                                 <svg class="tp-icon"><use href="#tp-icon-check-circle"></use></svg> Duyệt đề tài
@@ -76,8 +76,8 @@
 
     <th:block th:if="${ws.selected() != null and ws.canDecide()}">
         <!-- Approve Topic Confirmation -->
-        <!--/* [TV1-1.14e] Nói với thầy: "Chỗ này là 2 hộp thoại xác nhận, mỗi hộp là một form POST: Duyệt gửi tới /approve
-        [TV1-1.14], Yêu cầu sửa có ô góp ý gửi tới /request-changes [TV1-1.17]." */-->
+        <!--/* [TV1-1.14e] 2 hộp thoại xác nhận, mỗi hộp là một form POST: Duyệt gửi tới /approve
+        [TV1-1.14], Yêu cầu sửa có ô góp ý gửi tới /request-changes [TV1-1.17]. */-->
         <dialog id="approve-dialog" class="tp-dialog">
             <form method="post" th:action="@{/department-head/topics/{id}/approve(id=${ws.selected().id()})}">
                 <h2>Duyệt đề tài này?</h2>

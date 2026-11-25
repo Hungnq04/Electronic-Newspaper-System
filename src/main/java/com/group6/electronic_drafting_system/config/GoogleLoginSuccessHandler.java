@@ -36,9 +36,9 @@ public class GoogleLoginSuccessHandler implements AuthenticationSuccessHandler {
         this.authService = authService;
     }
 
-    // [TV1-8.1] Nói với thầy: "Chỗ này chạy sau khi Google xác nhận xong. Em lấy email Google trả về rồi tìm tài khoản
+    // [TV1-8.1] Chạy sau khi Google xác nhận xong. Em lấy email Google trả về rồi tìm tài khoản
     //   trong DB: chưa có thì tạo tài khoản chờ duyệt [TV1-8.2], đang chờ duyệt hoặc bị khóa thì báo và hủy phiên,
-    //   ACTIVE thì gắn role rồi chuyển tới /dashboard [TV1-7.4]."
+    //   ACTIVE thì gắn role rồi chuyển tới /dashboard [TV1-7.4].
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {
